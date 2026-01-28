@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+
+    <body class="bg-gray-50 text-dark font-sans antialiased dark:bg-dark transition-colors duration-300">
+        <!-- Minimal Doctor Header -->
+        <nav class="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-50">
+            <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-4">
+                        <a href="/doctor/dashboard" class="text-xl font-black text-primary tracking-tighter">HOSAM <span
+                                class="text-dark dark:text-white">DOC</span></a>
+                        <span class="hidden md:block w-px h-6 bg-gray-200 dark:bg-slate-800 mx-2"></span>
+                        <div class="hidden md:flex items-center gap-6">
+                            <a href="/doctor/dashboard"
+                                class="text-sm font-bold text-gray-500 hover:text-primary transition-colors">Dashboard</a>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3 pr-4 border-r border-gray-100 dark:border-slate-800">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                                <%= user.full_name.charAt(0) %>
+                            </div>
+                            <span class="text-xs font-bold dark:text-gray-300">Dr. <%= user.full_name.split(' ')[0] %></span>
+                        </div>
+                        <a href="/" class="text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-widest">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="min-h-screen py-10">
+            <div class="container mx-auto px-4 max-w-6xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <a href="/doctor/dashboard"
+                        class="w-10 h-10 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-800 hover:text-primary transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-2xl font-black text-dark dark:text-white">Process Prescription</h1>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <!-- Left: Image Viewer -->
+                    <div class="space-y-6">
+                        <div
+                            class="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 h-fit sticky top-24">
+                            <div class="flex justify-between items-center mb-4 px-2">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Prescription
+                                    Image</h3>
+                                <button onclick="zoomImage()"
+                                    class="text-primary hover:underline text-xs font-bold">
+                                    <i class="fas fa-search-plus mr-1"></i> Full View
+                                </button>
+                            </div>
+                            <div
+                                class="relative group rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 aspect-[3/4]">
+                                <img src="<%= prescription.image_url %>" id="rxImage" alt="Prescription"
+                                    class="w-full h-full object-contain cursor-zoom-in">
+                            </div>
+                            <div
+                                class="mt-6 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-900/30">
+                                <button onclick="runAIExtraction()" id="aiBtn"
+                                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                    <i class="fas fa-robot"></i> Run AI Vision Extraction
+                                </button>
+                                <p
+                                    class="text-[10px] text-center text-purple-600 dark:text-purple-400 mt-2 font-bold uppercase tracking-tighter">
+                                    AI will attempt to identify medicines and dosages</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Processing Form -->
+                    <div class="space-y-8">
+                        <div
+                            class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
+                            <h3 class="text-lg font-bold text-dark dark:text-white mb-6">Patient Info</h3>
+                            <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl mb-8">
+                                <div
+                                    class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl uppercase">
+                                    <%= prescription.user_name.charAt(0) %>
+                                </div>
+                                <div>
+                                    <p class="font-bold dark:text-white">
+                                        <%= prescription.user_name %>
+                                    </p>
+                                    <p class="text-xs text-gray-500">ID: <%= prescription.user_id %>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-dark dark:text-white mb-4">Add Medicines</h3>
+                            <div id="medicationList" class="space-y-3 mb-6">
+                                <!-- Items added here -->
+                            </div>
+
+                            <div class="grid grid-cols-12 gap-2 mb-8">
+                                <div class="col-span-12 sm:col-span-6">
+                                    <input type="text" id="medSearch" list="medicineOptions"
+                                        class="w-full bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none"
+                                        placeholder="Search medicine...">
+                                    <datalist id="medicineOptions">
+                                        <% medicines.forEach(med=> { %>
+                                            <option value="<%= med.name %>" data-price="<%= med.price %>">
+                                                <%= med.name %> ($<%= med.price %>)
+                                            </option>
+                                            <% }); %>
+                                    </datalist>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <input type="number" id="medQty"
+                                        class="w-full bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none"
+                                        placeholder="Qty" value="1">
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <button onclick="addItem()"
+                                        class="w-full h-full bg-dark dark:bg-white text-white dark:text-dark font-black rounded-xl hover:scale-105 transition-transform">ADD</button>
+                                </div>
+                            </div>
+
+                            <form action="/doctor/prescriptions/process" method="POST"
+                                onsubmit="return validateForm()">
+                                <input type="hidden" name="prescriptionId" value="<%= prescription.id %>">
+                                <div id="hiddenMeds"></div>
+                                <input type="hidden" name="totalPrice" id="finalTotal" value="0">
+
+                                <div class="space-y-4">
+                                    <label class="block text-sm font-bold text-gray-500 uppercase">Pharmacist
+                                        Notes</label>
+                                    <textarea name="notes" rows="3"
+                                        class="w-full bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-2xl px-6 py-4 outline-none"
+                                        placeholder="Provide instructions or comments..."></textarea>
+                                </div>
+
+                                <div class="mt-8 border-t border-gray-100 dark:border-slate-800 pt-6">
+                                    <div class="flex justify-between items-center mb-6">
+                                        <span class="text-xl font-bold dark:text-white">Estimated Total</span>
+                                        <span class="text-2xl font-black text-primary">$<span
+                                                id="displayTotal">0.00</span></span>
+                                    </div>
+
+                                    <label
+                                        class="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border-2 border-transparent hover:border-blue-200 transition-all cursor-pointer mb-6">
+                                        <input type="checkbox" id="reviewedCheck" required
+                                            class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+                                        <span class="text-xs font-bold text-blue-800 dark:text-blue-300">I have
+                                            manually reviewed the prescription image and verified the medications
+                                            listed above.</span>
+                                    </label>
+
+                                    <button type="submit"
+                                        class="w-full bg-primary hover:bg-blue-800 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
+                                        FINALIZE & NOTIFY PATIENT
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+
+                <script>
+                    let medicationArray = [];
+                    const medicinesData = <% - JSON.stringify(medicines) %>;
+
+                    function addItem(name = null, qty = null, price = null) {
+                        const searchInput = document.getElementById(' medSearch'); const
+                            qtyInput = document.getElementById('medQty'); const medName = name || searchInput.value;
+                        const medQty = qty || parseInt(qtyInput.value) || 1; if (!medName) return; const
+                            foundMed = medicinesData.find(m => m.name.toLowerCase() === medName.toLowerCase());
+                        const medPrice = price || (foundMed ? foundMed.price : 0);
+
+                        const item = {
+                            name: medName,
+                            quantity: medQty,
+                            price: medPrice
+                        };
+
+                        medicationArray.push(item);
+                        renderList();
+
+                        searchInput.value = '';
+                        qtyInput.value = '1';
+                    }
+
+                    function renderList() {
+                        const list = document.getElementById('medicationList');
+                        const hiddenMeds = document.getElementById('hiddenMeds');
+                        const displayTotal = document.getElementById('displayTotal');
+                        const finalTotal = document.getElementById('finalTotal');
+
+                        list.innerHTML = '';
+                        hiddenMeds.innerHTML = '';
+                        let total = 0;
+
+                        medicationArray.forEach((item, index) => {
+                            const itemTotal = item.price * item.quantity;
+                            total += itemTotal;
+
+                            list.innerHTML += `
+                                    <div
+                                        class="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-800 group">
+                                        <div class="flex items-center gap-4">
+                                            <span
+                                                class="bg-dark dark:bg-white text-white dark:text-dark px-2 py-0.5 rounded-md text-[10px] font-black">${item.quantity}x</span>
+                                            <span class="font-bold dark:text-gray-200">${item.name}</span>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <span
+                                                class="text-sm font-medium text-gray-500">$${itemTotal.toFixed(2)}</span>
+                                            <button onclick="removeItem(${index})"
+                                                class="text-red-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"><i
+                                                    class="fas fa-trash-alt"></i></button>
+                                        </div>
+                                    </div>
+                                    `;
+
+                            // Add hidden inputs for form submission
+                            hiddenMeds.innerHTML += `
+                                    <input type="hidden" name="medicines[${index}][name]" value="${item.name}">
+                                    <input type="hidden" name="medicines[${index}][quantity]" value="${item.quantity}">
+                                    <input type="hidden" name="medicines[${index}][price]" value="${item.price}">
+                                    `;
+                        });
+
+                        displayTotal.textContent = total.toFixed(2);
+                        finalTotal.value = total;
+                    }
+
+                    function removeItem(index) {
+                        medicationArray.splice(index, 1);
+                        renderList();
+                    }
+
+                    function validateForm() {
+                        if (medicationArray.length === 0) {
+                            alert('Please add at least one medication.');
+                            return false;
+                        }
+                        if (!document.getElementById('reviewedCheck').checked) {
+                            alert('You must confirm you have reviewed the prescription.');
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    function runAIExtraction() {
+                        const btn = document.getElementById('aiBtn');
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI Vision Parsing...';
+
+                        setTimeout(() => {
+                            // Simulation of AI extraction
+                            const results = [
+                                { name: "Panadol", qty: 2, price: 5.50 },
+                                { name: "Amoxicillin", qty: 1, price: 12.00 }
+                            ];
+
+                            results.forEach(res => addItem(res.name, res.qty, res.price));
+
+                            btn.innerHTML = '<i class="fas fa-check"></i> AI Extraction Complete';
+                            btn.className = 'w-full bg-green-500 text-white font-bold py-3 rounded-xl
+                            transition - all flex items - center justify - center gap - 2';
+                            alert('AI has extracted two medications from the image. Please verify they are
+                                    correct and adjust quantities if needed.');
+                        }, 2000);
+                    }
+
+                    function zoomImage() {
+                        window.open('<%= prescription.image_url %>', '_blank');
+                    }
+                </script>
+    </body>
+
+</html>

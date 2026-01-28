@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+
+    <body
+        class="bg-gray-50 dark:bg-[#0f172a] text-slate-800 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
+        <div class="flex h-screen overflow-hidden">
+            <!-- SIDEBAR -->
+            <aside
+                class="w-64 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col z-50 transition-all duration-300 transform -translate-x-full md:translate-x-0 fixed md:relative h-full"
+                id="sidebar">
+                <div class="p-6 flex items-center justify-between">
+                    <a href="/doctor/dashboard" class="flex items-center gap-2">
+                        <div
+                            class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-lg">
+                            H</div>
+                        <span class="text-lg font-black tracking-tight dark:text-white">HOSAM<span
+                                class="text-primary">DOC</span></span>
+                    </a>
+                    <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-primary"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <nav class="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar">
+                    <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Core</p>
+                    <a onclick="showModule('overview')"
+                        class="nav-item active flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-th-large w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Overview</span>
+                        </div>
+                    </a>
+                    <a onclick="showModule('shifts')"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-clock w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Shifts</span>
+                        </div>
+
+                        <span id="badge-shift" class="hidden w-2 h-2 bg-red-500 rounded-full"></span>
+                    </a>
+
+                    <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Pharmacy</p>
+                    <a onclick="showModule('orders')"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i
+                                class="fas fa-shopping-bag w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Orders</span>
+                        </div>
+                        <span id="badge-orders"
+                            class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-primary/30">
+                            <%= activeOrders.length %>
+                        </span>
+                    </a>
+                    <a onclick="showModule('prescriptions')"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i
+                                class="fas fa-file-medical w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Prescriptions</span>
+                        </div>
+                        <span id="badge-prescriptions"
+                            class="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-purple-500/30">
+                            <%= pendingPrescriptions.length %>
+                        </span>
+                    </a>
+                    <a onclick="showModule('inventory')"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-boxes w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Inventory</span>
+                        </div>
+                    </a>
+                    <a onclick="showModule('returns')"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-undo w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Returns</span>
+                        </div>
+                    </a>
+                    <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Communication
+                    </p>
+                    <a onclick="showModule('chats'); loadActiveChats();"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-comments w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Chat</span>
+                        </div>
+                        <span id="badge-chats"
+                            class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">New</span>
+                    </a>
+                    <a onclick="showModule('announcements'); loadAnnouncements();"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-bullhorn w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Announcements</span>
+                        </div>
+                        <span id="badge-announcements" class="hidden w-2 h-2 bg-blue-500 rounded-full"></span>
+                    </a>
+
+                    <a href="/admin/settings"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-tools w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Admin Config</span>
+                        </div>
+                    </a>
+
+                    <div class="mt-auto pt-6 border-t border-gray-100 dark:border-slate-800 mt-6">
+                        <a href="/"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all cursor-pointer">
+                            <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </nav>
+            </aside>
+            <!-- MAIN CONTENT -->
+            <main class="flex-1 flex flex-col h-full relative">
+                <!-- Header -->
+                <header
+                    class="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-40">
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-primary"><i
+                                class="fas fa-bars text-xl"></i></button>
+                        <h2 id="page-title" class="text-xl font-bold dark:text-white">Overview</h2>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <!-- Pharmacy Status Toggle -->
+                        <div
+                            class="flex items-center gap-3 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-slate-700">
+                            <span id="pharmacyStatusLabel"
+                                class="text-xs font-black uppercase <%= pharmacySettings && pharmacySettings.is_open ? 'text-green-500' : 'text-red-500' %>">
+                                <%= pharmacySettings && pharmacySettings.is_open ? 'OPEN' : 'CLOSED' %>
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" <%=pharmacySettings &&
+                                    pharmacySettings.is_open ? ' checked' : '' %> onchange="togglePharmacy(this)">
+                                <div
+                                    class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500">
+                                </div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                                <%= user.full_name.charAt(0) %>
+                            </div>
+                            <span class="text-xs font-bold dark:text-gray-300 hidden sm:inline">Dr. <%= user.full_name
+                                    %></span>
+                        </div>
+                    </div>
+                </header>
+                <!-- Modules Container -->
+                <div class="flex-1 overflow-y-auto p-6 scroll-smooth custom-scrollbar" id="content-area">
+                    <!-- MODULE: OVERVIEW -->
+                    <div id="module-overview" class="module-content animate-fade-in">
+                        <!-- Stats Grid -->
+                        <% if (activeShift) { %>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <div
+                                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50">
+                                    <div class="flex items-center gap-4 mb-2">
+                                        <div
+                                            class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-green-600">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </div>
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Revenue</span>
+                                    </div>
+                                    <h3 class="text-2xl font-black dark:text-white">$<%=
+                                            parseFloat(activeShift.total_revenue).toFixed(2) %>
+                                    </h3>
+                                </div>
+                                class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100
+                                dark:border-slate-700/50">
+                                <div class="flex items-center gap-4 mb-2">
+                                    <div
+                                        class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600">
+                                        <i class="fas fa-shopping-bag"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-gray-400 uppercase">Orders</span>
+                                </div>
+                                <h3 class="text-2xl font-black dark:text-white">
+                                    <%= activeShift.orders_count %>
+                                </h3>
+                            </div>
+                            <div
+                                class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50">
+                                <div class="flex items-center gap-4 mb-2">
+                                    <div
+                                        class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600">
+                                        <i class="fas fa-file-medical"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-gray-400 uppercase">Prescriptions</span>
+                                </div>
+                                <h3 class="text-2xl font-black dark:text-white">
+                                    <%= activeShift.prescriptions_count %>
+                                </h3>
+                            </div>
+                    </div>
+                    <% } else { %>
+                        <div
+                            class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-6 text-center mb-8">
+                            <i class="fas fa-moon text-blue-400 text-3xl mb-3"></i>
+                            <h3 class="text-lg font-bold dark:text-white">No Active Shift</h3>
+                            <p class="text-sm text-gray-500 mb-4">Start a shift to verify orders and
+                                prescriptions.</p>
+                            <form action="/doctor/shift/start" method="POST">
+                                <button type="submit"
+                                    class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all">Start
+                                    Shift Now</button>
+                            </form>
+                        </div>
+                        <% } %>
+
+                            <!-- Recent Activity / Trends -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div
+                                    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6">
+                                    <h3 class="font-bold dark:text-white mb-4">Trending Requests</h3>
+                                    <div class="space-y-3">
+                                        <% trendingRequests.forEach((req, index)=> { %>
+                                            <div
+                                                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                                                <div class="flex items-center gap-3">
+                                                    <span
+                                                        class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
+                                                        <%= index + 1 %>
+                                                    </span>
+                                                    <span class="text-sm font-bold dark:text-gray-200">
+                                                        <%= req.product_name %>
+                                                    </span>
+                                                </div>
+                                                <span class="text-xs font-black text-gray-400">
+                                                    <%= req.count %> REQ
+                                                </span>
+                                            </div>
+                                            <% }); %>
+                                    </div>
+                                </div>
+                                <!-- Quick Actions -->
+                                <div class="space-y-4">
+                                    <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-500/20 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-all"
+                                        onclick="showModule('inventory')">
+                                        <div class="relative z-10">
+                                            <h3 class="font-bold text-lg">Low Stock Issues?</h3>
+                                            <p class="text-white/80 text-xs mb-4">Manage inventory and respond
+                                                to demand.</p>
+                                            <span
+                                                class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold">Manage
+                                                Inventory</span>
+                                        </div>
+                                        <i
+                                            class="fas fa-boxes absolute -right-4 -bottom-4 text-8xl text-white/10 group-hover:rotate-12 transition-transform"></i>
+                                    </div>
+                                </div>
+                            </div>
+                </div>
+                <!-- MODULE: ORDERS -->
+                <div id="module-orders" class="module-content hidden animate-fade-in">
+                    <!-- Orders Table code (Similar to previous, but simplified structure) -->
+                    <div
+                        class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 dark:bg-slate-700/50 text-xs text-gray-400 uppercase font-bold">
+                                <tr>
+                                    <th class="px-6 py-4">Order Details</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                                <% activeOrders.forEach(order=> { %>
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-10 h-10 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-blue-500 font-bold text-xs">
+                                                    <%= order.user_name.charAt(0) %>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-sm dark:text-white">
+                                                        <%= order.user_name %>
+                                                    </p>
+                                                    <p class="text-xs text-gray-400">#<%= order.order_uid %> • <%= new
+                                                                Date(order.created_at).toLocaleTimeString() %>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase
+                                            <%= order.status === 'scheduled' ? 'bg-purple-100 text-purple-600' : 
+                                                order.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600' %>">
+                                                <%= order.status %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex justify-end gap-2">
+                                                <button onclick="updateStatus('<%= order.id %>', 'processing')"
+                                                    class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                                                    title="Process"><i class="fas fa-arrow-right text-xs"></i></button>
+                                                <button onclick="updateStatus('<%= order.id %>', 'done')"
+                                                    class="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
+                                                    title="Complete"><i class="fas fa-check text-xs"></i></button>
+                                                <button onclick="updateStatus('<%= order.id %>', 'canceled')"
+                                                    class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
+                                                    title="Cancel"><i class="fas fa-times text-xs"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                            </tbody>
+                        </table>
+                        <% if(activeOrders.length===0) { %>
+                            <div class="p-8 text-center text-gray-400">
+                                <i class="fas fa-check-circle text-4xl mb-2 text-gray-200 dark:text-slate-700"></i>
+                                <p>No active orders</p>
+                            </div>
+                            <% } %>
+                    </div>
+                </div>
+                <!-- MODULE: PRESCRIPTIONS -->
+                <div id="module-prescriptions" class="module-content hidden animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <% pendingPrescriptions.forEach(rx=> { %>
+                            <div
+                                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden group hover:shadow-lg transition-all">
+                                <div class="aspect-video bg-gray-100 relative overflow-hidden">
+                                    <img src="<%= rx.image_url %>"
+                                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                    <div
+                                        class="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                                        <%= rx.timeAgo %>
+                                    </div>
+                                </div>
+                                <div class="p-5">
+                                    <h4 class="font-bold dark:text-white mb-1">
+                                        <%= rx.user_name %>
+                                    </h4>
+                                    <p class="text-xs text-gray-400 mb-4">Requires verification</p>
+                                    <a href="/doctor/prescriptions/<%= rx.id %>/process"
+                                        class="block w-full text-center bg-primary hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-colors">Review
+                                        & Process</a>
+                                </div>
+                            </div>
+                            <% }); %>
+                                <% if(pendingPrescriptions.length===0) { %>
+                                    <div class="col-span-full py-20 text-center text-gray-400">
+                                        <p>No pending prescriptions.</p>
+                                    </div>
+
+                                    <% } %>
+                    </div>
+                </div>
+
+                <!-- MODULE: INVENTORY -->
+                <div id="module-inventory" class="module-content hidden animate-fade-in">
+                    <!-- Reuse the inventory form from before -->
+                    <div
+                        class="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-100 dark:border-slate-700">
+                        <h3 class="text-xl font-bold dark:text-white mb-6">Add New Product</h3>
+                        <form action="/doctor/inventory/add" method="POST" class="space-y-6">
+                            <!-- ... (Simplified form fields for brevity, assuming usage of previously defined fields) ... -->
+                            <!-- Repeating the key input fields -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="text" name="name" placeholder="Product Name"
+                                    class="col-span-2 bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                    required>
+                                <input type="number" step="0.01" name="price" placeholder="Price"
+                                    class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                    required>
+                                <input type="text" name="category" placeholder="Category"
+                                    class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                    required>
+                            </div>
+                            <textarea name="description" placeholder="Description..." rows="3"
+                                class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
+                            <input type="text" name="imageUrl" placeholder="Image URL"
+                                class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                            <button type="submit"
+                                class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">Add
+                                to Inventory</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- MODULE: RETURNS -->
+                <div id="module-returns" class="module-content hidden animate-fade-in">
+                    <div class="text-center py-20">
+                        <div
+                            class="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                            <i class="fas fa-undo text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold dark:text-white">Returns Management</h3>
+                        <p class="text-gray-500 mb-6">Process customer return requests here.</p>
+                        <p class="text-xs text-primary font-bold bg-primary/10 inline-block px-3 py-1 rounded-md">
+                            Coming Soon via Realtime</p>
+                    </div>
+                </div>
+                <!-- MODULE: CHAT -->
+                <div id="module-chats" class="module-content hidden animate-fade-in h-[calc(100vh-140px)]">
+                    <div class="grid grid-cols-12 gap-6 h-full">
+                        <div class="col-span-4 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-4 overflow-y-auto"
+                            id="chatListArea">
+                            <!-- Chat List Items -->
+                        </div>
+                        <div
+                            class="col-span-8 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-col overflow-hidden relative">
+                            <!-- Header -->
+                            <div id="chatWindowHeader"
+                                class="hidden h-16 border-b border-gray-100 dark:border-slate-700 flex items-center px-6 justify-between shrink-0">
+                                <div>
+                                    <h3 class="font-bold dark:text-white" id="activePatientName">Patient Name</h3>
+                                    <p class="text-[10px] text-green-500 font-bold uppercase tracking-wider">Online
+                                    </p>
+                                </div>
+                            </div>
+                            <!-- Messages -->
+                            <div id="chatMessagesArea"
+                                class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50 dark:bg-slate-900/50">
+                                <div class="text-center text-gray-400 mt-20">Select a chat to start messaging</div>
+                            </div>
+                            <!-- Input -->
+                            <div id="chatInputArea"
+                                class="hidden p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
+                                <form onsubmit="event.preventDefault(); sendDoctorMessage();" class="flex gap-2">
+                                    <input type="text" id="doctorMsgInput"
+                                        class="flex-1 bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                        placeholder="Type a message...">
+                                    <button type="submit"
+                                        class="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors"><i
+                                            class="fas fa-paper-plane"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- MODULE: ANNOUNCEMENTS -->
+                <div id="module-announcements" class="module-content hidden animate-fade-in">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1">
+                            <div
+                                class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-100 dark:border-slate-700 sticky top-6">
+                                <h3 class="font-bold dark:text-white mb-4">Post Announcement</h3>
+                                <form onsubmit="event.preventDefault(); postAnnouncement();" class="space-y-4">
+                                    <input type="text" id="annTitle"
+                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                        placeholder="Title" required>
+                                    <textarea id="annMessage" rows="4"
+                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                                        placeholder="Message content..." required></textarea>
+                                    <button type="submit"
+                                        class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700">Post</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 space-y-4" id="announcementsList">
+                            <!-- Announcements will load here -->
+                            <p class="text-center text-gray-400">Loading announcements...</p>
+                        </div>
+                    </div>
+                </div>
+
+        </div>
+        </main>
+        </div>
+        <!-- TOAST NOTIFICATION CONTAINER -->
+        <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-3"></div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            // 1. Orders
+            socket.on('orders:new', (data) => {
+                showToast(`New Order #${data.id.substring(0, 8)}`, `Total: $${parseFloat(data.total_price).toFixed(2)}`, 'blue');
+                updateBadge('orders', 1);
+                // In a full implementation, we would also prepend the new order to the table if the Order module is active
+            });
+            // 2. Prescriptions
+            socket.on('prescription:new', (data) => {
+                showToast(`New Prescription`, `Uploaded by ${data.user_name}`, 'purple');
+                updateBadge('prescriptions', 1);
+            });
+            // 3. Announcements
+            socket.on('announcement:new', (data) => {
+                showToast(`📢 ${data.title}`, data.message.substring(0, 50) + '...', 'indigo');
+                // If announcement module is open, prepend it
+                const list = document.getElementById('announcementsList');
+                if (list && list.offsetParent !== null) {
+                    prependAnnouncement(data);
+                }
+            });
+            // 4. Pharmacy Status (Sync across tabs)
+            socket.on('pharmacy:status', (data) => {
+                const label = document.getElementById('pharmacyStatusLabel');
+                const checkbox = document.querySelector('input[onchange="togglePharmacy(this)"]');
+                if (label) {
+                    label.textContent = data.isOpen ? 'OPEN' : 'CLOSED';
+                    label.className = `text-xs font-black uppercase ${data.isOpen ? 'text-green-500' : 'text-red-500'}`;
+                }
+                if (checkbox) checkbox.checked = data.isOpen;
+            });
+            function showModule(moduleId) {
+                // Hide all
+                document.querySelectorAll('.module-content').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-gray-50', 'dark:bg-slate-800', 'text-primary'));
+                // Show active
+                const activeModule = document.getElementById('module-' + moduleId);
+                if (activeModule) activeModule.classList.remove('hidden');
+                // Update page title
+                document.getElementById('page-title').textContent = moduleId.charAt(0).toUpperCase() + moduleId.slice(1);
+            }
+            function toggleSidebar() {
+                const sb = document.getElementById('sidebar');
+                sb.classList.toggle('-translate-x-full');
+            }
+            function showToast(title, message, color = 'blue') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `bg-white dark:bg-slate-800 border-l-4 border-${color}-500 shadow-xl rounded-r-xl p-4 w-72 transform translate-x-full transition-all duration-300 flex items-start gap-3`;
+                toast.innerHTML = `
+                <div class="text-${color}-500 mt-1"><i class="fas fa-info-circle"></i></div>
+                <div>
+                    <h4 class="font-bold text-sm dark:text-white">${title}</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${message}</p>
+                </div>
+            `;
+                container.appendChild(toast);
+                // Animate in
+                setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+                // Animate out
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+            }
+            function updateBadge(type, increment) {
+                const badge = document.getElementById(`badge-${type}`);
+                if (badge) {
+                    let count = parseInt(badge.innerText) || 0;
+                    badge.innerText = count + increment;
+                    badge.classList.remove('hidden');
+                }
+            }
+            // --- DATA FUNCTIONS ---
+            async function togglePharmacy(input) {
+                // Optimistic UI update handled by socket, but we trigger the POST here
+                try {
+                    await fetch('/doctor/pharmacy/toggle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isOpen: input.checked })
+                    });
+                } catch (err) {
+                    console.error(err);
+                    input.checked = !input.checked; // Revert on error
+                    alert('Failed to update status');
+                }
+            }
+
+            async function updateStatus(orderId, newState) {
+                try {
+                    const res = await fetch('/doctor/orders/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId, newState })
+                    });
+                    if (res.ok) window.location.reload(); // Simple reload for now, or remove row from DOM
+                } catch (e) { console.error(e); }
+            }
+            // Chat & Announcement Loaders
+            async function loadAnnouncements() {
+                const list = document.getElementById('announcementsList');
+                try {
+                    const res = await fetch('/doctor/announcements');
+                    const data = await res.json();
+                    if (data.success) {
+                        list.innerHTML = '';
+                        if (data.announcements.length === 0) list.innerHTML = '<p class="text-gray-400 text-sm">No announcements.</p>';
+                        data.announcements.forEach(prependAnnouncement);
+                    }
+                } catch (e) { list.innerHTML = 'Error loading.'; }
+            }
+            function prependAnnouncement(data) {
+                const list = document.getElementById('announcementsList');
+                const div = document.createElement('div');
+                div.className = 'bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm animate-fade-in';
+                div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-sm dark:text-white">${data.title}</h4>
+                    <span class="text-[10px] text-gray-400">${new Date(data.created_at).toLocaleDateString()}</span>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">${data.message}</p>
+             `;
+                list.prepend(div);
+            }
+            async function postAnnouncement() {
+                const title = document.getElementById('annTitle').value;
+                const message = document.getElementById('annMessage').value;
+                try {
+                    await fetch('/doctor/announcements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, message })
+                    });
+                    document.getElementById('annTitle').value = '';
+                    document.getElementById('annMessage').value = '';
+                    showToast('Success', 'Announcement posted', 'green');
+                } catch (e) { alert('Failed to post'); }
+            }
+            // Porting previous chat logic...
+            let activeChatId = null;
+            async function loadActiveChats() {
+                const list = document.getElementById('chatListArea');
+                try {
+                    const res = await fetch('/doctor/chats/active');
+                    const data = await res.json();
+                    if (data.success) {
+                        list.innerHTML = '';
+                        data.chats.forEach(chat => {
+                            list.innerHTML += `
+                            <div onclick="openChat('${chat.id}', '${chat.patient_name}')" class="p-3 mb-2 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-gray-200 cursor-pointer transition-all">
+                                <div class="flex justify-between">
+                                    <span class="font-bold text-sm dark:text-white">${chat.patient_name}</span>
+                                    <span class="text-[9px] text-gray-400">${new Date(chat.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 truncate mt-1">ID: ${chat.id.substring(0, 6)}</p>
+                            </div>
+                         `;
+                        });
+                    }
+                } catch (e) { }
+            }
+            async function openChat(chatId, name) {
+                activeChatId = chatId;
+                document.getElementById('activePatientName').innerText = name;
+                document.getElementById('chatWindowHeader').classList.remove('hidden');
+                document.getElementById('chatInputArea').classList.remove('hidden');
+                const msgArea = document.getElementById('chatMessagesArea');
+                try {
+                    const res = await fetch(`/doctor/chats/${chatId}/messages`);
+                    const data = await res.json();
+                    if (data.success) {
+                        msgArea.innerHTML = '';
+                        data.messages.forEach(msg => {
+                            const isMe = msg.sender_id === '<%= user.id %>';
+                            msgArea.innerHTML += `
+                            <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                                <div class="max-w-[75%] p-3 rounded-2xl ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 text-dark dark:text-white rounded-tl-sm shadow-sm'} text-sm">
+                                    ${msg.message}
+                                </div>
+                            </div>
+                        `;
+                        });
+                        msgArea.scrollTop = msgArea.scrollHeight;
+                    }
+                } catch (e) { }
+            }
+            async function sendDoctorMessage() {
+                const input = document.getElementById('doctorMsgInput');
+                if (!input.value.trim() || !activeChatId) return;
+                try {
+                    await fetch('/doctor/chats/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chatId: activeChatId, message: input.value })
+                    });
+                    // Optimistic append
+                    const msgArea = document.getElementById('chatMessagesArea');
+                    msgArea.innerHTML += `<div class="flex justify-end"><div class="max-w-[75%] p-3 rounded-2xl bg-primary text-white rounded-tr-sm text-sm">${input.value}</div></div>`;
+                    msgArea.scrollTop = msgArea.scrollHeight;
+                    input.value = '';
+                } catch (e) { }
+            }
+        </script>
+    </body>
+
+</html>
+</body>
+
+</html>

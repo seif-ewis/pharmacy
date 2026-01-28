@@ -5,7 +5,7 @@ import * as notificationController from "../controllers/notificationController.j
 import * as orderController from "../controllers/orderController.js";
 import * as requestController from "../controllers/requestController.js";
 
-import { ensureAuthenticated } from "../middleware/auth.js";
+import { ensureAuthenticated, ensureDoctor } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -82,5 +82,31 @@ router.get("/return-policy", (req, res) => {
 // Products
 import * as productController from "../controllers/productController.js";
 router.get("/products/:id", productController.getProductDetails);
+
+// Doctor Dashboard Routes
+// Doctor Dashboard Routes
+import * as doctorController from "../controllers/doctorController.js";
+import * as adminController from "../controllers/adminController.js"; // Import Admin Controller
+
+router.get("/doctor/dashboard", ensureDoctor, doctorController.getDashboard);
+router.post("/doctor/shift/start", ensureDoctor, doctorController.startShift);
+router.post("/doctor/shift/end", ensureDoctor, doctorController.endShift);
+router.post("/doctor/pharmacy/toggle", ensureDoctor, doctorController.togglePharmacyStatus);
+
+// Admin Settings Routes
+router.get("/admin/settings", ensureDoctor, adminController.getSettings);
+router.post("/admin/settings/update", ensureDoctor, adminController.updateSettings);
+
+router.get("/doctor/prescriptions/:id/process", ensureDoctor, doctorController.getProcessPrescription);
+router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.submitPrescriptionProcessing);
+router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderState);
+router.post("/doctor/inventory/add", ensureDoctor, doctorController.addInventoryItem);
+
+// Doctor Chat Routes
+router.get("/doctor/chats/active", ensureDoctor, doctorController.getChats);
+router.get("/doctor/chats/:chatId/messages", ensureDoctor, doctorController.getChatMessages);
+router.post("/doctor/chats/send", ensureDoctor, doctorController.sendChatMessage);
+
+
 
 export default router;

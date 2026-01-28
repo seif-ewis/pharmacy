@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+
+    <body
+        class="bg-gray-50 dark:bg-[#0f172a] text-slate-800 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
+        <div class="container mx-auto max-w-4xl px-4 py-12">
+            <div class="mb-8 flex items-center justify-between">
+                <h1 class="text-3xl font-black text-dark dark:text-white">Admin Control Panel</h1>
+                <a href="/doctor/dashboard"
+                    class="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div
+                class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
+                <div class="flex items-center gap-4 mb-6">
+                    <div
+                        class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-primary text-xl">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold dark:text-white">System Settings</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Manage global pharmacy configuration</p>
+                    </div>
+                </div>
+
+                <form onsubmit="event.preventDefault(); updateSettings();" class="space-y-8 max-w-xl">
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Global Tax Rate
+                            (%)</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="setTaxRate" value="<%= settings.tax_rate %>"
+                                class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400">Enter as decimal (e.g. 0.10 for 10%) or percentage
+                            depending on backend logic. Currently Logic handles Decimal (0.10).</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Flat Delivery Fee
+                            ($)</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="setDeliveryFee" value="<%= settings.delivery_fee %>"
+                                class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-gray-100 dark:border-slate-700">
+                        <button type="submit"
+                            class="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all">
+                            Update Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-3"></div>
+
+        <script>
+            async function updateSettings() {
+                const tax_rate = document.getElementById('setTaxRate').value;
+                const delivery_fee = document.getElementById('setDeliveryFee').value;
+                const btn = document.querySelector('button[type="submit"]');
+
+                // Simple validation
+                if (tax_rate < 0 || delivery_fee < 0) {
+                    alert('Values cannot be negative.');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
+
+                try {
+                    const res = await fetch('/admin/settings/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tax_rate, delivery_fee })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('Success', 'Settings updated successfully.', 'green');
+                    } else {
+                        alert('Failed: ' + data.message);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error updating settings');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = 'Update Configuration';
+                }
+            }
+
+            function showToast(title, message, color = 'blue') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `bg-white dark:bg-slate-800 border-l-4 border-${color}-500 shadow-xl rounded-r-xl p-4 w-72 transform translate-x-full transition-all duration-300 flex items-start gap-3`;
+                toast.innerHTML = `
+                <div class="text-${color}-500 mt-1"><i class="fas fa-info-circle"></i></div>
+                <div>
+                    <h4 class="font-bold text-sm dark:text-white">${title}</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${message}</p>
+                </div>
+            `;
+                container.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        </script>
+    </body>
+
+</html>

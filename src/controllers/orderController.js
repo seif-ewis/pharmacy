@@ -114,9 +114,9 @@ export const calculateOrder = async (req, res) => {
             }
         }
 
-        // Fetch Settings
-        const settingsRes = await client.query("SELECT tax_rate, delivery_fee FROM pharmacy_settings LIMIT 1");
-        const settings = settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 }; // Fallback
+        // Fetch Settings (Latest)
+        const settingsRes = await client.query("SELECT tax_rate, delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1");
+        const settings = settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 };
 
         const deliveryFee = parseFloat(settings.delivery_fee);
         const taxRate = parseFloat(settings.tax_rate);
@@ -229,8 +229,8 @@ export const createOrder = async (req, res) => {
             validItems.push({ ...item, price: med.price });
         }
 
-        // Fetch Settings
-        const settingsRes = await client.query("SELECT tax_rate, delivery_fee FROM pharmacy_settings LIMIT 1");
+        // Fetch Settings (Latest)
+        const settingsRes = await client.query("SELECT tax_rate, delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1");
         const settings = settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 };
 
         const deliveryFee = parseFloat(settings.delivery_fee);
@@ -281,15 +281,20 @@ export const createOrder = async (req, res) => {
         const total = (subtotal - discountAmount) + deliveryFee + tax;
         const finalTotal = Math.max(0, total);
 
+        // 1.7 Check Pharmacy Status for Order Status
+        const pharmacyStatusRes = await client.query("SELECT is_open FROM pharmacy_settings LIMIT 1");
+        const isPharmacyOpen = pharmacyStatusRes.rows[0]?.is_open ?? true;
+        const initialStatus = isPharmacyOpen ? 'pending' : 'scheduled';
+
         // 2. Create Order Record
         const orderRes = await client.query(
             `INSERT INTO orders (
                 user_id, address_id, status, 
                 subtotal, delivery_fee, tax_amount, discount_total, promotion_id, total_price, 
                 payment_status, created_at, order_uid
-            ) VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
             RETURNING id`,
-            [req.user.id, address_id, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
+            [req.user.id, address_id, initialStatus, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
         );
         const orderId = orderRes.rows[0].id;
 

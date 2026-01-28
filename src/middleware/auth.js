@@ -13,3 +13,11 @@ export const ensureAuthenticated = (req, res, next) => {
         res.redirect(`/?openLogin=true&returnTo=${returnUrl}`);
     });
 };
+
+export const ensureDoctor = (req, res, next) => {
+    if (req.isAuthenticated() && (req.user.role === 'pharmacist' || req.user.role === 'admin')) {
+        return next();
+    }
+    req.flash("error", "Access denied. Doctor or Pharmacist role required.");
+    res.redirect("/");
+};

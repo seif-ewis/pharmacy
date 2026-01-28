@@ -35,24 +35,31 @@ export const globalState = async (req, res, next) => {
         res.locals.pharmacySettings = settingsCache;
     } else {
         try {
-            // Deterministic ordering to ensure we always get the intended row
-            const result = await db.query(
-                "SELECT is_open, opening_time, closing_time FROM pharmacy_settings ORDER BY id ASC LIMIT 1"
+            // Fetch Status
+            const statusRes = await db.query(
+                "SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1"
             );
+            const isOpen = statusRes.rows.length > 0 ? statusRes.rows[0].is_open : true;
 
-            if (result.rows.length > 0) {
-                settingsCache = result.rows[0];
-            } else {
-                // Fail Closed: If no settings found, assume closed for safety
-                settingsCache = { is_open: false };
-            }
+            // Fetch Settings
+            const settingsRes = await db.query(
+                "SELECT tax_rate, delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1"
+            );
+            const settings = settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 };
+
+            // Combine
+            settingsCache = {
+                is_open: isOpen,
+                tax_rate: settings.tax_rate,
+                delivery_fee: settings.delivery_fee
+            };
 
             lastCacheTime = now;
             res.locals.pharmacySettings = settingsCache;
         } catch (err) {
             console.error("Global settings error:", err);
             // Fail Closed: On DB error, assume closed to prevent operations during outage
-            res.locals.pharmacySettings = { is_open: false };
+            res.locals.pharmacySettings = { is_open: false, tax_rate: 0.10, delivery_fee: 5.00 };
         }
     }
 
