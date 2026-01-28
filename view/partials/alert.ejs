@@ -1,0 +1,18 @@
+<% if (typeof error !=='undefined' && error.length> 0) { %>
+    <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm" role="alert">
+        <p class="font-bold">Error</p>
+        <p>
+            <%= error %>
+        </p>
+    </div>
+    <% } %>
+
+        <% if (typeof success !=='undefined' && success.length> 0) { %>
+            <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm"
+                role="alert">
+                <p class="font-bold">Success</p>
+                <p>
+                    <%= success %>
+                </p>
+            </div>
+            <% } %>

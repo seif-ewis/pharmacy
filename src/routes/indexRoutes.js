@@ -17,9 +17,13 @@ router.post("/notifications/:id/read", notificationController.markAsRead);
 router.post("/notifications/subscribe", ensureAuthenticated, notificationController.subscribeToStock);
 
 // Protected prescription upload route (Server-side check)
-router.get("/prescription/upload", ensureAuthenticated, (req, res) => {
-    res.send("This is the upload page. Access granted.");
-});
+// Prescription Routes
+import * as prescriptionController from "../controllers/prescriptionController.js";
+import { upload } from "../config/cloudinary.js";
+
+router.get("/prescription/upload", ensureAuthenticated, prescriptionController.getUploadPage);
+router.post("/prescription/upload", ensureAuthenticated, upload.single("image"), prescriptionController.uploadPrescription);
+router.get("/prescription/:id", ensureAuthenticated, prescriptionController.getPrescriptionDetails);
 
 // Order Routes
 router.get("/checkout", ensureAuthenticated, orderController.getCheckoutPage);
@@ -53,7 +57,6 @@ router.post("/admin/returns/process", ensureAuthenticated, returnController.proc
 
 // Profile
 import * as userController from "../controllers/userController.js";
-import { upload } from "../config/cloudinary.js";
 
 // Protected profile routes
 router.get("/profile", ensureAuthenticated, userController.getProfile);

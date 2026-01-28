@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+
+    <body
+        class="bg-gray-50 text-dark font-sans antialiased overflow-x-hidden selection:bg-primary selection:text-white dark:bg-dark transition-colors duration-300">
+        <%- include('../partials/header') %>
+
+            <main class="min-h-screen py-24">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+                    <div class="text-center mb-10">
+                        <h1 class="text-3xl font-bold text-dark dark:text-white mb-2">Upload Prescription</h1>
+                        <p class="text-gray-500 dark:text-gray-400">Securely upload your doctor's prescription for
+                            review.</p>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-slate-800">
+                        <!-- Alert Messages -->
+                        <%- include('../partials/alert') %>
+
+                            <form action="/prescription/upload" method="POST" enctype="multipart/form-data"
+                                class="space-y-8">
+                                <!-- Drag and Drop Area -->
+                                <div class="relative group">
+                                    <div id="drop-zone"
+                                        class="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl p-10 text-center transition-all duration-300 hover:border-primary hover:bg-blue-50/50 dark:hover:bg-slate-800/50 cursor-pointer">
+                                        <input type="file" name="image" id="file-input" class="hidden" accept="image/*"
+                                            required onchange="previewFile(this)">
+
+                                        <div id="upload-placeholder" class="space-y-4">
+                                            <div
+                                                class="w-16 h-16 bg-blue-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-primary mb-4 group-hover:scale-110 transition-transform">
+                                                <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-dark dark:text-white text-lg">Click to Upload
+                                                </p>
+                                                <p class="text-sm text-gray-500">or drag and drop your image here</p>
+                                            </div>
+                                            <p class="text-xs text-gray-400">Supported formats: JPG, PNG, GIF</p>
+                                        </div>
+
+                                        <!-- Preview Area -->
+                                        <div id="preview-container" class="hidden relative">
+                                            <img id="preview-image" src="#" alt="Preview"
+                                                class="max-h-64 mx-auto rounded-lg shadow-md">
+                                            <button type="button" onclick="clearFile()"
+                                                class="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 flex items-center justify-center transition-colors">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <p id="file-name"
+                                                class="mt-4 text-sm font-medium text-gray-600 dark:text-gray-300"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center pt-4">
+                                    <a href="/profile"
+                                        class="text-gray-500 hover:text-dark dark:hover:text-white font-medium transition-colors">Cancel</a>
+                                    <button type="submit"
+                                        class="bg-primary hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1">
+                                        Submit Prescription
+                                    </button>
+                                </div>
+                            </form>
+                    </div>
+
+                    <div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <p><i class="fas fa-lock mr-1"></i> Your data is processed securely and encrypted.</p>
+                    </div>
+                </div>
+            </main>
+
+            <%- include('../partials/footer') %>
+
+                <script>
+                    const dropZone = document.getElementById('drop-zone');
+                    const fileInput = document.getElementById('file-input');
+                    const uploadPlaceholder = document.getElementById('upload-placeholder');
+                    const previewContainer = document.getElementById('preview-container');
+                    const previewImage = document.getElementById('preview-image');
+                    const fileName = document.getElementById('file-name');
+
+                    // Click to upload
+                    dropZone.addEventListener('click', (e) => {
+                        if (e.target.closest('#preview-container') && !e.target.closest('button')) return; // Don't trigger if clicking on preview
+                        if (e.target.closest('button')) return; // Don't trigger if clicking clear button
+                        fileInput.click();
+                    });
+
+                    // Drag & Drop effects
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, preventDefaults, false);
+                    });
+
+                    function preventDefaults(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+
+                    ['dragenter', 'dragover'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, highlight, false);
+                    });
+
+                    ['dragleave', 'drop'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, unhighlight, false);
+                    });
+
+                    function highlight(e) {
+                        dropZone.classList.add('border-primary', 'bg-blue-50/50');
+                    }
+
+                    function unhighlight(e) {
+                        dropZone.classList.remove('border-primary', 'bg-blue-50/50');
+                    }
+
+                    dropZone.addEventListener('drop', handleDrop, false);
+
+                    function handleDrop(e) {
+                        const dt = e.dataTransfer;
+                        const files = dt.files;
+                        fileInput.files = files;
+                        previewFile({ files: files });
+                    }
+
+                    function previewFile(input) {
+                        const file = input.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                previewImage.src = e.target.result;
+                                fileName.textContent = file.name;
+                                uploadPlaceholder.classList.add('hidden');
+                                previewContainer.classList.remove('hidden');
+                            }
+                            reader.readAsDataURL(file);
+                        }
+                    }
+
+                    function clearFile() {
+                        fileInput.value = '';
+                        previewImage.src = '#';
+                        uploadPlaceholder.classList.remove('hidden');
+                        previewContainer.classList.add('hidden');
+                        // Prevent click propagation
+                        event.stopPropagation();
+                    }
+                </script>
+    </body>
+
+</html>
