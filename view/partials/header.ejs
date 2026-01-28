@@ -769,5 +769,20 @@
     });
 
     // Initial sync
-    document.addEventListener('DOMContentLoaded', updateHeaderBadge);
+    document.addEventListener('DOMContentLoaded', () => {
+        updateHeaderBadge();
+        // Listen for storage events (other tabs)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'guestCart') {
+                updateHeaderBadge();
+                renderCartItems();
+            }
+        });
+    });
+
+    // Expose update function globally for product.ejs or other scripts
+    window.updateCartCount = () => {
+        updateHeaderBadge();
+        renderCartItems(); // Also refresh the drawer list if open
+    };
 </script>

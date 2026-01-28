@@ -373,7 +373,9 @@
                     // We can also sync to localStorage for persistence if that's the app pattern
                     localStorage.setItem('cart', JSON.stringify(cart));
 
-                    updateHeaderBadge();
+                    if (typeof window.updateCartCount === 'function') {
+                        window.updateCartCount();
+                    }
 
                     // Show feedback
                     const btn = document.querySelector('button[onclick*="addToCart"]');
@@ -422,8 +424,12 @@
                     startAutoScroll(); // Start initially
                 }
 
-                function updateHeaderBadge() {
-                    if (window.updateCartCount) window.updateCartCount();
+                if (typeof window.updateCartCount === 'function') {
+                    window.updateCartCount();
+                } else {
+                    // Fallback if header script somehow hasn't defined it
+                    console.warn('updateCartCount not found');
+                    window.dispatchEvent(new Event('storage'));
                 }
 
                 async function subscribeStock(medicineId) {
