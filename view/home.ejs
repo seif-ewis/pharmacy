@@ -633,6 +633,8 @@
                             }
 
                             function addToCart(id, name, price, stock = 9999) {
+                                // Re-fetch cart state to ensure it's up to date (e.g. after deletion)
+                                cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
                                 const qty = 1; // Default to 1 from home page
 
                                 const existingItem = cart.find(item => item.id === id);
