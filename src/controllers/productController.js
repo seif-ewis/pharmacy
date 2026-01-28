@@ -15,6 +15,9 @@ export const getProductDetails = async (req, res) => {
 
         const product = result.rows[0];
 
+        // Use actual original_price from DB
+        product.originalPrice = product.original_price;
+
         // Determine if it is a Service or Medicine based on category
         const isService = product.category === 'servicesProducts';
 

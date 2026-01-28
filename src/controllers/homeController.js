@@ -15,7 +15,7 @@ export const getHomePage = async (req, res) => {
 
     try {
         const result = await db.query(`
-            SELECT id, name, description, price, icon, quantity, category
+            SELECT id, name, description, price, original_price, icon, quantity, category
             FROM (
                 SELECT *,
                        ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC) AS rn
@@ -33,6 +33,7 @@ export const getHomePage = async (req, res) => {
                     name: row.name,
                     description: row.description,
                     price: row.price,
+                    originalPrice: row.original_price,
                     icon: row.icon,
                     stock: row.quantity
                 });

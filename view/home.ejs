@@ -163,8 +163,17 @@
                                                     <%= med.description %>
                                                 </p>
                                                 <div class="flex justify-between items-center">
-                                                    <span class="text-xl font-bold text-primary dark:text-blue-400">$<%=
-                                                            med.price %></span>
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-xl font-bold text-primary dark:text-blue-400">$
+                                                            <%= med.price %>
+                                                        </span>
+                                                        <% if (med.originalPrice) { %>
+                                                            <span class="text-xs text-red-400 line-through md:-mt-1">$
+                                                                <%= med.originalPrice %>
+                                                            </span>
+                                                            <% } %>
+                                                    </div>
 
                                                     <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
                                                         <button disabled
@@ -244,8 +253,17 @@
                                                     <%= med.description %>
                                                 </p>
                                                 <div class="flex justify-between items-center">
-                                                    <span class="text-xl font-bold text-primary dark:text-blue-400">$<%=
-                                                            med.price %></span>
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-xl font-bold text-primary dark:text-blue-400">$
+                                                            <%= med.price %>
+                                                        </span>
+                                                        <% if (med.originalPrice) { %>
+                                                            <span class="text-xs text-red-400 line-through md:-mt-1">$
+                                                                <%= med.originalPrice %>
+                                                            </span>
+                                                            <% } %>
+                                                    </div>
 
                                                     <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
                                                         <button disabled
@@ -325,9 +343,17 @@
                                                     <%= med.description %>
                                                 </p>
                                                 <div class="flex justify-between items-center">
-                                                    <span class="text-xl font-bold text-secondary dark:text-teal-400">$
-                                                        <%= med.price %>
-                                                    </span>
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-xl font-bold text-secondary dark:text-teal-400">$
+                                                            <%= med.price %>
+                                                        </span>
+                                                        <% if (med.originalPrice) { %>
+                                                            <span class="text-xs text-red-400 line-through md:-mt-1">$
+                                                                <%= med.originalPrice %>
+                                                            </span>
+                                                            <% } %>
+                                                    </div>
 
                                                     <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
                                                         <button disabled
@@ -400,8 +426,14 @@
                                             <%= med.description %>
                                         </p>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-xl font-bold text-secondary dark:text-teal-400">$<%=
-                                                    med.price %></span>
+                                            <div class="flex flex-col">
+                                                <span class="text-xl font-bold text-secondary dark:text-teal-400">$<%=
+                                                        med.price %></span>
+                                                <% if (med.originalPrice) { %>
+                                                    <span class="text-xs text-red-400 line-through md:-mt-1">$<%=
+                                                            med.originalPrice %></span>
+                                                    <% } %>
+                                            </div>
                                             <button
                                                 onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                 class="w-10 h-10 rounded-full bg-teal-50 text-secondary flex items-center justify-center hover:bg-secondary hover:text-white transition-all duration-300 add-btn">

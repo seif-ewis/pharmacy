@@ -113,10 +113,12 @@
                     <div class="flex items-baseline gap-4">
                         <span class="text-4xl font-bold text-primary dark:text-blue-400">$<%=
                                 parseFloat(product.price).toFixed(2) %></span>
-                        <% if(Math.random()> 0.5) { %> <!-- Simulate discount visual -->
-                            <span class="text-lg text-gray-400 line-through">$<%= (parseFloat(product.price) *
-                                    1.2).toFixed(2) %></span>
-                            <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded">-20%</span>
+                        <% if (product.originalPrice) { %>
+                            <span
+                                class="text-xl text-red-500 line-through decoration-red-500 decoration-2 font-medium">$
+                                <%= parseFloat(product.originalPrice).toFixed(2) %></span>
+                            <span
+                                class="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full uppercase tracking-wide">SALE</span>
                             <% } %>
                     </div>
 
