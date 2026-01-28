@@ -1,0 +1,63 @@
+Database Schema
+[NEW] returns table
+Tracks the high-level return request from a user.
+
+id (UUID, PK)
+order_id (UUID, FK -> orders)
+user_id (UUID, FK -> users)
+status (Enum: 'pending', 'approved', 'rejected', 'refunded')
+refund_amount (Numeric)
+reason (Text)
+admin_notes (Text)
+created_at, updated_at
+[NEW] return_items table
+Tracks specific items within a return request.
+
+id (UUID, PK)
+return_id (UUID, FK -> returns)
+medicine_id (UUID, FK -> medicines)
+quantity (Integer)
+condition (Enum: 'good', 'damaged', 'expired')
+[NEW] inventory_adjustments table
+Immutable ledger of all stock changes.
+
+id (UUID, PK)
+medicine_id (UUID, FK -> medicines)
+adjustment_type (Enum: 'restock', 'sale', 'return_restock', 'return_discard', 'damage', 'expired', 'correction', 'audit')
+quantity_change (Integer) - Positive for additions, negative for reductions.
+reference_id (UUID) - ID of the order or return causing the change (nullable).
+performed_by (UUID, FK -> users)
+reason (Text)
+created_at
+Backend Logic
+[NEW] src/controllers/returnController.js
+requestReturn(orderId, items): User initiates a return.
+approveReturn(returnId): Admin approves. Triggers inventory adjustment and refund logic.
+rejectReturn(returnId): Admin rejects.
+[NEW] src/controllers/inventoryController.js
+logAdjustment(medicineId, type, quantity, user, reason): Central function to update medicines.quantity and insert into inventory_adjustments transactionally.
+[MODIFY] src/controllers/orderController.js
+Update createOrder to log 'sale' adjustments in inventory_adjustments.
+Frontend Views
+[MODIFY] view/orders/index.ejs (or equivalent)
+Add "Request Return" button for eligible orders.
+[NEW] view/admin/returns.ejs
+Admin interface to view and process returns.
+Verification Plan
+Automated Tests
+Since there are no existing automated tests, we will verify manually.
+
+Manual Verification
+Inventory Tracking:
+Note current stock of "Medicine A".
+Place an order for "Medicine A".
+Verify stock decreased and inventory_adjustments has a 'sale' entry.
+Return Flow:
+Log in as User.
+Go to Orders, click "Return".
+Log in as Admin.
+Approve the return with condition "Good".
+Verify stock increased and inventory_adjustments has a 'return_restock' entry.
+Damaged Return:
+Repeat above but approve with condition "Damaged".
+Verify stock did not increase, but log exists as 'return_discard'.

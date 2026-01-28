@@ -1,0 +1,244 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare Pharmacy</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E3A8A',   /* Blue 900 */
+                        secondary: '#0D9488', /* Teal 600 */
+                        success: '#22C55E',   /* Green 500 */
+                        warning: '#F59E0B',   /* Amber 500 */
+                        error: '#EF4444',     /* Red 500 */
+                        bg: '#F8FAFC',        /* Slate 50 */
+                        dark: '#020617',      /* Slate 950 */
+                        night: '#0F172A',     /* Navy 900 for dark mode */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <% if (typeof pharmacySettings !=='undefined' && !pharmacySettings.is_open) { %>
+        <script>
+            document.documentElement.classList.add('dark');
+
+            document.addEventListener('DOMContentLoaded', () => {
+                // 1. Moon Rocking Animation
+                anime({
+                    targets: '#moon-icon',
+                    rotate: [15, -15],
+                    duration: 3000,
+                    direction: 'alternate',
+                    loop: true,
+                    easing: 'easeInOutSine'
+                });
+
+                // 2. Sleeping "Zzz" Animation
+                const zzzTimeline = anime.timeline({
+                    loop: true,
+                    duration: 2000
+                });
+
+                zzzTimeline
+                    .add({
+                        targets: '.zzz-container',
+                        opacity: [0, 1],
+                        duration: 500,
+                        easing: 'easeOutSine'
+                    })
+                    .add({
+                        targets: '.zzz-container span',
+                        translateY: [0, -20],
+                        translateX: [0, 15],
+                        opacity: [1, 0],
+                        delay: anime.stagger(300),
+                        duration: 1500,
+                        easing: 'easeOutCirc'
+                    });
+
+                // 3. Starry Background Effect
+                const body = document.body;
+                // Create stars dynamically or set background
+                body.style.backgroundImage = `
+                radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+                radial-gradient(1px 1px at 30% 60%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 70% 40%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+                radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+                radial-gradient(1px 1px at 50% 80%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)
+            `;
+                body.style.backgroundSize = '400px 400px';
+                body.style.backgroundRepeat = 'repeat';
+
+                // Subtle twinkling
+                anime({
+                    targets: 'body',
+                    backgroundPosition: ['0% 0%', '50% 50%'],
+                    duration: 60000,
+                    easing: 'linear',
+                    loop: true
+                });
+            });
+        </script>
+        <% } %>
+
+            <style>
+                /* Modern Design Tokens */
+                :root {
+                    --glass-bg: rgba(255, 255, 255, 0.7);
+                    --glass-border: rgba(255, 255, 255, 0.3);
+                    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+                }
+
+                /* Dark Mode Tokens */
+                .dark :root {
+                    --glass-bg: rgba(15, 23, 42, 0.6);
+                    /* Darker glass */
+                    --glass-border: rgba(255, 255, 255, 0.1);
+                    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+                }
+
+                .dark body {
+                    background-color: #0F172A;
+                    /* Night Blue */
+                    color: #E2E8F0;
+                    /* Slate 200 */
+                }
+
+                html {
+                    scroll-behavior: smooth;
+                }
+
+                body {
+                    font-family: 'Inter', sans-serif;
+                    transition: background-color 0.5s ease, color 0.5s ease;
+                }
+
+                .glass {
+                    background: var(--glass-bg);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid var(--glass-border);
+                    box-shadow: var(--glass-shadow);
+                }
+
+                /* Animations */
+                @keyframes wave {
+
+                    0%,
+                    100% {
+                        transform: rotate(0deg);
+                    }
+
+                    20% {
+                        transform: rotate(-15deg);
+                    }
+
+                    40% {
+                        transform: rotate(10deg);
+                    }
+
+                    60% {
+                        transform: rotate(-10deg);
+                    }
+
+                    80% {
+                        transform: rotate(5deg);
+                    }
+                }
+
+                .animate-wave {
+                    animation: wave 2s infinite ease-in-out;
+                    display: inline-block;
+                }
+
+                /* Custom Scrollbar */
+                ::-webkit-scrollbar {
+                    width: 6px;
+                }
+
+                ::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                ::-webkit-scrollbar-thumb {
+                    background: #CBD5E1;
+                    border-radius: 10px;
+                }
+
+                .dark ::-webkit-scrollbar-thumb {
+                    background: #334155;
+                    /* Darker thumb */
+                }
+
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #94A3B8;
+                }
+
+                .hide-scroll::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .hide-scroll {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+
+                /* Modern Cart Drawer */
+                #cart-drawer {
+                    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                /* Dark mode for drawer */
+                .dark #cart-drawer {
+                    background-color: #1E293B;
+                    /* Slate 800 */
+                    color: #F8FAFC;
+                }
+
+                #cart-drawer.translate-x-full {
+                    transform: translateX(100%);
+                }
+
+                #cart-drawer.translate-x-0 {
+                    transform: translateX(0);
+                }
+
+                @keyframes fade-in-down {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .animate-fade-in-down {
+                    animation: fade-in-down 0.8s ease-out forwards;
+                }
+            </style>
+</head>

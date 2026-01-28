@@ -1,0 +1,773 @@
+<header
+    class="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-md sticky top-0 z-50 transition-all duration-300"
+    id="main-header">
+    <div class="container mx-auto px-3 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20 gap-2">
+
+            <!-- Logo & Status -->
+            <div class="flex items-center gap-4">
+                <div class="flex-shrink-0 flex items-center cursor-pointer logo-anim" onclick="location.href='/'">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-plus text-white text-xl"></i>
+                    </div>
+                    <span class="font-bold text-2xl text-primary tracking-tight">MediCare</span>
+                </div>
+
+                <!-- Status Badge (Visible on all screens) -->
+                <div
+                    class="flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold 
+                <%= (typeof pharmacySettings !== 'undefined' && pharmacySettings.is_open) ? 'bg-green-100 text-green-700' : 'bg-night border border-blue-900 text-blue-100' %>">
+                    <% if (typeof pharmacySettings !=='undefined' && pharmacySettings.is_open) { %>
+                        <span class="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></span>
+                        We're Open
+                        <% } else { %>
+                            <div class="relative flex items-center">
+                                <i class="fas fa-moon mr-2 text-yellow-400 text-sm" id="moon-icon"></i>
+                                <div class="absolute -top-3 left-1 flex space-x-0.5 opacity-0 zzz-container">
+                                    <span class="text-[8px] text-blue-200 font-bold">z</span>
+                                    <span class="text-[10px] text-blue-200 font-bold">Z</span>
+                                </div>
+                                Currently Closed
+                            </div>
+                            <% } %>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="hidden md:flex flex-1 max-w-md mx-8 relative">
+                <form action="/search" method="GET" class="relative w-full group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i
+                            class="fas fa-search text-gray-400 group-focus-within:text-primary dark:group-focus-within:text-blue-400 transition-colors"></i>
+                    </div>
+                    <input type="text" name="q" id="desktop-search" autocomplete="off"
+                        class="block w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-full leading-5 bg-gray-50 dark:bg-slate-800 placeholder-gray-400 text-dark dark:text-white focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-primary dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300"
+                        placeholder="Search medicines...">
+                </form>
+                <!-- Desktop Results Dropdown -->
+                <div id="desktop-search-results"
+                    class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 hidden overflow-hidden z-[100] max-h-[400px] overflow-y-auto">
+                    <!-- Results injected here -->
+                </div>
+            </div>
+
+            <!-- Right Side Actions -->
+            <div class="flex items-center space-x-6">
+                <!-- Cart Icon -->
+                <button class="relative group p-2" onclick="toggleCartDrawer()">
+                    <i
+                        class="fas fa-shopping-cart text-gray-600 dark:text-gray-300 text-xl group-hover:text-primary dark:group-hover:text-white transition-colors"></i>
+                    <span id="header-cart-count"
+                        class="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                        0
+                    </span>
+                </button>
+
+                <% if (typeof user !=='undefined' && user) { %>
+                    <!-- Logged In State -->
+
+                    <!-- Notification Bell -->
+                    <div class="relative" id="notification-container">
+                        <button onclick="toggleNotifications()"
+                            class="hidden md:flex p-2 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors relative group items-center justify-center">
+                            <i class="fas fa-bell text-xl group-hover:scale-110 transition-transform"></i>
+                            <% const unreadCount=(typeof notifications !=='undefined' ) ? notifications.filter(n=>
+                                !n.read).length : 0;
+                                %>
+                                <% if (unreadCount> 0) { %>
+                                    <span
+                                        class="absolute top-1 right-1 h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full animate-bounce shadow-sm flex items-center justify-center">
+                                        <span
+                                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    </span>
+                                    <% } %>
+                        </button>
+                        <!-- Notification Dropdown -->
+                        <div id="notification-dropdown"
+                            class="absolute right-[-4.5rem] md:right-0 mt-4 w-[calc(100vw-2rem)] md:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_40px_-20px_rgba(0,0,0,0.2)] dark:shadow-none dark:border dark:border-slate-800 overflow-hidden hidden transform origin-top-right transition-all z-[100] ring-1 ring-black/5">
+                            <!-- Header -->
+                            <div
+                                class="px-5 py-4 border-b border-gray-50 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+                                <h3 class="font-extrabold text-dark dark:text-white text-sm">Notifications</h3>
+                                <% if (unreadCount> 0) { %>
+                                    <span
+                                        class="text-[10px] bg-primary/10 dark:bg-blue-500/20 text-primary dark:text-blue-300 px-2.5 py-1 rounded-full font-bold shadow-sm">
+                                        <%= unreadCount %> New
+                                    </span>
+                                    <% } %>
+                            </div>
+
+                            <!-- List -->
+                            <div class="max-h-[400px] md:max-h-[350px] overflow-y-auto scroll-smooth custom-scrollbar">
+                                <% if (typeof notifications !=='undefined' && notifications.length> 0) { %>
+                                    <% notifications.forEach(function(notif) { %>
+                                        <div onclick="markAsRead('<%= notif.id %>', this)"
+                                            class="px-5 py-4 border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative <%= !notif.read ? 'bg-blue-50/30 dark:bg-blue-900/5' : '' %>">
+
+                                            <% if (!notif.read) { %>
+                                                <div id="dot-<%= notif.id %>"
+                                                    class="absolute left-0 top-0 bottom-0 w-1 bg-primary dark:bg-blue-500 rounded-r-full">
+                                                </div>
+                                                <% } %>
+
+                                                    <div class="flex gap-4">
+                                                        <div class="mt-0.5 shrink-0">
+                                                            <% if (notif.type==='transactional' ) { %>
+                                                                <div
+                                                                    class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                                                    <i class="fas fa-box-open text-sm"></i>
+                                                                </div>
+                                                                <% } else if (notif.type==='system' ) { %>
+                                                                    <div
+                                                                        class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                                                        <i class="fas fa-layer-group text-sm"></i>
+                                                                    </div>
+                                                                    <% } else { %>
+                                                                        <div
+                                                                            class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                                                            <i class="fas fa-bell text-sm"></i>
+                                                                        </div>
+                                                                        <% } %>
+                                                        </div>
+                                                        <div class="flex-1">
+                                                            <div class="flex justify-between items-start mb-0.5">
+                                                                <p
+                                                                    class="text-sm font-bold text-dark dark:text-gray-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors">
+                                                                    <%= notif.title %>
+                                                                </p>
+                                                                <span
+                                                                    class="text-[9px] text-gray-400 font-medium whitespace-nowrap ml-2">
+                                                                    <%= notif.time %>
+                                                                </span>
+                                                            </div>
+                                                            <p
+                                                                class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
+                                                                <%= notif.message %>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                        </div>
+                                        <% }); %>
+                                            <% } else { %>
+                                                <div class="py-12 px-8 text-center flex flex-col items-center">
+                                                    <div
+                                                        class="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                                                        <i
+                                                            class="fas fa-bell-slash text-gray-300 dark:text-slate-600 text-xl"></i>
+                                                    </div>
+                                                    <p class="text-sm font-bold text-dark dark:text-gray-300 mb-1">No
+                                                        notifications</p>
+                                                    <p class="text-xs text-gray-400 dark:text-gray-500">You're all
+                                                        caught up!</p>
+                                                </div>
+                                                <% } %>
+                            </div>
+
+                            <!-- Footer -->
+                            <div
+                                class="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 text-center">
+                                <button onclick="markAllAsRead(this)"
+                                    class="text-xs text-primary dark:text-blue-400 font-bold hover:text-blue-700 dark:hover:text-blue-300 transition-colors flex items-center justify-center gap-2 w-full py-1">
+                                    <span>Mark all as read</span>
+                                    <i class="fas fa-check-double text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative group">
+                        <button onclick="toggleProfileMenu(); event.stopPropagation();"
+                            class="flex items-center space-x-2 focus:outline-none p-1 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors relative">
+                            <!-- Mobile Notification Badge on Profile -->
+                            <% if (typeof notifications !=='undefined' && notifications.some(n=> !n.read)) { %>
+                                <span
+                                    class="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full md:hidden z-10"></span>
+                                <% } %>
+
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-primary/10 dark:bg-slate-800 flex items-center justify-center text-primary dark:text-blue-400">
+                                        <i class="fas fa-user-circle text-xl"></i>
+                                    </div>
+                                    <span class="hidden sm:block font-semibold text-gray-700 text-sm">
+                                        <%= user.full_name %>
+                                    </span>
+                                    <i class="fas fa-chevron-down text-[10px] text-gray-400"></i>
+                        </button>
+
+                        <!-- Profile Dropdown (Updated for Mobile Notifications) -->
+                        <div id="profile-dropdown" onclick="event.stopPropagation();"
+                            class="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl py-2 hidden opacity-0 transform origin-top-right z-50 border border-gray-100 dark:border-slate-800 overflow-hidden ring-1 ring-black/5 transition-all">
+
+                            <!-- Standard Menu -->
+                            <a href="/profile"
+                                class="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 gap-3">
+                                <i class="fas fa-user text-gray-400 w-4"></i> Profile
+                            </a>
+                            <a href="/orders"
+                                class="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 gap-3">
+                                <i class="fas fa-box text-gray-400 w-4"></i> Orders
+                            </a>
+
+                            <!-- Mobile Notifications Link -->
+                            <button onclick="toggleNotifications(true); event.stopPropagation();"
+                                id="mobile-notif-trigger"
+                                class="md:hidden w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 group border-t border-gray-100 dark:border-slate-800">
+                                <div class="flex items-center gap-3">
+                                    <i
+                                        class="fas fa-bell text-gray-400 w-4 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors"></i>
+                                    <span>Notifications</span>
+                                </div>
+                                <% const mobileUnreadCount=(typeof notifications !=='undefined' ) ?
+                                    notifications.filter(n=>
+                                    !n.read).length : 0;
+                                    %>
+                                    <% if (mobileUnreadCount> 0) { %>
+                                        <span
+                                            class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                                            <%= mobileUnreadCount %>
+                                        </span>
+                                        <% } %>
+                            </button>
+
+                            <div class="border-t border-gray-100 dark:border-slate-800 my-1"></div>
+                            <a href="/auth/logout"
+                                class="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 gap-3">
+                                <i class="fas fa-sign-out-alt w-4"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                    <% } else { %>
+                        <!-- Guest State -->
+                        <div class="hidden sm:flex items-center space-x-2">
+                            <button onclick="openAuthModal('login')"
+                                class="text-gray-600 dark:text-gray-300 hover:text-primary font-bold px-4 py-2 rounded-full transition-colors text-sm">Log
+                                In</button>
+                            <button onclick="openAuthModal('register')"
+                                class="bg-primary hover:bg-blue-800 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 text-sm">Join
+                                Now</button>
+                        </div>
+                        <!-- Mobile Guest Login Icon -->
+                        <button onclick="openAuthModal('login')"
+                            class="sm:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors">
+                            <i class="fas fa-user-circle text-xl"></i>
+                        </button>
+                        <% } %>
+
+            </div>
+        </div>
+
+        <!-- Mobile Search Bar (Fixed) -->
+        <div class="md:hidden pb-4 pt-1 animate-fade-in-down relative">
+            <form action="/search" method="GET" class="relative w-full group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i
+                        class="fas fa-search text-gray-400 group-focus-within:text-primary dark:group-focus-within:text-blue-400 transition-colors"></i>
+                </div>
+                <input type="text" name="q" id="mobile-search" autocomplete="off"
+                    class="block w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-2xl leading-5 bg-gray-50 dark:bg-slate-800 placeholder-gray-400 text-dark dark:text-white focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-primary dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 shadow-sm"
+                    placeholder="Search medicines...">
+            </form>
+            <!-- Mobile Results Dropdown -->
+            <div id="mobile-search-results"
+                class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 hidden overflow-hidden z-[100] max-h-[350px] overflow-y-auto">
+                <!-- Results injected here -->
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Modern Cart Drawer (Sliding from Right) -->
+<div id="cart-overlay"
+    class="fixed inset-0 bg-dark/20 backdrop-blur-sm z-[60] opacity-0 pointer-events-none transition-opacity duration-300"
+    onclick="toggleCartDrawer()"></div>
+<div id="cart-drawer"
+    class="fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-[70] translate-x-full transition-transform duration-500 ease-in-out flex flex-col">
+    <!-- Header -->
+    <div
+        class="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-dark dark:text-white">Your Cart</h2>
+                <div class="flex items-center gap-2">
+                    <span id="drawer-cart-count" class="text-xs text-gray-500">0 Items</span>
+                </div>
+            </div>
+        </div>
+        <button onclick="toggleCartDrawer()"
+            class="w-10 h-10 rounded-full hover:bg-gray-50 flex items-center justify-center transition-colors group">
+            <i class="fas fa-times text-gray-400 group-hover:text-dark transition-colors"></i>
+        </button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="cart-empty"
+        class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-slate-900">
+        <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-shopping-basket text-4xl text-gray-200"></i>
+        </div>
+        <h3 class="text-lg font-bold text-dark mb-2">Cart is empty</h3>
+        <p class="text-gray-400 text-sm mb-8 max-w-[200px]">Add some life-saving medicines to get started.</p>
+        <button onclick="toggleCartDrawer()"
+            class="bg-primary text-white px-8 py-3 rounded-full font-bold hover:bg-blue-800 transition-all shadow-lg active:scale-95">
+            Browse Store
+        </button>
+    </div>
+
+    <!-- Cart Items List -->
+    <div id="cart-items-container" class="flex-1 overflow-y-auto p-6 space-y-4 hidden bg-gray-50/30 dark:bg-slate-900">
+        <!-- Items injected by JS -->
+    </div>
+
+    <!-- Footer / Checkout -->
+    <div id="cart-footer" class="p-6 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 hidden">
+        <div class="space-y-3 mb-6">
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-400">Products</span>
+                <span id="cart-items-total" class="font-semibold text-dark dark:text-white">$0.00</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-400">Delivery</span>
+                <span class="text-green-500 font-bold uppercase text-[10px]">Free</span>
+            </div>
+            <div
+                class="flex justify-between items-center pt-3 border-t border-dashed border-gray-100 dark:border-slate-800">
+                <span class="font-bold text-dark dark:text-white text-lg">Total</span>
+                <span id="cart-subtotal" class="text-2xl font-extrabold text-primary">$0.00</span>
+            </div>
+        </div>
+        <button onclick="location.href='/checkout'"
+            class="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3 group active:scale-[0.98]">
+            Checkout Now
+            <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    function toggleCartDrawer() {
+        const drawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+        const isOpen = drawer.classList.contains('translate-x-0');
+
+        if (isOpen) {
+            drawer.classList.remove('translate-x-0');
+            drawer.classList.add('translate-x-full');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            overlay.classList.remove('opacity-100', 'pointer-events-auto');
+        } else {
+            drawer.classList.remove('translate-x-full');
+            drawer.classList.add('translate-x-0');
+            overlay.classList.add('opacity-100', 'pointer-events-auto');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            renderCartItems();
+        }
+    }
+
+    function renderCartItems() {
+        const cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
+        const container = document.getElementById('cart-items-container');
+        const emptyState = document.getElementById('cart-empty');
+        const footer = document.getElementById('cart-footer');
+        const countBadge = document.getElementById('drawer-cart-count');
+        const headerCount = document.getElementById('header-cart-count');
+
+        const totalItems = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
+        countBadge.innerText = `${totalItems} Items`;
+        if (headerCount) headerCount.innerText = totalItems;
+
+        if (cart.length === 0) {
+            container.classList.add('hidden');
+            footer.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        container.classList.remove('hidden');
+        footer.classList.remove('hidden');
+
+        let subtotal = 0;
+        container.innerHTML = cart.map((item, index) => {
+            const price = parseFloat(item.price);
+            const qty = item.qty || 1;
+            subtotal += price * qty;
+            return `
+                <div class="flex gap-4 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <div class="w-20 h-20 bg-gray-50 dark:bg-slate-700/50 rounded-xl flex items-center justify-center shrink-0 border border-gray-50 dark:border-slate-700">
+                        <i class="fas fa-pills text-2xl text-primary/20 dark:text-blue-400/50"></i>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-between py-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-dark dark:text-white leading-snug text-sm line-clamp-1">${item.name}</h4>
+                                <p class="text-[10px] text-gray-400 mt-0.5 font-medium">Genuine Medicine</p>
+                            </div>
+                            <button onclick="removeFromCart(${index})" class="text-gray-300 hover:text-red-500 transition-colors p-1 transform hover:rotate-90 duration-300">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="font-extrabold text-primary dark:text-blue-400">$${price.toFixed(2)}</span>
+                            <div class="flex items-center bg-gray-50 dark:bg-slate-700 rounded-lg p-1 border border-gray-100 dark:border-slate-600 select-none">
+                                <button onclick="updateQty(${index}, -1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-600 rounded-md transition-all text-gray-400 hover:text-primary dark:hover:text-blue-400">
+                                    <i class="fas fa-minus text-[8px]"></i>
+                                </button>
+                                <span class="w-8 text-center text-xs font-bold text-dark dark:text-white">${qty}</span>
+                                <button onclick="updateQty(${index}, 1)" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-slate-600 rounded-md transition-all text-gray-400 hover:text-primary dark:hover:text-blue-400">
+                                    <i class="fas fa-plus text-[8px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+        document.getElementById('cart-items-total').innerText = `$${subtotal.toFixed(2)}`;
+    }
+
+    function updateQty(index, delta) {
+        let cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
+        if (!cart[index].qty) cart[index].qty = 1;
+        cart[index].qty += delta;
+
+        if (cart[index].qty < 1) {
+            removeFromCart(index);
+        } else {
+            sessionStorage.setItem('guestCart', JSON.stringify(cart));
+            renderCartItems();
+            updateHeaderBadge();
+        }
+    }
+
+    function removeFromCart(index) {
+        let cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
+        cart.splice(index, 1);
+        sessionStorage.setItem('guestCart', JSON.stringify(cart));
+        renderCartItems();
+        updateHeaderBadge();
+    }
+
+    function updateHeaderBadge() {
+        const cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
+        const totalItems = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
+        const headerCount = document.getElementById('header-cart-count');
+        if (headerCount) {
+            headerCount.innerText = totalItems;
+            anime({
+                targets: headerCount,
+                scale: [1, 1.4, 1],
+                duration: 400,
+                easing: 'easeOutElastic(1, .8)'
+            });
+        }
+    }
+
+
+
+    // --- Profile Menu Logic ---
+    function toggleProfileMenu(fromNotifTrigger = false) {
+        const menu = document.getElementById('profile-dropdown');
+        if (!menu) return;
+
+        if (menu.classList.contains('hidden')) {
+            // Close notif dropdown if open and not triggered by notification button
+            if (!fromNotifTrigger) {
+                const notifDropdown = document.getElementById('notification-dropdown');
+                if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+                    toggleNotifications();
+                }
+            }
+
+            // Show
+            menu.classList.remove('hidden');
+            menu.classList.remove('opacity-0');
+            menu.classList.remove('invisible');
+
+            anime({
+                targets: menu,
+                opacity: [0, 1],
+                translateY: [-10, 0],
+                scale: [0.95, 1],
+                duration: 200,
+                easing: 'easeOutCubic'
+            });
+        } else {
+            // Hide
+            anime({
+                targets: menu,
+                opacity: 0,
+                translateY: -10,
+                scale: 0.95,
+                duration: 150,
+                easing: 'easeInCubic',
+                complete: () => {
+                    menu.classList.add('hidden');
+                    menu.classList.add('opacity-0');
+                }
+            });
+        }
+    }
+
+    // --- Notification Logic ---
+    function toggleNotifications(fromMobile = false) {
+        const dropdown = document.getElementById('notification-dropdown');
+        if (!dropdown) return;
+
+        if (dropdown.classList.contains('hidden')) {
+            // If opening from mobile, close the profile menu first
+            if (fromMobile) {
+                const profileMenu = document.getElementById('profile-dropdown');
+                if (profileMenu) profileMenu.classList.add('hidden', 'opacity-0');
+            }
+
+            // Show
+            dropdown.classList.remove('hidden');
+            // Animate In
+            anime({
+                targets: dropdown,
+                opacity: [0, 1],
+                translateY: [-10, 0],
+                scale: [0.95, 1],
+                duration: 200,
+                easing: 'easeOutCubic'
+            });
+        } else {
+            // Hide
+            anime({
+                targets: dropdown,
+                opacity: 0,
+                translateY: -10,
+                scale: 0.95,
+                duration: 150,
+                easing: 'easeInCubic',
+                complete: () => dropdown.classList.add('hidden')
+            });
+        }
+    }
+
+    // Close Dropdown on Click Outside
+    document.addEventListener('click', function (e) {
+        const container = document.getElementById('notification-container');
+        const dropdown = document.getElementById('notification-dropdown');
+        const mobileTrigger = document.getElementById('mobile-notif-trigger');
+
+        const isClickInside = (container && container.contains(e.target)) ||
+            (dropdown && dropdown.contains(e.target)) ||
+            (mobileTrigger && mobileTrigger.contains(e.target));
+
+        if (!isClickInside && dropdown && !dropdown.classList.contains('hidden')) {
+            anime({
+                targets: dropdown,
+                opacity: 0,
+                translateY: -10,
+                scale: 0.95,
+                duration: 150,
+                easing: 'easeInCubic',
+                complete: () => dropdown.classList.add('hidden')
+            });
+        }
+    });
+
+
+    function updateNotificationBadges(count) {
+        // Desktop Bell Badge
+        const bellBadge = document.querySelector('#notification-container button span');
+        if (bellBadge) {
+            if (count > 0) bellBadge.style.display = 'flex';
+            else bellBadge.style.display = 'none';
+        }
+
+        // Mobile Badge (on Profile button)
+        const mobileBadge = document.querySelector('button[onclick="toggleProfileMenu()"] > span.absolute');
+        if (mobileBadge) {
+            if (count > 0) mobileBadge.style.display = 'block';
+            else mobileBadge.style.display = 'none';
+        }
+
+        // Mobile Menu Badge (inside Profile dropdown)
+        const mobileMenuBadge = document.querySelector('#profile-dropdown button span.bg-red-500');
+        if (mobileMenuBadge) {
+            if (count > 0) {
+                mobileMenuBadge.innerText = count;
+                mobileMenuBadge.style.display = 'inline-block';
+            } else {
+                mobileMenuBadge.style.display = 'none';
+            }
+        }
+
+        // Header Count in Dropdown
+        const dropdownHeader = document.querySelector('#notification-dropdown h3 + span');
+        if (dropdownHeader) {
+            if (count > 0) {
+                dropdownHeader.innerText = `${count} New`;
+                dropdownHeader.style.display = 'inline-block';
+            }
+            else dropdownHeader.style.display = 'none';
+        }
+    }
+
+    function decrementBadgeCount() {
+        // This is a bit tricky since we don't store the count in a simple variable.
+        // We can check the number of unread items in DOM?
+        // The unread items have specific styling or we can just assume -1.
+        // A better way is to rely on the server response or just hide the badge if we know we cleared all.
+        // For single read, let's just try to parse the current badge count or hide it if it was 1.
+
+        // Simplification: We will just hide the specific dot on the item, 
+        // and if we want accurate global count without reload, we need to track it.
+        // Let's grab the current count from the "X New" span in dropdown if it exists.
+        const dropdownHeader = document.querySelector('#notification-dropdown h3 + span');
+        if (dropdownHeader) {
+            let text = dropdownHeader.innerText; // "3 New"
+            let count = parseInt(text);
+            if (!isNaN(count) && count > 0) {
+                count--;
+                updateNotificationBadges(count);
+            }
+        }
+    }
+
+    async function markAsRead(id, element) {
+        try {
+            const res = await fetch(`/notifications/${id}/read`, { method: 'POST' });
+            if (res.ok) {
+                // Animate removal
+                anime({
+                    targets: element,
+                    opacity: 0,
+                    height: 0,
+                    padding: 0,
+                    marginBottom: 0,
+                    duration: 300,
+                    easing: 'easeInQuad',
+                    complete: () => {
+                        element.remove();
+                        decrementBadgeCount();
+
+                        // Check if list empty
+                        const list = document.querySelector('#notification-dropdown .overflow-y-auto');
+                        if (list && list.children.length === 0) {
+                            // Show empty state
+                            list.innerHTML = `
+                                <div class="py-12 px-8 text-center flex flex-col items-center">
+                                    <div class="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                                        <i class="fas fa-bell-slash text-gray-300 dark:text-slate-600 text-xl"></i>
+                                    </div>
+                                    <p class="text-sm font-bold text-dark dark:text-gray-300 mb-1">No notifications</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">You're all caught up!</p>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function markAllAsRead(btnElement) {
+        try {
+            const res = await fetch('/notifications/read-all', { method: 'POST' });
+            if (res.ok) {
+                // Clear all items visually
+                const list = document.querySelector('#notification-dropdown .overflow-y-auto');
+                if (list) {
+                    anime({
+                        targets: list.children,
+                        opacity: 0,
+                        translateX: 20,
+                        delay: anime.stagger(50),
+                        duration: 300,
+                        easing: 'easeInQuad',
+                        complete: () => {
+                            list.innerHTML = `
+                                <div class="py-12 px-8 text-center flex flex-col items-center">
+                                    <div class="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                                        <i class="fas fa-bell-slash text-gray-300 dark:text-slate-600 text-xl"></i>
+                                    </div>
+                                    <p class="text-sm font-bold text-dark dark:text-gray-300 mb-1">No notifications</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">You're all caught up!</p>
+                                </div>
+                           `;
+                            updateNotificationBadges(0);
+                        }
+                    });
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // --- Live Search Logic ---
+    const searchInputs = ['desktop-search', 'mobile-search'];
+    let debounceTimer;
+
+    searchInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        const resultsContainer = document.getElementById(`${inputId}-results`);
+
+        if (!input || !resultsContainer) return;
+
+        input.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/search?q=${encodeURIComponent(query)}&ajax=1`);
+                    const data = await res.json();
+
+                    if (data.medicines && data.medicines.length > 0) {
+                        resultsContainer.innerHTML = data.medicines.map(med => `
+                            <div class="p-3 hover:bg-gray-50 dark:hover:bg-slate-800 border-b border-gray-50 dark:border-slate-800 last:border-0 cursor-pointer flex items-center gap-3 group/item transition-colors" onclick="location.href='/search?q=${encodeURIComponent(med.name)}'">
+                                <div class="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-gray-400 group-hover/item:text-primary transition-colors">
+                                    <i class="fas ${med.icon || 'fa-pills'} text-sm"></i>
+                                </div>
+                                <div class="flex-1 truncate">
+                                    <h4 class="text-sm font-bold text-dark dark:text-white truncate">${med.name}</h4>
+                                    <p class="text-[10px] text-gray-400 truncate">${med.category || 'General'}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-primary dark:text-blue-400">$${parseFloat(med.price).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                        resultsContainer.classList.remove('hidden');
+                    } else {
+                        resultsContainer.innerHTML = '<div class="p-8 text-center text-gray-400 text-xs">No medicines found</div>';
+                        resultsContainer.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    console.error('Live search error:', err);
+                }
+            }, 300);
+        });
+    });
+
+    // Close results on click outside
+    document.addEventListener('click', (e) => {
+        searchInputs.forEach(inputId => {
+            const results = document.getElementById(`${inputId}-results`);
+            const input = document.getElementById(inputId);
+            if (results && !results.contains(e.target) && !input.contains(e.target)) {
+                results.classList.add('hidden');
+            }
+        });
+    });
+
+    // Initial sync
+    document.addEventListener('DOMContentLoaded', updateHeaderBadge);
+</script>

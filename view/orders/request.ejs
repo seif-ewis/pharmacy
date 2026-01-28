@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<%- include('../partials/head') %>
+
+    <body
+        class="bg-bg text-dark font-sans antialiased overflow-x-hidden selection:bg-primary selection:text-white dark:bg-dark">
+
+        <%- include('../partials/header') %>
+
+            <!-- Page Header -->
+            <div class="bg-gray-100 dark:bg-slate-900 py-12 mt-20">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 class="text-3xl font-bold text-dark dark:text-white mb-2">Request Missing Product</h1>
+                    <p class="text-gray-500 dark:text-gray-400">Can't find what you're looking for? Let our doctors
+                        source it for you.</p>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div
+                    class="max-w-xl mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-slate-800">
+
+                    <div id="request-success"
+                        class="hidden mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm">
+                        <p class="font-bold">Success!</p>
+                        <p>Your request has been submitted. Our team will contact you soon.</p>
+                        <a href="/orders" class="inline-block mt-4 text-sm font-bold underline">Back to Orders</a>
+                    </div>
+
+                    <form id="product-request-form" onsubmit="handleRequestSubmit(event)">
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block font-bold text-dark dark:text-white mb-2">Product Name</label>
+                                <input type="text" name="productName" required placeholder="e.g. Panadol Extra 500mg"
+                                    class="w-full rounded-xl border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary p-4">
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-dark dark:text-white mb-2">Detailed Description
+                                    (Optional)</label>
+                                <textarea name="description" rows="4"
+                                    placeholder="Describe the product or why you need it..."
+                                    class="w-full rounded-xl border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary p-4"></textarea>
+                            </div>
+
+                            <div
+                                class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                                <p class="text-xs text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                                    <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                                    <span>Requests are processed manually. Once the medicine is found and added to our
+                                        system, you will be notified to complete the order.</span>
+                                </p>
+                            </div>
+
+                            <button type="submit" id="submit-btn"
+                                class="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                                <span>Submit Request</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <%- include('../partials/footer') %>
+
+                <script>
+                    async function handleRequestSubmit(e) {
+                        e.preventDefault();
+                        const form = e.target;
+                        const btn = document.getElementById('submit-btn');
+                        const formData = new FormData(form);
+                        const data = Object.fromEntries(formData.entries());
+
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+                        try {
+                            const response = await fetch('/orders/request', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data)
+                            });
+
+                            const result = await response.json();
+                            if (result.success) {
+                                form.classList.add('hidden');
+                                document.getElementById('request-success').classList.remove('hidden');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            } else {
+                                alert(result.message || 'Submission failed');
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>Submit Request</span><i class="fas fa-paper-plane"></i>';
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('An error occurred. Please try again.');
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>Submit Request</span><i class="fas fa-paper-plane"></i>';
+                        }
+                    }
+                </script>
+    </body>
+
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('partials/head') %>
+        <style>
+            .product-image-container {
+                perspective: 1000px;
+            }
+
+            .product-image {
+                transform-style: preserve-3d;
+                transition: transform 0.5s;
+            }
+
+            .product-image:hover {
+                transform: rotateY(5deg) rotateX(5deg);
+            }
+        </style>
+</head>
+
+<body class="bg-bg dark:bg-dark transition-colors duration-300">
+    <%- include('partials/header') %>
+
+        <main class="container mx-auto px-4 py-8 mt-24">
+
+            <!-- Breadcrumbs -->
+            <nav class="flex mb-8" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="/"
+                            class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-400 dark:hover:text-white">
+                            <i class="fas fa-home mr-2"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Products</span>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                <%= product.name %>
+                            </span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <!-- Product Image -->
+                <div class="product-image-container flex justify-center items-start">
+                    <div class="relative group product-image w-full max-w-md">
+                        <!-- Main Image Card -->
+                        <div
+                            class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-2xl shadow-blue-900/10 border border-gray-100 dark:border-slate-700 relative z-10">
+                            <div
+                                class="aspect-square relative flex items-center justify-center overflow-hidden rounded-2xl bg-gray-50 dark:bg-slate-700/50">
+                                <% if (product.image_url) { %>
+                                    <img src="<%= product.image_url %>" alt="<%= product.name %>"
+                                        class="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700">
+                                    <% } else { %>
+                                        <i
+                                            class="<%= product.icon || 'fas fa-pills' %> text-9xl text-gray-300 dark:text-slate-600"></i>
+                                        <% } %>
+
+                                            <!-- Category Badge -->
+                                            <div class="absolute top-4 right-4">
+                                                <% if (isService) { %>
+                                                    <span
+                                                        class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-200 shadow-sm flex items-center gap-1">
+                                                        <i class="fas fa-user-md"></i> Service
+                                                    </span>
+                                                    <% } else { %>
+                                                        <span
+                                                            class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 shadow-sm flex items-center gap-1">
+                                                            <i class="fas fa-prescription-bottle-alt"></i> Medicine
+                                                        </span>
+                                                        <% } %>
+                                            </div>
+                            </div>
+                        </div>
+
+                        <!-- Decorative Elements -->
+                        <div
+                            class="absolute -inset-4 bg-gradient-to-r from-primary to-secondary rounded-[2.5rem] opacity-20 blur-xl -z-10 group-hover:opacity-30 transition-opacity duration-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Details -->
+                <div class="space-y-6">
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-extrabold text-dark dark:text-white mb-2 tracking-tight">
+                            <%= product.name %>
+                        </h1>
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="flex text-yellow-400 text-sm">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-xs text-gray-400 dark:text-gray-500">(4.5/5 based on 128 reviews)</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-baseline gap-4">
+                        <span class="text-4xl font-bold text-primary dark:text-blue-400">$<%=
+                                parseFloat(product.price).toFixed(2) %></span>
+                        <% if(Math.random()> 0.5) { %> <!-- Simulate discount visual -->
+                            <span class="text-lg text-gray-400 line-through">$<%= (parseFloat(product.price) *
+                                    1.2).toFixed(2) %></span>
+                            <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded">-20%</span>
+                            <% } %>
+                    </div>
+
+
+
+                    <!-- Full Width Stacked Details -->
+                    <div class="space-y-6 mt-8">
+                        <div
+                            class="p-6 bg-blue-50/50 dark:bg-slate-800/50 rounded-2xl border border-blue-100 dark:border-slate-700">
+                            <h4 class="font-bold text-lg text-primary dark:text-blue-300 mb-2 flex items-center gap-2">
+                                <i class="fas fa-check-circle"></i> Benefits
+                            </h4>
+                            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                <%= product.benefits
+                                    || "Supports general health and wellness. Clinically tested for safety and efficacy."
+                                    %>
+                            </p>
+                        </div>
+
+                        <div
+                            class="p-6 bg-orange-50/50 dark:bg-slate-800/50 rounded-2xl border border-orange-100 dark:border-slate-700">
+                            <h4
+                                class="font-bold text-lg text-orange-600 dark:text-orange-300 mb-2 flex items-center gap-2">
+                                <i class="fas fa-exclamation-circle"></i> Side Effects
+                            </h4>
+                            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                <%= product.side_effects
+                                    || "Consult your physician if adverse reactions occur. Keep out of reach of children."
+                                    %>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Stock & Actions -->
+                    <div class="pt-6 border-t border-gray-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Availability:</span>
+                            <% if (product.quantity> 0) { %>
+                                <span class="text-green-500 font-bold flex items-center gap-1">
+                                    <i class="fas fa-circle text-[8px]"></i> In Stock (<%= product.quantity %>
+                                        available)
+                                </span>
+                                <% } else { %>
+                                    <span class="text-red-500 font-bold flex items-center gap-1">
+                                        <i class="fas fa-times-circle"></i> Out of Stock
+                                    </span>
+                                    <% } %>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="flex items-center bg-gray-100 dark:bg-slate-700 rounded-xl px-3 w-32">
+                                <button
+                                    class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary transition-colors"
+                                    onclick="adjustQty(-1)">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <input type="number" id="qty-input" value="1" min="1" max="<%= product.quantity %>"
+                                    class="w-full bg-transparent text-center font-bold text-dark dark:text-white focus:outline-none"
+                                    readonly>
+                                <button
+                                    class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary transition-colors"
+                                    onclick="adjustQty(1)">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+
+                            <% if (product.quantity> 0) { %>
+                                <button
+                                    onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price %>)"
+                                    class="flex-1 bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
+                                    <i class="fas fa-shopping-cart group-hover:animate-bounce"></i>
+                                    Add to Cart
+                                </button>
+                                <% } else { %>
+                                    <button id="notify-me-btn" onclick="subscribeStock('<%= product.id %>')"
+                                        class="flex-1 bg-secondary hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
+                                        <i class="fas fa-bell group-hover:animate-swing"></i>
+                                        Notify Me When Available
+                                    </button>
+                                    <% } %>
+                        </div>
+                    </div>
+                </div> <!-- End Details Column -->
+            </div> <!-- End Grid -->
+
+            <!-- Similar Products Carousel -->
+            <div class="mt-20 relative group">
+                <div class="flex justify-between items-end mb-6">
+                    <h2 class="text-2xl font-bold text-dark dark:text-white">You might also like</h2>
+                    <div class="flex gap-2">
+                        <button onclick="scrollRelated(-1)"
+                            class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-md flex items-center justify-center text-primary dark:text-blue-400 hover:bg-primary hover:text-white transition-colors">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button onclick="scrollRelated(1)"
+                            class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-md flex items-center justify-center text-primary dark:text-blue-400 hover:bg-primary hover:text-white transition-colors">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex space-x-6 overflow-x-auto pb-8 hide-scroll py-4 px-2 scroll-smooth"
+                    id="related-carousel">
+                    <% if (typeof relatedProducts !=='undefined' && relatedProducts.length> 0) { %>
+                        <% relatedProducts.forEach(function(rProd) { %>
+                            <div
+                                class="min-w-[280px] bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof rProd.quantity !== 'undefined' && rProd.quantity === 0) ? 'opacity-60 grayscale' : '' %>">
+
+                                <% if (typeof rProd.quantity !=='undefined' && rProd.quantity===0) { %>
+                                    <div
+                                        class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                        Out of Stock
+                                    </div>
+                                    <% } %>
+
+                                        <a href="/products/<%= rProd.id %>" class="block">
+                                            <div
+                                                class="h-40 bg-white dark:bg-slate-700/50 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden group/med">
+                                                <% if (rProd.image_url) { %>
+                                                    <img src="<%= rProd.image_url %>" alt="<%= rProd.name %>"
+                                                        class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out">
+                                                    <div
+                                                        class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                    </div>
+                                                    <% } else { %>
+                                                        <i
+                                                            class="<%= rProd.icon || 'fas fa-pills' %> text-6xl text-gray-200 dark:text-slate-600 transform group-hover:scale-110 transition-transform duration-500"></i>
+                                                        <div
+                                                            class="absolute inset-0 bg-primary/5 dark:bg-white/5 opacity-0 group-hover/med:opacity-100 transition-opacity">
+                                                        </div>
+                                                        <% } %>
+                                            </div>
+                                            <h3
+                                                class="font-bold text-lg text-dark dark:text-gray-100 mb-1 line-clamp-1">
+                                                <%= rProd.name %>
+                                            </h3>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-1">
+                                                <%= rProd.description || 'Premium quality healthcare product' %>
+                                            </p>
+                                        </a>
+
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xl font-bold text-primary dark:text-blue-400">$<%=
+                                                    parseFloat(rProd.price).toFixed(2) %></span>
+
+                                            <% if (typeof rProd.quantity !=='undefined' && rProd.quantity===0) { %>
+                                                <button disabled
+                                                    class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                                <% } else { %>
+                                                    <button
+                                                        onclick="addToCart('<%= rProd.id %>', '<%= rProd.name %>', '<%= rProd.price %>')"
+                                                        class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 shadow-sm hover:shadow-md">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <% } %>
+                                        </div>
+                            </div>
+                            <% }); %>
+                                <% } else { %>
+                                    <p class="text-gray-400 w-full text-center py-8">No similar products found.</p>
+                                    <% } %>
+                </div>
+            </div>
+
+            <!-- Detailed Description & Info Section (Bottom) -->
+            <div class="mt-20 border-t border-gray-100 dark:border-slate-800 pt-16">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="md:col-span-2">
+                        <h2 class="text-3xl font-extrabold text-dark dark:text-white mb-6">About this Medicine</h2>
+                        <div class="prose dark:prose-invert prose-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                            <p>
+                                <%= product.description || "No detailed description available." %>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-slate-800/50 p-8 rounded-3xl">
+                        <h3 class="text-xl font-bold text-dark dark:text-white mb-4">Product Highlights</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-tag text-primary mt-1"></i>
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">
+                                    <strong class="text-dark dark:text-gray-200">Category:</strong>
+                                    <%= product.category %>
+                                </span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-prescription-bottle text-green-500 mt-1"></i>
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">
+                                    <strong class="text-dark dark:text-gray-200">Type:</strong>
+                                    <%= isService ? 'Service' : 'Medicine' %>
+                                </span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fas fa-cubes text-blue-500 mt-1"></i>
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">
+                                    <strong class="text-dark dark:text-gray-200">Availability:</strong>
+                                    <%= product.quantity> 0 ? 'In Stock' : 'Out of Stock' %>
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <%- include('partials/footer') %>
+
+            <script>
+                function adjustQty(delta) {
+                    const input = document.getElementById('qty-input');
+                    const max = parseInt(input.getAttribute('max'));
+                    let val = parseInt(input.value);
+                    val += delta;
+                    if (val < 1) val = 1;
+                    if (val > max) val = max;
+                    input.value = val;
+                }
+
+                // Wrapper around existing addToCart to handle quantity
+                const originalAddToCart = window.addToCart; // Assuming global scope from home.ejs or header? 
+                // Note: header doesn't usually have addToCart. It was in home.ejs.
+                // We need to redefine addToCart here or ensure it's available.
+
+                // Re-implement basic add to cart logic here if not global, or bridge it.
+                // Since home.ejs script isn't loaded here, we recreate the logic compatible with the header cart.
+
+                // Load Cart Logic (simplified version of home.ejs logic)
+                function addToCart(id, name, price) {
+                    const qty = parseInt(document.getElementById('qty-input').value);
+
+                    // Check session storage first (guest) or consistent storage
+                    let cart = JSON.parse(sessionStorage.getItem('guestCart') || '[]');
+
+                    const existingItem = cart.find(item => item.id === id);
+                    if (existingItem) {
+                        existingItem.qty = (existingItem.qty || 1) + qty;
+                    } else {
+                        cart.push({ id, name, price, qty: qty });
+                    }
+
+                    sessionStorage.setItem('guestCart', JSON.stringify(cart));
+
+                    // Try to update UI if function exists (header should have logic to read storage?)
+                    // If header.ejs doesn't autorefresh, we force a badge update or dispatch event
+                    window.dispatchEvent(new Event('storage')); // Trigger storage listeners
+
+                    // Dispatch custom event for immediate UI update if header listens
+                    // Or manually update if we know how header works.
+                    // Let's assume header reads localStorage/sessionStorage on load.
+                    // We can also sync to localStorage for persistence if that's the app pattern
+                    localStorage.setItem('cart', JSON.stringify(cart));
+
+                    updateHeaderBadge();
+
+                    // Show feedback
+                    const btn = document.querySelector('button[onclick*="addToCart"]');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Added';
+                    btn.classList.add('bg-green-500');
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('bg-green-500');
+                    }, 2000);
+                }
+
+                function scrollRelated(direction) {
+                    const container = document.getElementById('related-carousel');
+                    const scrollAmount = 320; // Slightly more than card width
+                    if (direction === 1) {
+                        container.scrollLeft += scrollAmount;
+                    } else {
+                        container.scrollLeft -= scrollAmount;
+                    }
+                }
+
+                // Auto Scroll Logic
+                let autoScrollInterval;
+                const carousel = document.getElementById('related-carousel');
+
+                function startAutoScroll() {
+                    if (!carousel) return;
+                    autoScrollInterval = setInterval(() => {
+                        if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 10) {
+                            carousel.scrollTo({ left: 0, behavior: 'smooth' }); // Loop back
+                        } else {
+                            carousel.scrollLeft += 320;
+                        }
+                    }, 4000); // Scroll every 4 seconds
+                }
+
+                function stopAutoScroll() {
+                    clearInterval(autoScrollInterval);
+                }
+
+                if (carousel) {
+                    carousel.addEventListener('mouseenter', stopAutoScroll);
+                    carousel.addEventListener('mouseleave', startAutoScroll);
+                    carousel.addEventListener('touchstart', stopAutoScroll); // Mobile
+                    startAutoScroll(); // Start initially
+                }
+
+                function updateHeaderBadge() {
+                    if (window.updateCartCount) window.updateCartCount();
+                }
+
+                async function subscribeStock(medicineId) {
+                    const btn = document.getElementById('notify-me-btn');
+                    try {
+                        const res = await fetch('/notifications/subscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ medicineId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> We will notify you!';
+                            btn.classList.replace('bg-secondary', 'bg-green-500');
+                            btn.disabled = true;
+                        } else {
+                            if (res.status === 401) {
+                                // Redirect to login or show modal
+                                window.location.href = '/profile'; // Or wherever auth is handled
+                            } else {
+                                alert(data.message);
+                            }
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+            </script>
+</body>
+
+</html>

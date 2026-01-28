@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<%- include('partials/head') %>
+
+    <body
+        class="bg-gray-50 text-dark font-sans antialiased overflow-x-hidden transition-colors duration-300 dark:bg-dark">
+
+        <%- include('partials/header') %>
+
+            <main class="min-h-screen py-12 relative overflow-hidden">
+                <!-- Background Elements -->
+                <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                    <div
+                        class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-3xl animate-blob">
+                    </div>
+                    <div
+                        class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-400/5 rounded-full blur-3xl animate-blob animation-delay-2000">
+                    </div>
+                </div>
+
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <!-- Header -->
+                    <div class="mb-10 text-center">
+                        <h1 class="text-4xl font-extrabold text-dark dark:text-white mb-4">Checkout</h1>
+                        <p class="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                            Complete your purchase securely. Review your items and select a delivery address.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left Column: Order Details -->
+                        <div class="lg:col-span-2 space-y-8">
+
+                            <!-- Address Selection -->
+                            <div
+                                class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-800 backdrop-blur-sm">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h2 class="text-xl font-bold text-dark dark:text-white flex items-center gap-3">
+                                        <span
+                                            class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-primary dark:text-blue-400">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                        </span>
+                                        Delivery Address
+                                    </h2>
+                                    <button onclick="toggleAddressForm()"
+                                        class="text-sm text-primary font-bold hover:text-blue-700 transition-colors">
+                                        + Add New
+                                    </button>
+                                </div>
+
+                                <!-- Address List -->
+                                <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2"
+                                    id="address-list">
+                                    <% if (addresses && addresses.length> 0) { %>
+                                        <% addresses.forEach((addr, index)=> { %>
+                                            <label
+                                                class="relative flex items-start p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 group hover:bg-gray-50 dark:hover:bg-slate-800 <%= addr.is_default ? 'border-primary bg-blue-50/10 dark:border-blue-500/50' : 'border-gray-100 dark:border-slate-700' %>">
+                                                <input type="radio" name="address_id" value="<%= addr.id %>"
+                                                    <%=addr.is_default ? 'checked' : '' %> class="peer sr-only"
+                                                onchange="updateSelectedAddress(this)">
+
+                                                <div
+                                                    class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-slate-600 peer-checked:border-primary peer-checked:bg-primary mr-4 mt-1 flex items-center justify-center transition-all">
+                                                    <i
+                                                        class="fas fa-check text-white text-[10px] opacity-0 peer-checked:opacity-100"></i>
+                                                </div>
+
+                                                <div class="flex-1">
+                                                    <div class="flex justify-between items-start">
+                                                        <h3 class="font-bold text-dark dark:text-white mb-1">
+                                                            <%= addr.label %>
+                                                        </h3>
+                                                        <% if (addr.is_default) { %>
+                                                            <span
+                                                                class="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Default</span>
+                                                            <% } %>
+                                                    </div>
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                        <%= addr.street %>, <%= addr.city %>
+                                                    </p>
+                                                    <p class="text-xs text-gray-400 mt-1">
+                                                        <%= addr.phone || user.phone %>
+                                                    </p>
+                                                </div>
+                                            </label>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <div
+                                                        class="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl">
+                                                        <i class="fas fa-map-marked-alt text-3xl mb-3 opacity-50"></i>
+                                                        <p class="text-sm">No addresses saved. Please add one.</p>
+                                                    </div>
+                                                    <% } %>
+                                </div>
+
+                                <!-- Add New Address Form (Hidden) -->
+                                <div id="new-address-form"
+                                    class="hidden mt-6 pt-6 border-t border-gray-100 dark:border-slate-800 animate-fade-in-down">
+                                    <h3 class="font-bold text-md mb-4 text-dark dark:text-white">New Address Details
+                                    </h3>
+                                    <form action="/profile/address/add?redirect=checkout" method="POST"
+                                        class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="col-span-2">
+                                            <label
+                                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Address
+                                                Label</label>
+                                            <input type="text" name="label" placeholder="e.g. Home, Office" required
+                                                class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm">
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">City</label>
+                                            <input type="text" name="city" placeholder="City" required
+                                                class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm">
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Street</label>
+                                            <input type="text" name="street" placeholder="Street Name & Number" required
+                                                class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label
+                                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Additional
+                                                Details</label>
+                                            <textarea name="details" rows="2" placeholder="Start typing..."
+                                                class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm"></textarea>
+                                        </div>
+                                        <div class="col-span-2 flex justify-end gap-3 mt-2">
+                                            <button type="button" onclick="toggleAddressForm()"
+                                                class="px-6 py-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-sm font-bold">Cancel</button>
+                                            <button type="submit"
+                                                class="px-6 py-2 rounded-xl bg-primary hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-all text-sm font-bold transform active:scale-95">Save
+                                                Address</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div
+                                class="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-800 backdrop-blur-sm">
+                                <div class="mb-6">
+                                    <h2 class="text-xl font-bold text-dark dark:text-white flex items-center gap-3">
+                                        <span
+                                            class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                                            <i class="fas fa-wallet"></i>
+                                        </span>
+                                        Payment Method
+                                    </h2>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <label
+                                        class="relative flex items-center p-4 rounded-2xl border-2 border-primary bg-blue-50/10 cursor-pointer transition-all">
+                                        <input type="radio" name="payment_method" value="cod" checked
+                                            class="peer sr-only">
+                                        <div
+                                            class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-slate-600 peer-checked:border-primary peer-checked:bg-primary mr-3 flex items-center justify-center">
+                                            <i
+                                                class="fas fa-check text-white text-[10px] opacity-0 peer-checked:opacity-100"></i>
+                                        </div>
+                                        <div class="text-dark dark:text-white">
+                                            <span class="block font-bold">Cash on Delivery</span>
+                                            <span class="text-xs text-gray-500">Pay when you receive</span>
+                                        </div>
+                                        <i
+                                            class="fas fa-money-bill-wave text-2xl text-gray-300 absolute right-4 opacity-50"></i>
+                                    </label>
+
+                                    <label
+                                        class="relative flex items-center p-4 rounded-2xl border-2 border-gray-100 dark:border-slate-700 cursor-not-allowed opacity-60 grayscale">
+                                        <input type="radio" name="payment_method" value="card" disabled
+                                            class="peer sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 border-gray-300 mr-3"></div>
+                                        <div class="text-dark dark:text-white">
+                                            <span class="block font-bold">Credit Card</span>
+                                            <span class="text-xs text-gray-500">Coming Soon</span>
+                                        </div>
+                                        <i class="fab fa-cc-visa text-2xl text-gray-300 absolute right-4"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Order Summary -->
+                        <div class="lg:col-span-1">
+                            <div class="sticky top-24">
+                                <div
+                                    class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-800">
+                                    <h2 class="text-xl font-bold text-dark dark:text-white mb-6">Order Summary</h2>
+
+                                    <!-- Cart Items (Populated from LocalStorage via JS) -->
+                                    <div id="checkout-cart-items"
+                                        class="space-y-4 mb-6 max-h-80 overflow-y-auto pr-2 custom-scrollbar overscroll-contain">
+                                        <!-- Loading Skeleton -->
+                                        <div class="animate-pulse flex space-x-4">
+                                            <div class="rounded-full bg-gray-200 h-10 w-10"></div>
+                                            <div class="flex-1 space-y-2 py-1">
+                                                <div class="h-2 bg-gray-200 rounded"></div>
+                                                <div class="h-2 bg-gray-200 rounded w-5/6"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Coupon Section -->
+                                    <div class="mb-6">
+                                        <div class="flex gap-2">
+                                            <input type="text" id="coupon-code" placeholder="Enter coupon code"
+                                                class="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary uppercase">
+                                            <button onclick="applyCoupon()" id="coupon-btn"
+                                                class="bg-dark dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-black transition-colors">
+                                                Apply
+                                            </button>
+                                        </div>
+                                        <p id="coupon-message" class="text-xs mt-2 hidden"></p>
+                                    </div>
+
+                                    <div
+                                        class="border-t border-gray-100 dark:border-slate-800 my-4 pt-4 space-y-2 text-sm">
+                                        <div class="flex justify-between text-gray-500 dark:text-gray-400">
+                                            <span>Subtotal</span>
+                                            <span class="font-bold text-dark dark:text-gray-200"
+                                                id="checkout-subtotal">$...</span>
+                                        </div>
+                                        <div class="flex justify-between text-green-600 dark:text-green-400"
+                                            id="discount-row" style="display:none;">
+                                            <span>Discount</span>
+                                            <span class="font-bold" id="checkout-discount">-$0.00</span>
+                                        </div>
+                                        <div class="flex justify-between text-gray-500 dark:text-gray-400">
+                                            <span>Delivery Fee</span>
+                                            <span class="font-bold text-dark dark:text-gray-200"
+                                                id="checkout-delivery">$...</span>
+                                        </div>
+                                        <div class="flex justify-between text-gray-500 dark:text-gray-400">
+                                            <span>Tax (10%)</span>
+                                            <span class="font-bold text-dark dark:text-gray-200"
+                                                id="checkout-tax">$...</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-100 dark:border-slate-800 my-4 pt-4">
+                                        <div
+                                            class="flex justify-between items-center text-lg font-extrabold text-dark dark:text-white">
+                                            <span>Total</span>
+                                            <span class="text-primary" id="checkout-total">$0.00</span>
+                                        </div>
+                                    </div>
+
+                                    <button id="place-order-btn" onclick="submitOrder()"
+                                        class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3">
+                                        <span>Place Order</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+
+                                    <p class="text-[10px] text-center text-gray-400 mt-4">
+                                        By placing an order, you agree to our <a href="/terms"
+                                            class="underline hover:text-primary">Terms</a> and <a href="/return-policy"
+                                            class="underline hover:text-primary">Return Policy</a>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <%- include('partials/footer') %>
+
+                <script>
+                    // Load cart from localStorage
+                    // Load cart from sessionStorage (guestCart from home) or localStorage (fallback)
+                    let rawGuestHelper = sessionStorage.getItem('guestCart');
+                    let cart = [];
+
+                    if (rawGuestHelper) {
+                        try {
+                            const parsed = JSON.parse(rawGuestHelper);
+                            // Map 'qty' to 'quantity' to match this page's expectation
+                            cart = parsed.map(item => ({ ...item, quantity: item.qty || item.quantity || 1 }));
+                        } catch (e) { console.error('Cart parse error', e); }
+                    } else {
+                        cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    }
+                    const deliveryFee = 5.00;
+
+                    document.addEventListener('DOMContentLoaded', () => {
+                        renderCheckoutItems();
+                    });
+
+                    let currentCoupon = null;
+
+                    async function renderCheckoutItems() {
+                        const container = document.getElementById('checkout-cart-items');
+                        if (cart.length === 0) {
+                            container.innerHTML = '<p class="text-gray-500 text-center text-sm py-4">Your cart is empty.</p>';
+                            document.getElementById('place-order-btn').disabled = true;
+                            document.getElementById('place-order-btn').classList.add('opacity-50', 'cursor-not-allowed');
+                            updateTotals(); // Reset totals
+                            return;
+                        }
+
+                        // Render items from cart data immediately (price might update after fetch but names/qty are known)
+                        container.innerHTML = cart.map(item => `
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-pills text-gray-400"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-bold text-dark dark:text-white truncate ring-0">${item.name}</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Quantity: ${item.quantity}</p>
+                                </div>
+                                <div class="text-sm font-bold text-dark dark:text-gray-200">
+                                   <!-- Price placeholder until calc -->
+                                </div>
+                            </div>
+                        `).join('');
+
+                        await updateTotals();
+                    }
+
+                    async function updateTotals() {
+                        try {
+                            const res = await fetch('/orders/calculate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    items: cart.map(i => ({ medicine_id: i.id, quantity: i.quantity })),
+                                    couponCode: currentCoupon
+                                })
+                            });
+
+                            const data = await res.json();
+                            if (data.success) {
+                                document.getElementById('checkout-subtotal').innerText = `$${data.subtotal}`;
+                                document.getElementById('checkout-delivery').innerText = `$${data.delivery}`;
+                                document.getElementById('checkout-tax').innerText = `$${data.tax}`;
+                                document.getElementById('checkout-total').innerText = `$${data.total}`;
+
+                                if (data.discount > 0) {
+                                    document.getElementById('discount-row').style.display = 'flex';
+                                    document.getElementById('checkout-discount').innerText = `-$${data.discount}`;
+                                } else {
+                                    document.getElementById('discount-row').style.display = 'none';
+                                }
+                            }
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }
+
+                    async function applyCoupon() {
+                        const code = document.getElementById('coupon-code').value.trim();
+                        const msg = document.getElementById('coupon-message');
+                        const btn = document.getElementById('coupon-btn');
+
+                        if (!code) return;
+
+                        btn.disabled = true;
+                        btn.innerText = '...';
+
+                        currentCoupon = code;
+                        const res = await fetch('/orders/calculate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                items: cart.map(i => ({ medicine_id: i.id, quantity: i.quantity })),
+                                couponCode: code
+                            })
+                        });
+                        const data = await res.json();
+
+                        btn.disabled = false;
+                        btn.innerText = 'Apply';
+                        msg.classList.remove('hidden', 'text-green-500', 'text-red-500');
+
+                        if (data.success && data.couponApplied) {
+                            msg.innerText = `Coupon '${data.couponLabel}' applied!`;
+                            msg.classList.add('text-green-500');
+                            updateTotals();
+                        } else {
+                            currentCoupon = null;
+                            msg.innerText = 'Invalid or expired coupon.';
+                            msg.classList.add('text-red-500');
+                            updateTotals();
+                        }
+                    }
+
+                    function toggleAddressForm() {
+                        const form = document.getElementById('new-address-form');
+                        form.classList.toggle('hidden');
+                    }
+
+                    // Highlight selected address
+                    function updateSelectedAddress(radio) {
+                        document.querySelectorAll('#address-list label').forEach(lbl => {
+                            lbl.classList.remove('border-primary', 'bg-blue-50/10', 'dark:border-blue-500/50');
+                            lbl.classList.add('border-gray-100', 'dark:border-slate-700');
+                        });
+
+                        if (radio.checked) {
+                            radio.closest('label').classList.remove('border-gray-100', 'dark:border-slate-700');
+                            radio.closest('label').classList.add('border-primary', 'bg-blue-50/10', 'dark:border-blue-500/50');
+                        }
+                    }
+
+                    async function submitOrder() {
+                        const selectedAddress = document.querySelector('input[name="address_id"]:checked');
+                        if (!selectedAddress) {
+                            alert('Please select a delivery address');
+                            return;
+                        }
+
+                        const btn = document.getElementById('place-order-btn');
+                        const originalContent = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                        btn.disabled = true;
+
+                        try {
+                            const response = await fetch('/orders/checkout', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    items: cart.map(i => ({ medicine_id: i.id, quantity: i.quantity })),
+                                    address_id: selectedAddress.value,
+                                    payment_method: 'cod',
+                                    couponCode: currentCoupon // Pass the applied coupon code
+                                })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                // Clear cart (both storages to be safe)
+                                localStorage.removeItem('cart');
+                                sessionStorage.removeItem('guestCart');
+                                updateHeaderBadge(); // Update badge to 0
+
+                                // Show success
+                                btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+                                btn.classList.remove('bg-primary', 'hover:bg-blue-700');
+                                btn.classList.add('bg-green-500', 'hover:bg-green-600');
+
+                                setTimeout(() => {
+                                    window.location.href = '/orders'; // Redirect to My Orders
+                                }, 1000);
+                            } else {
+                                alert('Order Failed: ' + (result.error || 'Unknown error'));
+                                btn.innerHTML = originalContent;
+                                btn.disabled = false;
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('An error occurred. Please try again.');
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }
+                    }
+                </script>
+                <%- include('partials/footer') %>
+    </body>
+
+</html>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<%- include('partials/head') %>
+
+    <body class="bg-bg text-dark font-sans antialiased overflow-x-hidden selection:bg-primary selection:text-white">
+        <%- include('partials/header') %>
+
+            <div class="min-h-screen pt-20 pb-12 bg-gray-50 dark:bg-dark transition-colors duration-300">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+                    <!-- Feedback Messages -->
+                    <% if (typeof error !=='undefined' && error.length> 0) { %>
+                        <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm"
+                            role="alert">
+                            <p class="font-bold">Error</p>
+                            <p>
+                                <%= error %>
+                            </p>
+                        </div>
+                        <% } %>
+                            <% if (typeof success !=='undefined' && success.length> 0) { %>
+                                <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm"
+                                    role="alert">
+                                    <p class="font-bold">Success</p>
+                                    <p>
+                                        <%= success %>
+                                    </p>
+                                </div>
+                                <% } %>
+
+                                    <div class="md:grid md:grid-cols-12 md:gap-6">
+                                        <!-- Sidebar Navigation -->
+                                        <div class="md:col-span-3 mb-6 md:mb-0">
+                                            <div
+                                                class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 sticky top-24 border border-gray-100 dark:border-slate-800">
+                                                <div
+                                                    class="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-100 dark:border-slate-800">
+                                                    <div class="relative group">
+                                                        <div
+                                                            class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold overflow-hidden border-2 border-transparent group-hover:border-primary transition-all">
+                                                            <% if (user.avatar) { %>
+                                                                <img src="<%= user.avatar %>" alt="Avatar"
+                                                                    class="w-full h-full object-cover">
+                                                                <% } else { %>
+                                                                    <%= user.full_name.charAt(0).toUpperCase() %>
+                                                                        <% } %>
+                                                        </div>
+                                                        <label for="avatar-input"
+                                                            class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                                            <i class="fas fa-camera text-white text-sm"></i>
+                                                        </label>
+                                                        <form id="avatar-form" action="/profile/avatar" method="POST"
+                                                            enctype="multipart/form-data" class="hidden">
+                                                            <input type="file" name="avatar" id="avatar-input"
+                                                                accept="image/*"
+                                                                onchange="document.getElementById('avatar-form').submit()">
+                                                        </form>
+                                                    </div>
+                                                    <div>
+                                                        <h2 class="font-bold text-lg text-dark dark:text-white">
+                                                            <%= user.full_name %>
+                                                        </h2>
+                                                        <p class="text-sm text-gray-500 truncate max-w-[150px]">
+                                                            <%= user.email %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <nav class="space-y-1">
+                                                    <button onclick="showTab('info')" id="nav-info"
+                                                        class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors bg-primary/5 text-primary">
+                                                        <i class="fas fa-user-circle w-5"></i>
+                                                        <span>Personal Info</span>
+                                                    </button>
+                                                    <button onclick="showTab('orders')" id="nav-orders"
+                                                        class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                                        <i class="fas fa-box w-5"></i>
+                                                        <span>My Orders</span>
+                                                    </button>
+                                                    <button onclick="showTab('prescriptions')" id="nav-prescriptions"
+                                                        class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                                        <i class="fas fa-file-medical w-5"></i>
+                                                        <span>Prescriptions</span>
+                                                    </button>
+                                                    <button onclick="showTab('addresses')" id="nav-addresses"
+                                                        class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                                        <i class="fas fa-map-marker-alt w-5"></i>
+                                                        <span>Addresses</span>
+                                                    </button>
+                                                    <button onclick="showTab('security')" id="nav-security"
+                                                        class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                                        <i class="fas fa-lock w-5"></i>
+                                                        <span>Security</span>
+                                                    </button>
+                                                    <div
+                                                        class="pt-4 mt-4 border-t border-gray-100 dark:border-slate-800">
+                                                        <a href="/auth/logout"
+                                                            class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors">
+                                                            <i class="fas fa-sign-out-alt w-5"></i>
+                                                            <span>Log Out</span>
+                                                        </a>
+                                                    </div>
+                                                </nav>
+                                            </div>
+                                        </div>
+
+                                        <!-- Main Content Area -->
+                                        <div class="md:col-span-9 space-y-6">
+
+                                            <!-- TAB: Personal Info -->
+                                            <div id="tab-info"
+                                                class="tab-content bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                                                <h2 class="text-2xl font-bold text-dark dark:text-white mb-6">Personal
+                                                    Information</h2>
+                                                <form action="/profile/update" method="POST">
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full
+                                                                Name</label>
+                                                            <div class="relative">
+                                                                <div
+                                                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                    <i class="fas fa-user text-gray-400"></i>
+                                                                </div>
+                                                                <input type="text" name="full_name"
+                                                                    value="<%= user.full_name %>" required
+                                                                    class="pl-10 block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-dark dark:text-white focus:ring-primary focus:border-primary sm:text-sm py-2.5">
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email
+                                                                Address</label>
+                                                            <div class="relative">
+                                                                <div
+                                                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                    <i class="fas fa-envelope text-gray-400"></i>
+                                                                </div>
+                                                                <input type="email" value="<%= user.email %>" disabled
+                                                                    class="pl-10 block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-500 cursor-not-allowed sm:text-sm py-2.5">
+                                                            </div>
+                                                            <p class="mt-1 text-xs text-gray-400">Email cannot be
+                                                                changed.</p>
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone
+                                                                Number</label>
+                                                            <div class="relative">
+                                                                <div
+                                                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                    <i class="fas fa-phone text-gray-400"></i>
+                                                                </div>
+                                                                <input type="tel" name="phone"
+                                                                    value="<%= user.phone || '' %>"
+                                                                    placeholder="+1 (555) 000-0000"
+                                                                    class="pl-10 block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-dark dark:text-white focus:ring-primary focus:border-primary sm:text-sm py-2.5">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-8 flex justify-end">
+                                                        <button type="submit"
+                                                            class="bg-primary hover:bg-blue-800 text-white font-bold py-2.5 px-6 rounded-lg transition-colors shadow-md">
+                                                            Save Changes
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                            <!-- TAB: Orders -->
+                                            <div id="tab-orders"
+                                                class="tab-content hidden bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                                                <h2 class="text-2xl font-bold text-dark dark:text-white mb-6">Order
+                                                    History</h2>
+
+                                                <% if (orders && orders.length> 0) { %>
+                                                    <div class="overflow-x-auto">
+                                                        <table
+                                                            class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                                            <thead class="bg-gray-50 dark:bg-slate-800">
+                                                                <tr>
+                                                                    <th scope="col"
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Order ID</th>
+                                                                    <th scope="col"
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Date</th>
+                                                                    <th scope="col"
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Status</th>
+                                                                    <th scope="col"
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Total</th>
+                                                                    <th scope="col"
+                                                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Action</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody
+                                                                class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
+                                                                <% orders.forEach(order=> { %>
+                                                                    <tr>
+                                                                        <td
+                                                                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                                                                            #<%= order.order_uid ||
+                                                                                order.id.substring(0,8) %>
+                                                                        </td>
+                                                                        <td
+                                                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                                            <%= new
+                                                                                Date(order.created_at).toLocaleDateString()
+                                                                                %>
+                                                                        </td>
+                                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                                            <span
+                                                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= order.status === 'completed' ? 'bg-green-100 text-green-800' : order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : (order.status === 'cancelled' || order.status === 'canceled') ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800' %>">
+                                                                                <%= order.status.charAt(0).toUpperCase()
+                                                                                    + order.status.slice(1) %>
+                                                                            </span>
+                                                                        </td>
+                                                                        <td
+                                                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                                            $<%= order.total_price %>
+                                                                        </td>
+                                                                        <td
+                                                                            class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                            <a href="/orders/<%= order.id %>"
+                                                                                class="text-primary hover:text-blue-900 border border-primary/20 px-3 py-1 rounded-lg text-xs hover:bg-blue-50 transition-colors">
+                                                                                View / Invoice
+                                                                            </a>
+                                                                            <% if (order.status==='completed' ) { %>
+                                                                                <!-- Placeholder for Return Button logic -->
+                                                                                <span
+                                                                                    class="text-gray-300 mx-1">|</span>
+                                                                                <a href="/orders/<%= order.id %>/return"
+                                                                                    class="text-gray-500 hover:text-red-500 text-xs">Return</a>
+                                                                                <% } %>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }); %>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+
+                                                    <!-- Pagination Controls -->
+                                                    <% if (pagination && pagination.pages> 1) { %>
+                                                        <div class="flex justify-center items-center space-x-2 mt-6">
+                                                            <% if (pagination.current> 1) { %>
+                                                                <a href="/profile?page=<%= pagination.current - 1 %>#orders"
+                                                                    class="px-3 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                                    &larr; Prev
+                                                                </a>
+                                                                <% } %>
+
+                                                                    <span class="text-sm text-gray-500">
+                                                                        Page <%= pagination.current %> of <%=
+                                                                                pagination.pages %>
+                                                                    </span>
+
+                                                                    <% if (pagination.current < pagination.pages) { %>
+                                                                        <a href="/profile?page=<%= pagination.current + 1 %>#orders"
+                                                                            class="px-3 py-1 bg-gray-100 dark:bg-slate-800 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                                            Next &rarr;
+                                                                        </a>
+                                                                        <% } %>
+                                                        </div>
+                                                        <% } %>
+
+                                                            <% } else { %>
+                                                                <div class="text-center py-12">
+                                                                    <div
+                                                                        class="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                                        <i
+                                                                            class="fas fa-shopping-bag text-gray-300 text-2xl"></i>
+                                                                    </div>
+                                                                    <h3
+                                                                        class="text-lg font-medium text-gray-900 dark:text-white">
+                                                                        No orders yet</h3>
+                                                                    <p class="mt-1 text-sm text-gray-500">When you place
+                                                                        orders,
+                                                                        they will appear here.</p>
+                                                                    <div class="mt-6">
+                                                                        <a href="/#medicines"
+                                                                            class="text-primary hover:text-blue-800 font-medium">Start
+                                                                            Shopping &rarr;</a>
+                                                                    </div>
+                                                                </div>
+                                                                <% } %>
+                                            </div>
+
+                                            <!-- TAB: Prescriptions -->
+                                            <div id="tab-prescriptions"
+                                                class="tab-content hidden bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                                                <div class="flex justify-between items-center mb-6">
+                                                    <h2 class="text-2xl font-bold text-dark dark:text-white">my
+                                                        Prescriptions</h2>
+                                                    <a href="/prescription/upload"
+                                                        class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors">
+                                                        <i class="fas fa-upload mr-1"></i> Upload New
+                                                    </a>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    <% if (prescriptions && prescriptions.length> 0) { %>
+                                                        <% prescriptions.forEach(rx=> { %>
+                                                            <div
+                                                                class="border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-800 hover:shadow-lg transition-shadow">
+                                                                <div
+                                                                    class="h-40 bg-gray-100 dark:bg-slate-700 relative group overflow-hidden">
+                                                                    <% if (rx.image_url) { %>
+                                                                        <img src="<%= rx.image_url %>"
+                                                                            alt="Prescription"
+                                                                            class="w-full h-full object-cover">
+                                                                        <% } else { %>
+                                                                            <div
+                                                                                class="flex items-center justify-center h-full text-gray-300">
+                                                                                <i
+                                                                                    class="fas fa-file-image text-3xl"></i>
+                                                                            </div>
+                                                                            <% } %>
+                                                                </div>
+                                                                <div class="p-4">
+                                                                    <div class="flex justify-between items-start mb-2">
+                                                                        <span
+                                                                            class="px-2 py-1 text-[10px] uppercase font-bold rounded-full <%= rx.status === 'approved' ? 'bg-green-100 text-green-700' : rx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700' %>">
+                                                                            <%= rx.status %>
+                                                                        </span>
+                                                                        <span class="text-xs text-gray-400">
+                                                                            <%= rx.timeAgo %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <p
+                                                                        class="text-sm font-bold text-dark dark:text-white mb-1">
+                                                                        Rx #<%= rx.id.substring(0,8) %>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <% }); %>
+                                                                <% } else { %>
+                                                                    <div
+                                                                        class="col-span-full text-center py-12 text-gray-500">
+                                                                        <div
+                                                                            class="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                                            <i
+                                                                                class="fas fa-file-medical text-gray-300 text-2xl"></i>
+                                                                        </div>
+                                                                        <p>No prescriptions uploaded yet.</p>
+                                                                    </div>
+                                                                    <% } %>
+                                                </div>
+                                            </div>
+
+                                            <!-- TAB: Addresses -->
+                                            <div id="tab-addresses"
+                                                class="tab-content hidden bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                                                <div class="flex justify-between items-center mb-6">
+                                                    <h2 class="text-2xl font-bold text-dark dark:text-white">Saved
+                                                        Addresses</h2>
+                                                    <button onclick="toggleAddressForm()"
+                                                        class="text-sm bg-gray-50 hover:bg-gray-100 text-primary border border-gray-200 rounded-lg px-4 py-2 transition-colors">
+                                                        <i class="fas fa-plus mr-1"></i> Add New
+                                                    </button>
+                                                </div>
+
+                                                <!-- Add Address Form (Hidden) -->
+                                                <div id="add-address-form"
+                                                    class="hidden mb-8 bg-gray-50 dark:bg-slate-800/50 p-6 rounded-xl border border-gray-200 dark:border-slate-700 animate-fade-in-down">
+                                                    <h3 class="font-bold text-lg mb-4 text-dark dark:text-white">New
+                                                        Address details</h3>
+                                                    <form action="/profile/address/add" method="POST">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                            <div>
+                                                                <label
+                                                                    class="block text-xs font-bold text-gray-500 uppercase mb-1">Label</label>
+                                                                <input type="text" name="label"
+                                                                    placeholder="e.g. Home, Office" required
+                                                                    class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-sm py-2">
+                                                            </div>
+                                                            <div>
+                                                                <label
+                                                                    class="block text-xs font-bold text-gray-500 uppercase mb-1">City</label>
+                                                                <input type="text" name="city" required
+                                                                    class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-sm py-2">
+                                                            </div>
+                                                            <div class="md:col-span-2">
+                                                                <label
+                                                                    class="block text-xs font-bold text-gray-500 uppercase mb-1">Street
+                                                                    Address</label>
+                                                                <input type="text" name="street" required
+                                                                    class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-sm py-2">
+                                                            </div>
+                                                            <div class="md:col-span-2">
+                                                                <label
+                                                                    class="block text-xs font-bold text-gray-500 uppercase mb-1">Additional
+                                                                    Details</label>
+                                                                <textarea name="details" rows="2"
+                                                                    placeholder="Building, Apt, Instructions..."
+                                                                    class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-sm py-2"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-center mb-4">
+                                                            <input type="checkbox" name="is_default" id="is_default"
+                                                                class="rounded text-primary focus:ring-primary">
+                                                            <label for="is_default"
+                                                                class="ml-2 text-sm text-gray-700 dark:text-gray-300">Set
+                                                                as default address</label>
+                                                        </div>
+                                                        <div class="flex justify-end gap-3">
+                                                            <button type="button" onclick="toggleAddressForm()"
+                                                                class="text-sm text-gray-500 hover:text-gray-700 px-4 py-2">Cancel</button>
+                                                            <button type="submit"
+                                                                class="bg-primary text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-blue-800">Save
+                                                                Address</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+
+                                                <!-- Address List -->
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <% if (addresses && addresses.length> 0) { %>
+                                                        <% addresses.forEach(addr=> { %>
+                                                            <div
+                                                                class="border <%= addr.is_default ? 'border-primary ring-1 ring-primary ring-opacity-50' : 'border-gray-200 dark:border-slate-700' %> rounded-xl p-4 relative group hover:shadow-md transition-shadow bg-white dark:bg-slate-800">
+                                                                <div class="flex justify-between items-start mb-2">
+                                                                    <div class="flex items-center gap-2">
+                                                                        <i
+                                                                            class="fas <%= addr.label.toLowerCase() === 'work' ? 'fa-briefcase' : 'fa-home' %> text-gray-400"></i>
+                                                                        <span
+                                                                            class="font-bold text-dark dark:text-white">
+                                                                            <%= addr.label %>
+                                                                        </span>
+                                                                        <% if (addr.is_default) { %>
+                                                                            <span
+                                                                                class="bg-primary/10 text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Default</span>
+                                                                            <% } %>
+                                                                    </div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <% if (!addr.is_default) { %>
+                                                                            <button
+                                                                                onclick="setDefaultAddress('<%= addr.id %>', this)"
+                                                                                id="btn-default-<%= addr.id %>"
+                                                                                class="text-gray-400 hover:text-primary transition-colors text-sm"
+                                                                                title="Set as Default">
+                                                                                <i class="fas fa-star"></i>
+                                                                            </button>
+                                                                            <% } %>
+                                                                                <form
+                                                                                    action="/profile/address/<%= addr.id %>/delete"
+                                                                                    method="POST"
+                                                                                    onsubmit="return confirm('Are you sure?')">
+                                                                                    <button type="submit"
+                                                                                        class="text-gray-400 hover:text-red-500 transition-colors">
+                                                                                        <i class="fas fa-trash-alt"></i>
+                                                                                    </button>
+                                                                                </form>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
+                                                                    <p>
+                                                                        <%= addr.street %>
+                                                                    </p>
+                                                                    <p>
+                                                                        <%= addr.city %>
+                                                                    </p>
+                                                                    <% if (addr.details) { %>
+                                                                        <p class="text-xs text-gray-400 mt-1 italic">
+                                                                            <%= addr.details %>
+                                                                        </p>
+                                                                        <% } %>
+                                                                </div>
+                                                            </div>
+                                                            <% }); %>
+                                                                <% } else { %>
+                                                                    <div
+                                                                        class="md:col-span-2 text-center py-8 text-gray-500">
+                                                                        <p>No addresses saved yet.</p>
+                                                                    </div>
+                                                                    <% } %>
+                                                </div>
+                                            </div>
+
+                                            <!-- TAB: Security -->
+                                            <div id="tab-security"
+                                                class="tab-content hidden bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                                                <h2 class="text-2xl font-bold text-dark dark:text-white mb-6">Security
+                                                    Settings</h2>
+
+                                                <form action="/profile/password" method="POST" class="max-w-md">
+                                                    <div class="space-y-4">
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current
+                                                                Password</label>
+                                                            <input type="password" name="current_password" required
+                                                                class="block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 py-2.5 px-4 focus:ring-primary focus:border-primary">
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New
+                                                                Password</label>
+                                                            <input type="password" name="new_password" required
+                                                                class="block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 py-2.5 px-4 focus:ring-primary focus:border-primary">
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm
+                                                                New Password</label>
+                                                            <input type="password" name="confirm_password" required
+                                                                class="block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 py-2.5 px-4 focus:ring-primary focus:border-primary">
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-8">
+                                                        <button type="submit"
+                                                            class="bg-gray-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white font-bold py-2.5 px-6 rounded-lg transition-colors shadow-md">
+                                                            Update Password
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                </div>
+            </div>
+
+            <%- include('partials/footer') %>
+
+                <script>
+                    function showTab(tabName) {
+                        // Hide all tabs
+                        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+                        // Show current tab
+                        document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+                        // Update styling
+                        document.querySelectorAll('nav button').forEach(el => {
+                            el.classList.remove('bg-primary/5', 'text-primary');
+                            el.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-slate-800');
+                        });
+
+                        const activeBtn = document.getElementById('nav-' + tabName);
+                        activeBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-slate-800');
+                        activeBtn.classList.add('bg-primary/5', 'text-primary');
+                    }
+
+                    function setDefaultAddress(id, btn) {
+                        const icon = btn.querySelector('i');
+                        icon.classList.remove('fa-star');
+                        icon.classList.add('fa-spinner', 'fa-spin');
+
+                        fetch(`/profile/address/${id}/default`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // 1. Reset previous default
+                                    const prevDefaultCard = document.querySelector('.border-primary.ring-1.ring-primary');
+                                    if (prevDefaultCard) {
+                                        prevDefaultCard.classList.remove('border-primary', 'ring-1', 'ring-primary', 'ring-opacity-50');
+                                        prevDefaultCard.classList.add('border-gray-200', 'dark:border-slate-700');
+
+                                        const badge = prevDefaultCard.querySelector('.bg-primary\\/10');
+                                        if (badge) badge.remove();
+
+                                        // Add back button
+                                        const actionContainer = prevDefaultCard.querySelector('.flex.items-center.gap-2') || prevDefaultCard.querySelector('form').parentNode;
+                                        const deleteForm = prevDefaultCard.querySelector('form[action*="/delete"]');
+                                        if (deleteForm && actionContainer) {
+                                            const actionUrl = deleteForm.getAttribute('action');
+                                            const prevId = actionUrl.split('/address/')[1].split('/delete')[0];
+
+                                            const newBtn = document.createElement('button');
+                                            newBtn.onclick = function () { setDefaultAddress(prevId, this); };
+                                            newBtn.id = 'btn-default-' + prevId;
+                                            newBtn.className = 'text-gray-400 hover:text-primary transition-colors text-sm';
+                                            newBtn.title = 'Set as Default';
+                                            newBtn.innerHTML = '<i class="fas fa-star"></i>';
+
+                                            if (actionContainer.firstChild) {
+                                                actionContainer.insertBefore(newBtn, actionContainer.firstChild);
+                                            } else {
+                                                actionContainer.appendChild(newBtn);
+                                            }
+                                        }
+                                    }
+
+                                    // 2. Highlight new default
+                                    const newDefaultCard = btn.closest('.border');
+                                    if (newDefaultCard) {
+                                        newDefaultCard.classList.remove('border-gray-200', 'dark:border-slate-700');
+                                        newDefaultCard.classList.add('border-primary', 'ring-1', 'ring-primary', 'ring-opacity-50');
+
+                                        const topHeader = newDefaultCard.querySelector('.flex.justify-between > .flex.items-center.gap-2');
+                                        if (topHeader) {
+                                            const badge = document.createElement('span');
+                                            badge.className = 'bg-primary/10 text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full';
+                                            badge.innerText = 'Default';
+                                            topHeader.appendChild(badge);
+                                        }
+                                        btn.remove();
+                                    }
+                                } else {
+                                    alert('Failed: ' + data.error);
+                                    icon.classList.add('fa-star');
+                                    icon.classList.remove('fa-spinner', 'fa-spin');
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                alert('Network error');
+                                icon.classList.add('fa-star');
+                                icon.classList.remove('fa-spinner', 'fa-spin');
+                            });
+                    }
+
+                    function toggleAddressForm() {
+                        const form = document.getElementById('add-address-form');
+                        if (form.classList.contains('hidden')) {
+                            form.classList.remove('hidden');
+                        } else {
+                            form.classList.add('hidden');
+                        }
+                    }
+
+                    // Check URL hash for direct linking to tabs (e.g. /profile#orders)
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const hash = window.location.hash.replace('#', '');
+                        if (['info', 'orders', 'prescriptions', 'addresses', 'security'].includes(hash)) {
+                            showTab(hash);
+                        }
+                    });
+                </script>
+    </body>
+
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<%- include('partials/head') %>
+
+    <body class="bg-bg text-dark font-sans antialiased overflow-x-hidden selection:bg-primary selection:text-white">
+
+        <%- include('partials/header') %>
+
+            <!-- Page Header -->
+            <div class="bg-teal-700 text-white py-12 md:py-20 relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    <h1 class="text-3xl md:text-5xl font-extrabold mb-4">Return & Refund Policy</h1>
+                    <p class="text-teal-50 text-sm md:text-base max-w-2xl mx-auto">We want you to be completely
+                        satisfied with your purchase. Here is how we handle returns and refunds.</p>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <section class="py-16 bg-bg dark:bg-dark transition-colors duration-300">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div
+                        class="max-w-4xl mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-slate-800">
+
+                        <div class="space-y-12">
+
+                            <!-- Overview Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div
+                                    class="bg-green-50 dark:bg-green-900/20 p-6 rounded-2xl text-center border border-green-100 dark:border-green-800">
+                                    <i
+                                        class="fas fa-calendar-check text-3xl text-green-600 dark:text-green-400 mb-3"></i>
+                                    <h3 class="font-bold text-dark dark:text-white mb-1">30 Days</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Return window for non-medicine
+                                        items</p>
+                                </div>
+                                <div
+                                    class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl text-center border border-blue-100 dark:border-blue-800">
+                                    <i class="fas fa-box-open text-3xl text-blue-600 dark:text-blue-400 mb-3"></i>
+                                    <h3 class="font-bold text-dark dark:text-white mb-1">Damaged Items</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Instant replacement or refund
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl text-center border border-red-100 dark:border-red-800">
+                                    <i class="fas fa-ban text-3xl text-red-600 dark:text-red-400 mb-3"></i>
+                                    <h3 class="font-bold text-dark dark:text-white mb-1">Medicines</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Non-returnable due to safety</p>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Sections -->
+                            <div class="space-y-8 text-gray-600 dark:text-gray-400 leading-relaxed">
+
+                                <!-- Medicines -->
+                                <div>
+                                    <h2 class="text-xl font-bold text-dark dark:text-white mb-3">Return of Medicines
+                                    </h2>
+                                    <p class="mb-2">Due to health and safety regulations, <strong>we cannot accept
+                                            returns on prescription medications or opened over-the-counter
+                                            medicines</strong> once they have left our pharmacy, even if they are
+                                        unused.</p>
+                                    <p>However, if we made an error filling your prescription, please contact us
+                                        immediately. We will rectify the mistake at no cost to you.</p>
+                                </div>
+
+                                <!-- General Items -->
+                                <div>
+                                    <h2 class="text-xl font-bold text-dark dark:text-white mb-3">General Merchandise
+                                    </h2>
+                                    <p>For non-medical items (e.g., beauty products, medical devices, supplements), we
+                                        accept returns within <strong>30 days of purchase</strong> provided that:</p>
+                                    <ul class="list-disc list-outside ml-5 mt-2 space-y-1">
+                                        <li>The item is unopened and in its original packaging.</li>
+                                        <li>You have the receipt or proof of purchase.</li>
+                                        <li>The item is not marked as "Final Sale".</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Damaged Items -->
+                                <div>
+                                    <h2 class="text-xl font-bold text-dark dark:text-white mb-3">Damaged or Defective
+                                        Items</h2>
+                                    <p>If you receive a damaged or defective item, please notify us within 48 hours of
+                                        delivery. Please take a photo of the damaged product and email it to
+                                        support@medicare.com. We will arrange for a replacement or a full refund.</p>
+                                </div>
+
+                                <!-- Refund Process -->
+                                <div>
+                                    <h2 class="text-xl font-bold text-dark dark:text-white mb-3">Refund Process</h2>
+                                    <p>Once your return is received and inspected, we will send you an email to notify
+                                        you that we have received your returned item. If approved, your refund will be
+                                        processed, and a credit will automatically be applied to your credit card or
+                                        original method of payment within 5-7 business days.</p>
+                                </div>
+
+                            </div>
+
+                            <!-- CTA -->
+                            <div class="mt-12 bg-gray-50 dark:bg-slate-800 rounded-2xl p-8 text-center">
+                                <h3 class="text-lg font-bold text-dark dark:text-white mb-2">Need to start a return?
+                                </h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">Our support team is here to
+                                    guide you through the process.</p>
+                                <a href="/contact"
+                                    class="inline-block bg-primary hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:-translate-y-1 shadow-lg">
+                                    Contact Support
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <%- include('partials/footer') %>
+
+    </body>
+
+</html>

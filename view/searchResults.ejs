@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<%- include('partials/head') %>
+
+    <body class="bg-bg text-dark font-sans antialiased overflow-x-hidden transition-colors duration-300 dark:bg-dark">
+
+        <%- include('partials/header.ejs') %>
+
+            <!-- Search Header -->
+            <section
+                class="bg-white dark:bg-night py-12 border-b border-gray-100 dark:border-slate-800 transition-colors duration-300">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <nav class="flex mb-4 text-sm font-medium text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                            <li class="inline-flex items-center">
+                                <a href="/" class="hover:text-primary transition-colors">Home</a>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <i class="fas fa-chevron-right text-xs mx-2"></i>
+                                    <span class="text-gray-400">Search</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                    <h1 class="text-3xl font-extrabold text-dark dark:text-white">
+                        Search results for "<span class="text-primary dark:text-blue-400">
+                            <%= query %>
+                        </span>"
+                    </h1>
+                    <p class="mt-2 text-gray-500 dark:text-gray-400">
+                        Found <%= medicines.length %> items matching your query.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="py-16 min-h-[60vh]">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <% if (medicines.length===0) { %>
+                        <div class="text-center py-20 flex flex-col items-center">
+                            <div
+                                class="w-32 h-32 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                                <i class="fas fa-search text-5xl text-gray-200 dark:text-slate-700"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-dark dark:text-white mb-2">No results found</h2>
+                            <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
+                                Sorry, we couldn't find any medicines matching "<%= query %>". Try checking the spelling
+                                    or use more general terms.
+                            </p>
+                            <a href="/"
+                                class="bg-primary hover:bg-blue-800 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">
+                                Go Back Home
+                            </a>
+                        </div>
+                        <% } else { %>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                <% medicines.forEach(function(med) { %>
+                                    <div
+                                        class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.quantity !== 'undefined' && med.quantity === 0) ? 'opacity-60 grayscale' : '' %>">
+
+                                        <% if (typeof med.quantity !=='undefined' && med.quantity===0) { %>
+                                            <div
+                                                class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                                Out of Stock
+                                            </div>
+                                            <% } %>
+
+                                                <a href="/products/<%= med.id %>" class="block">
+                                                    <div
+                                                        class="h-40 bg-gray-50 dark:bg-slate-700/50 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden group/med">
+                                                        <i
+                                                            class="fas <%= med.icon || 'fa-pills' %> text-6xl text-gray-200 dark:text-slate-600"></i>
+                                                        <div
+                                                            class="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover/med:opacity-100 transition-opacity">
+                                                        </div>
+                                                    </div>
+                                                </a>
+
+                                                <h3
+                                                    class="font-bold text-lg text-dark dark:text-gray-100 mb-1 line-clamp-1">
+                                                    <%= med.name %>
+                                                </h3>
+                                                <p
+                                                    class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 min-h-[3rem]">
+                                                    <%= med.description %>
+                                                </p>
+
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-xl font-bold text-primary dark:text-blue-400">$<%=
+                                                            med.price %></span>
+
+                                                    <% if (typeof med.quantity !=='undefined' && med.quantity===0) { %>
+                                                        <button disabled
+                                                            class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                        <% } else { %>
+                                                            <button
+                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>')"
+                                                                class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 add-btn">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                            <% } %>
+                                                </div>
+                                    </div>
+                                    <% }); %>
+                            </div>
+                            <% } %>
+                </div>
+            </section>
+
+            <%- include('partials/footer') %>
+
+                <!-- Anime.js for results -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        anime({
+                            targets: '.med-card',
+                            opacity: [0, 1],
+                            translateY: [20, 0],
+                            delay: anime.stagger(100),
+                            easing: 'easeOutCubic',
+                            duration: 600
+                        });
+                    });
+
+                    // Reuse addToCart function from home if needed, or ensure it's in global scope
+                    // Usually it's in home.ejs footer, but it should probably be in a common JS file.
+                    // Assuming it works like in home.ejs.
+                </script>
+    </body>
+
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<%- include('../partials/head') %>
+
+    <body class="bg-bg text-dark font-sans antialiased overflow-x-hidden selection:bg-primary selection:text-white">
+
+        <%- include('../partials/header') %>
+
+            <!-- Page Header -->
+            <div class="bg-gray-100 dark:bg-slate-900 py-12">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center gap-4 mb-4 text-sm text-gray-500 dark:text-gray-400">
+                        <a href="/profile#orders" class="hover:text-primary transition-colors">My Orders</a>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                        <span>Order #<%= order.order_uid || order.id.substring(0,8) %></span>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                        <span>Return Request</span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-dark dark:text-white">Request a Return</h1>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div
+                    class="max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100 dark:border-slate-800">
+
+                    <% if (typeof error !=='undefined' && error.length> 0) { %>
+                        <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm"
+                            role="alert">
+                            <p class="font-bold">Error</p>
+                            <p>
+                                <%= error %>
+                            </p>
+                        </div>
+                        <% } %>
+
+                            <div
+                                class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                                <p class="text-sm text-blue-700 dark:text-blue-300">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Please select the items you wish to return. Note that open medicines cannot be
+                                    returned for safety reasons.
+                                </p>
+                            </div>
+
+                            <form action="/orders/return" method="POST">
+                                <input type="hidden" name="order_id" value="<%= order.id %>">
+
+                                <div class="space-y-6 mb-8">
+                                    <h3
+                                        class="font-bold text-lg text-dark dark:text-white border-b border-gray-100 dark:border-slate-800 pb-2">
+                                        Select Items</h3>
+
+                                    <% order.items.forEach(item=> { %>
+                                        <div
+                                            class="flex items-center gap-4 p-4 border rounded-xl hover:shadow-md transition-shadow dark:border-slate-700">
+                                            <!-- Checkbox logic: we only process items with quantity > 0 -->
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-dark dark:text-white">
+                                                    <%= item.name %>
+                                                </h4>
+                                                <p class="text-sm text-gray-500">Purchased Qty: <%= item.qty %> | Price:
+                                                        $<%= item.price %>
+                                                </p>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <label for="qty_<%= item.id %>"
+                                                    class="text-xs font-bold uppercase text-gray-500">Return
+                                                    Qty:</label>
+                                                <select name="qty_<%= item.id %>" id="qty_<%= item.id %>"
+                                                    class="rounded-lg border-gray-300 dark:bg-slate-800 dark:border-slate-600 text-sm py-1.5 focus:ring-primary focus:border-primary">
+                                                    <option value="0">0 (Keep)</option>
+                                                    <% for(let i=1; i<=item.qty; i++) { %>
+                                                        <option value="<%= i %>">
+                                                            <%= i %>
+                                                        </option>
+                                                        <% } %>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                                </div>
+
+                                <div class="mb-8">
+                                    <label class="block font-bold text-dark dark:text-white mb-2">Reason for
+                                        Return</label>
+                                    <textarea name="reason" required rows="4"
+                                        placeholder="Please describe why you are returning these items..."
+                                        class="w-full rounded-xl border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary p-4"></textarea>
+                                </div>
+
+                                <div class="flex justify-end gap-4">
+                                    <a href="/profile"
+                                        class="px-6 py-3 text-gray-600 dark:text-gray-400 font-bold hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors">Cancel</a>
+                                    <button type="submit"
+                                        class="px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg active:scale-95">
+                                        Submit Request
+                                    </button>
+                                </div>
+                            </form>
+
+                </div>
+            </div>
+
+            <%- include('../partials/footer') %>
+    </body>
+
+</html>
