@@ -173,7 +173,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>')"
+                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -254,7 +254,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>')"
+                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-white dark:bg-white/10 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -336,7 +336,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>')"
+                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-teal-50 dark:bg-teal-900/30 text-secondary dark:text-teal-400 flex items-center justify-center hover:bg-secondary hover:text-white dark:hover:bg-teal-500 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -403,7 +403,7 @@
                                             <span class="text-xl font-bold text-secondary dark:text-teal-400">$<%=
                                                     med.price %></span>
                                             <button
-                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>')"
+                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                 class="w-10 h-10 rounded-full bg-teal-50 text-secondary flex items-center justify-center hover:bg-secondary hover:text-white transition-all duration-300 add-btn">
 
                                                 <i class="fas fa-plus"></i>
@@ -629,28 +629,31 @@
                             let cart = JSON.parse(sessionStorage.getItem('guestCart')) || [];
 
                             function updateCartUI() {
-                                const count = cart.length;
-                                const badge = document.getElementById('header-cart-count');
-                                if (badge) {
-                                    badge.innerText = count;
-                                    anime({
-                                        targets: badge,
-                                        scale: [1, 1.5, 1],
-                                        duration: 400,
-                                        easing: 'easeOutElastic(1, .8)'
-                                    });
-                                }
+                                if (window.updateCartCount) window.updateCartCount();
                             }
 
-                            function addToCart(id, name, price) {
+                            function addToCart(id, name, price, stock = 9999) {
+                                const qty = 1; // Default to 1 from home page
+
                                 const existingItem = cart.find(item => item.id === id);
+                                const currentQty = existingItem ? (existingItem.qty || 1) : 0;
+
+                                if (currentQty + qty > stock) {
+                                    alert(`Sorry, we only have ${stock} items left in stock.`);
+                                    return;
+                                }
+
                                 if (existingItem) {
                                     existingItem.qty = (existingItem.qty || 1) + 1;
                                 } else {
-                                    cart.push({ id, name, price, qty: 1 });
+                                    cart.push({ id, name, price, qty: 1, maxStock: stock });
                                 }
                                 sessionStorage.setItem('guestCart', JSON.stringify(cart));
                                 updateCartUI();
+
+                                // Dispatch for header update
+                                window.dispatchEvent(new Event('storage'));
+
                                 console.log(`Added ${name} to cart`);
                             }
 

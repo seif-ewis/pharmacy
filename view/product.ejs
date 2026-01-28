@@ -185,7 +185,7 @@
 
                             <% if (product.quantity> 0) { %>
                                 <button
-                                    onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price %>)"
+                                    onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price %>, <%= product.quantity %>)"
                                     class="flex-1 bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
                                     <i class="fas fa-shopping-cart group-hover:animate-bounce"></i>
                                     Add to Cart
@@ -348,17 +348,24 @@
                 // Since home.ejs script isn't loaded here, we recreate the logic compatible with the header cart.
 
                 // Load Cart Logic (simplified version of home.ejs logic)
-                function addToCart(id, name, price) {
+                function addToCart(id, name, price, stock = 9999) {
                     const qty = parseInt(document.getElementById('qty-input').value);
 
                     // Check session storage first (guest) or consistent storage
                     let cart = JSON.parse(sessionStorage.getItem('guestCart') || '[]');
 
                     const existingItem = cart.find(item => item.id === id);
+                    const currentQty = existingItem ? (existingItem.qty || 1) : 0;
+
+                    if (currentQty + qty > stock) {
+                        alert(`Sorry, we only have ${stock} items left in stock.`);
+                        return;
+                    }
+
                     if (existingItem) {
                         existingItem.qty = (existingItem.qty || 1) + qty;
                     } else {
-                        cart.push({ id, name, price, qty: qty });
+                        cart.push({ id, name, price, qty: qty, maxStock: stock });
                     }
 
                     sessionStorage.setItem('guestCart', JSON.stringify(cart));
