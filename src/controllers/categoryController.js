@@ -18,11 +18,23 @@ const CATEGORY_DISPLAY_NAMES = {
 
 const ITEMS_PER_PAGE = 12;
 
+// Helper to determine order clause
+const getOrderClause = (sort) => {
+    switch (sort) {
+        case 'price-low': return 'price ASC, id DESC';
+        case 'price-high': return 'price DESC, id DESC';
+        case 'name': return 'name ASC, id DESC';
+        case 'newest':
+        default: return 'created_at DESC, id DESC';
+    }
+};
+
 /**
  * Get category page (initial load)
  */
 export const getCategoryPage = async (req, res) => {
     const { slug } = req.params;
+    const { sort } = req.query; // Get sort param
 
     // Validate category
     const category = CATEGORY_MAP[slug];
@@ -31,12 +43,15 @@ export const getCategoryPage = async (req, res) => {
     }
 
     try {
+        const orderBy = getOrderClause(sort);
+
         // Get first page of products
+        // Using string interpolation for ORDER BY (safe here as values are controlled by switch)
         const result = await db.query(`
             SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
             FROM medicines
             WHERE category = $1
-            ORDER BY created_at DESC, id DESC
+            ORDER BY ${orderBy}
             LIMIT $2
         `, [category, ITEMS_PER_PAGE]);
 
@@ -45,14 +60,22 @@ export const getCategoryPage = async (req, res) => {
         // Determine if there are more products
         const hasMore = products.length === ITEMS_PER_PAGE;
 
-        // Get cursor for next page (last item's created_at + id)
+        // Get cursor for next page
+        // For simple cursor pagination with variable sorts, we need to encode the sort value too
+        // But for this MVP, let's rely on offset or simplified cursor if possible.
+        // To properly support cursor pagination with dynamic sorts, we'd need to emit the sort value in the cursor.
+        // For now, let's keep the cursor simple: using offset-like logic or just the last item's ID if we don't strictly ban duplicates.
+        // Actually, let's just use OFFSET based pagination for "Load More" to simplify dynamic sorting support 
+        // OR simply pass the full last item state.
+
+        // Let's stick to the current cursor implementation but adapt it for 'created_at' default.
+        // If sorting by price, the cursor logic becomes complex.
+        // HACK: For this fix, I'll switch to OFFSET for "Load More" if a sort is active, OR I will just disable infinite scroll for sorted views?
+        // Better: Let's simply return the offset as cursor.
+
         let nextCursor = null;
-        if (hasMore && products.length > 0) {
-            const lastItem = products[products.length - 1];
-            nextCursor = Buffer.from(JSON.stringify({
-                created_at: lastItem.created_at,
-                id: lastItem.id
-            })).toString('base64');
+        if (hasMore) {
+            nextCursor = ITEMS_PER_PAGE; // Simple numeric offset
         }
 
         // Get total count for display
@@ -64,6 +87,7 @@ export const getCategoryPage = async (req, res) => {
         res.render('category', {
             category: slug,
             categoryName: CATEGORY_DISPLAY_NAMES[category],
+            currentSort: sort || 'newest', // Pass current sort to view
             products: products.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -87,11 +111,11 @@ export const getCategoryPage = async (req, res) => {
 
 /**
  * API: Get more products (for infinite scroll)
- * Uses cursor-based pagination for consistent ordering
+ * Switching to OFFSET-based pagination for simplicity with sorting
  */
 export const getMoreProducts = async (req, res) => {
     const { slug } = req.params;
-    const { cursor } = req.query;
+    const { cursor, sort } = req.query; // Cursor is now an offset integer
 
     // Validate category
     const category = CATEGORY_MAP[slug];
@@ -100,51 +124,20 @@ export const getMoreProducts = async (req, res) => {
     }
 
     try {
-        let query;
-        let params;
+        const orderBy = getOrderClause(sort);
+        const offset = parseInt(cursor) || 0;
 
-        if (cursor) {
-            // Decode cursor
-            const cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString('utf8'));
+        const result = await db.query(`
+            SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
+            FROM medicines
+            WHERE category = $1
+            ORDER BY ${orderBy}
+            LIMIT $2 OFFSET $3
+        `, [category, ITEMS_PER_PAGE, offset]);
 
-            // Cursor-based pagination: get items AFTER the cursor position
-            // Using (created_at, id) tuple for stable ordering
-            query = `
-                SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
-                FROM medicines
-                WHERE category = $1
-                  AND (created_at, id) < ($2::timestamp, $3::uuid)
-                ORDER BY created_at DESC, id DESC
-                LIMIT $4
-            `;
-            params = [category, cursorData.created_at, cursorData.id, ITEMS_PER_PAGE];
-        } else {
-            // First page (no cursor)
-            query = `
-                SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
-                FROM medicines
-                WHERE category = $1
-                ORDER BY created_at DESC, id DESC
-                LIMIT $2
-            `;
-            params = [category, ITEMS_PER_PAGE];
-        }
-
-        const result = await db.query(query, params);
         const products = result.rows;
-
-        // Determine if there are more products
         const hasMore = products.length === ITEMS_PER_PAGE;
-
-        // Generate next cursor
-        let nextCursor = null;
-        if (hasMore && products.length > 0) {
-            const lastItem = products[products.length - 1];
-            nextCursor = Buffer.from(JSON.stringify({
-                created_at: lastItem.created_at,
-                id: lastItem.id
-            })).toString('base64');
-        }
+        const nextCursor = hasMore ? (offset + ITEMS_PER_PAGE) : null;
 
         res.json({
             success: true,

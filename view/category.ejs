@@ -98,7 +98,8 @@
                                             <div class="flex flex-col">
                                                 <span
                                                     class="text-lg md:text-xl font-bold text-primary dark:text-blue-400">$
-                                                    <%= med.price %></span>
+                                                    <%= med.price %>
+                                                </span>
                                                 <% if (med.originalPrice) { %>
                                                     <span class="text-[10px] text-red-400 line-through">$<%=
                                                             med.originalPrice %></span>
@@ -277,7 +278,12 @@
                         loadingIndicator.classList.remove('hidden');
 
                         try {
-                            const url = `/api/category/${category}/products${nextCursor ? `?cursor=${encodeURIComponent(nextCursor)}` : ''}`;
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const sort = urlParams.get('sort') || 'newest';
+
+                            // Adjust API call to include sort
+                            const url = `/api/category/${category}/products?cursor=${encodeURIComponent(nextCursor)}&sort=${sort}`;
+
                             const response = await fetch(url);
                             const data = await response.json();
 
@@ -330,10 +336,25 @@
                         observer.observe(loadingIndicator);
                     }
 
+                    function initSort() {
+                        const sortSelect = document.getElementById('sort-select');
+                        if (sortSelect) {
+                            const urlParams = new URLSearchParams(window.location.search);
+                            sortSelect.value = urlParams.get('sort') || 'newest';
+
+                            sortSelect.addEventListener('change', (e) => {
+                                const url = new URL(window.location.href);
+                                url.searchParams.set('sort', e.target.value);
+                                window.location.href = url.toString();
+                            });
+                        }
+                    }
+
                     // Initialize on page load
                     document.addEventListener('DOMContentLoaded', () => {
                         updateCartUI();
                         setupInfiniteScroll();
+                        initSort();
 
                         // Add button hover animation
                         document.querySelectorAll('.add-btn').forEach(btn => {
