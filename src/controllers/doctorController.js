@@ -223,9 +223,12 @@ export const getDashboardStats = async (req, res) => {
 export const getAllOrders = async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT o.*, u.full_name as user_name, u.email as user_email, u.phone as user_phone
+            SELECT o.*, u.full_name as user_name, u.email as user_email, u.phone as user_phone,
+            d.full_name as doctor_name
             FROM orders o 
             LEFT JOIN users u ON o.user_id = u.id 
+            LEFT JOIN shifts s ON o.shift_id = s.id
+            LEFT JOIN users d ON s.opened_by = d.id
             ORDER BY o.created_at DESC
         `);
 
@@ -265,9 +268,9 @@ export const getOrderItems = async (req, res) => {
 export const startShift = async (req, res) => {
     try {
         const doctorId = req.user.id;
-        const activeCheck = await db.query("SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open'", [doctorId]);
+        const activeCheck = await db.query("SELECT id FROM shifts WHERE status = 'open' LIMIT 1");
         if (activeCheck.rows.length > 0) {
-            req.flash('error', 'You already have an active shift.');
+            req.flash('error', 'Another shift is currently active. Please close it first.');
             return res.redirect('/doctor/dashboard');
         }
         const shiftRes = await db.query(

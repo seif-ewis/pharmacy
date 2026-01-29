@@ -2387,7 +2387,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                ${order.shift_id ? '<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-bold">📍 Shift Assigned</span>' : '<span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full text-xs font-bold">⏳ No Shift</span>'}
+                                ${order.shift_id ? `<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-bold" title="Shift ID: ${order.shift_id}">📍 ${order.doctor_name || 'Shift Assigned'}</span>` : '<span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full text-xs font-bold">⏳ Unassigned</span>'}
                                 <i class="fas fa-chevron-down text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}" id="chevron-${order.id}" style="${isExpanded ? 'transform: rotate(180deg);' : ''}"></i>
                             </div>
                         </div>
