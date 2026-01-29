@@ -36,7 +36,7 @@ export const saveMessage = async (userId, message) => {
         // 4. Update the chat's last_message_at timestamp
         await db.query(`UPDATE chats SET last_message_at = NOW() WHERE id = $1`, [chatId]);
 
-        return true;
+        return chatId;
     } catch (err) {
         console.error("Chat save error:", err);
         return false;

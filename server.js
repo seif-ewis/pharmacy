@@ -84,7 +84,11 @@ io.on("connection", (socket) => {
         console.log(`User connected: ${user.full_name} (${user.role})`);
 
         // Groups
-        if (user.role === 'pharmacist' || user.role === 'admin' || user.role === 'doctor') {
+        // Check roles array (populated by deserializer)
+        const roles = user.roles || [];
+        console.log(`User connected: ${user.full_name} [${roles.join(', ')}]`);
+
+        if (roles.includes('pharmacist') || roles.includes('admin') || roles.includes('doctor')) {
             socket.join('doctors');
             // Send current online users to this doctor
             socket.emit('online:users', Array.from(onlineUsers));
@@ -105,9 +109,10 @@ io.on("connection", (socket) => {
             console.log(`Message from ${user.full_name}: ${cleanMsg}`);
 
             // Save to DB
+            let chatId = null;
             try {
                 if (chatController.saveMessage) {
-                    await chatController.saveMessage(user.id, cleanMsg);
+                    chatId = await chatController.saveMessage(user.id, cleanMsg);
                 }
             } catch (err) {
                 console.error("Failed to save chat message:", err);
@@ -117,6 +122,7 @@ io.on("connection", (socket) => {
             // Forward to Doctors
             // We include properties to help UI: userId, userName
             io.to('doctors').emit('chat:message', {
+                chatId: chatId, // Sending the Chat UUID so the dashboard can route it
                 senderId: user.id,
                 senderName: user.full_name,
                 message: cleanMsg,
@@ -133,7 +139,8 @@ io.on("connection", (socket) => {
         });
 
         socket.on("disconnect", () => {
-            if (user.role !== 'pharmacist' && user.role !== 'admin' && user.role !== 'doctor') {
+            const roles = user.roles || [];
+            if (!roles.includes('pharmacist') && !roles.includes('admin') && !roles.includes('doctor')) {
                 onlineUsers.delete(user.id);
                 io.to('doctors').emit('user:offline', { userId: user.id });
             }

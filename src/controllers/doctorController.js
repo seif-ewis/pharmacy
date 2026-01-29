@@ -14,7 +14,47 @@ export const getDashboard = async (req, res) => {
             "SELECT * FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
             [doctorId]
         );
-        const activeShift = shiftRes.rows[0] || null;
+        let activeShift = shiftRes.rows[0] || null;
+
+        // Calculate LIVE Shift Stats (since shift table is only updated on close)
+        if (activeShift) {
+            // Live Revenue & Orders from Orders Table
+            const shiftMetricsRes = await db.query(
+                `SELECT 
+                    COALESCE(SUM(total_price), 0) as gross_revenue,
+                    COUNT(*) as total_orders
+                 FROM orders 
+                 WHERE shift_id = $1`,
+                [activeShift.id]
+            );
+
+            // Live Returns
+            const shiftReturnsRes = await db.query(
+                `SELECT COALESCE(SUM(refund_amount), 0) as total_refunds 
+                 FROM returns 
+                 WHERE shift_id = $1`,
+                [activeShift.id]
+            );
+
+            // Live Prescriptions Processed in Shift
+            const shiftPresRes = await db.query(
+                `SELECT COUNT(*) as count 
+                 FROM prescriptions 
+                 WHERE shift_id = $1`,
+                [activeShift.id]
+            );
+
+            const gross = parseFloat(shiftMetricsRes.rows[0].gross_revenue || 0);
+            const refunds = parseFloat(shiftReturnsRes.rows[0].total_refunds || 0);
+
+            // Overwrite stale shift data with live data
+            activeShift = {
+                ...activeShift,
+                gross_revenue: (gross - refunds).toFixed(2),
+                total_orders: parseInt(shiftMetricsRes.rows[0].total_orders || 0),
+                total_prescriptions: parseInt(shiftPresRes.rows[0].count || 0)
+            };
+        }
 
         // Fetch prescriptions (Pending)
         const presRes = await db.query(
@@ -119,23 +159,35 @@ export const getDashboardStats = async (req, res) => {
 
         // Calculate Live Shift Data
         let liveRevenue = 0;
+        let shiftOrdersCount = 0;
+        let shiftPrescriptionsCount = 0;
+        let shiftReturnsCount = 0;
+
         if (activeShift) {
-            // Gross Revenue (Orders)
-            const typeCast = '::numeric'; // Helper for casting if needed
+            // Gross Revenue & Orders Count (Orders)
             const grossRes = await db.query(
-                "SELECT COALESCE(SUM(total_price), 0) as gross FROM orders WHERE shift_id = $1",
+                "SELECT COALESCE(SUM(total_price), 0) as gross, COUNT(*) as count FROM orders WHERE shift_id = $1",
                 [activeShift.id]
             );
             const gross = parseFloat(grossRes.rows[0].gross || 0);
+            shiftOrdersCount = parseInt(grossRes.rows[0].count || 0);
 
             // Refunds (Returns)
             const returnRes = await db.query(
-                "SELECT COALESCE(SUM(refund_amount), 0) as refunds FROM returns WHERE shift_id = $1",
+                "SELECT COALESCE(SUM(refund_amount), 0) as refunds, COUNT(*) as count FROM returns WHERE shift_id = $1",
                 [activeShift.id]
             );
             const refunds = parseFloat(returnRes.rows[0].refunds || 0);
+            shiftReturnsCount = parseInt(returnRes.rows[0].count || 0);
 
             liveRevenue = gross - refunds;
+
+            // Prescriptions Processed in Shift
+            const presRes = await db.query(
+                "SELECT COUNT(*) as count FROM prescriptions WHERE shift_id = $1",
+                [activeShift.id]
+            );
+            shiftPrescriptionsCount = parseInt(presRes.rows[0].count || 0);
         }
 
         // Get pharmacy status
@@ -146,9 +198,12 @@ export const getDashboardStats = async (req, res) => {
             success: true,
             data: {
                 shiftActive: !!activeShift,
-                shiftStartedAt: activeShift ? activeShift.created_at : null,
+                shiftActive: !!activeShift,
                 shiftStartedAt: activeShift ? activeShift.created_at : null,
                 revenue: liveRevenue.toFixed(2),
+                shiftOrdersCount,
+                shiftPrescriptionsCount,
+                shiftReturnsCount,
                 ordersCount,
                 prescriptionsCount,
                 totalRequests,

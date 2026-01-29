@@ -418,7 +418,7 @@
                                                 </div>
                                                 <span class="text-xs font-bold text-gray-500 uppercase">Revenue</span>
                                             </div>
-                                            <p class="text-2xl font-black dark:text-white">$<%=
+                                            <p id="shift-live-revenue" class="text-2xl font-black dark:text-white">$<%=
                                                     parseFloat(activeShift.gross_revenue || 0).toFixed(2) %>
                                             </p>
                                         </div>
@@ -433,7 +433,7 @@
                                                 </div>
                                                 <span class="text-xs font-bold text-gray-500 uppercase">Orders</span>
                                             </div>
-                                            <p class="text-2xl font-black dark:text-white">
+                                            <p id="shift-live-orders" class="text-2xl font-black dark:text-white">
                                                 <%= activeShift.total_orders || 0 %>
                                             </p>
                                         </div>
@@ -449,7 +449,8 @@
                                                 <span
                                                     class="text-xs font-bold text-gray-500 uppercase">Prescriptions</span>
                                             </div>
-                                            <p class="text-2xl font-black dark:text-white">
+                                            <p id="shift-live-prescriptions"
+                                                class="text-2xl font-black dark:text-white">
                                                 <%= activeShift.total_prescriptions || 0 %>
                                             </p>
                                         </div>
@@ -464,7 +465,7 @@
                                                 </div>
                                                 <span class="text-xs font-bold text-gray-500 uppercase">Returns</span>
                                             </div>
-                                            <p class="text-2xl font-black dark:text-white">
+                                            <p id="shift-live-returns" class="text-2xl font-black dark:text-white">
                                                 <%= activeShift.total_returns || 0 %>
                                             </p>
                                         </div>
@@ -1629,21 +1630,16 @@
             });
 
             socket.on('chat:message', (data) => {
-                // If this is the active chat, append message
-                if (activeChatId && data.senderId === activeChatId) { // activeChatId matches senderId for 1-on-1
-                    // Unless it's my own message echoing back?
-                    // data.senderId is the User ID.
-                    // If I am the doctor, the activeChatId is likely the Chat ID or Patient ID? 
-                    // Wait, activeChatId in my code below is the CHAT ID. 
-                    // But data.senderId is USER ID.
-                    // I need to map User ID to Chat ID or store User ID in active state.
+                console.log('Socket received chat:message:', data);
+                console.log('ActiveChatId:', activeChatId, 'Type:', typeof activeChatId);
 
-                    // Helper: Find chat by senderId
-                    const chat = activeChatsCache.find(c => c.patient_id === data.senderId);
-                    if (chat && chat.id === activeChatId) {
-                        appendMessage(data.message, false);
-                    }
+                // If this is the active chat, append message
+                // Use loose equality (==) for string vs number comparison
+                if (activeChatId && (data.chatId == activeChatId)) {
+                    console.log('Appending message to active chat');
+                    appendMessage(data.message, false);
                 } else {
+                    console.log('Message not for active chat, showing toast');
                     // Show notification badge or toast
                     showToast('info', `New message from ${data.senderName}`);
                     // Refresh list to show unread? 
@@ -1848,9 +1844,15 @@
 
                         // Update all counters
                         updateCounter('counter-revenue', data.data.revenue);
-                        updateCounter('counter-orders', data.data.ordersCount);
-                        updateCounter('counter-prescriptions', data.data.prescriptionsCount);
+                        updateCounter('counter-orders', data.data.shiftOrdersCount);
+                        updateCounter('counter-prescriptions', data.data.shiftPrescriptionsCount);
                         updateCounter('counter-total-requests', data.data.totalRequests);
+
+                        // Update Shift Module Live Stats (if module exists)
+                        updateCounter('shift-live-revenue', data.data.revenue);
+                        updateCounter('shift-live-orders', data.data.shiftOrdersCount);
+                        updateCounter('shift-live-prescriptions', data.data.shiftPrescriptionsCount);
+                        updateCounter('shift-live-returns', data.data.shiftReturnsCount);
 
                         // Update alerts
                         const updateAlert = (id, value) => {

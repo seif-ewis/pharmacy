@@ -518,10 +518,15 @@
                             class="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden">
                             <div class="absolute inset-0 bg-blue-400/20 animate-ping opacity-20"></div>
                             <i class="fas fa-user-md text-3xl animate-wave origin-bottom"></i>
-                            <span
-                                class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold">1</span>
+                            <!-- Notification Badge (Initially Hidden) -->
+                            <span id="chat-notification-badge"
+                                class="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white transform scale-0 transition-transform duration-300"></span>
                         </button>
                     </div>
+
+                    <!-- Notification Sound -->
+                    <audio id="chat-sound-source"
+                        src="data:audio/mp3;base64,//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"></audio>
 
                     <!-- Chat Modal -->
                     <div id="chat-modal"
@@ -608,6 +613,8 @@
                         const chatMessagesDiv = document.getElementById('chat-messages');
                         const chatInput = document.getElementById('chat-input');
                         const typingIndicator = document.getElementById('typing-indicator');
+                        const chatSound = document.getElementById('chat-sound-source');
+                        const notificationBadge = document.getElementById('chat-notification-badge');
 
                         // Pre-populate chat history if available
                         <% if (typeof chatMessages !== 'undefined' && chatMessages.length > 0) { %>
@@ -637,8 +644,28 @@
                         }
 
                         // Incoming messages
-                        chatSocket.on('chat message', function (msg) {
-                            appendMessage(msg, 'other');
+                        chatSocket.on('chat:message', function (msg) {
+                            const modal = document.getElementById('chat-modal');
+
+                            // Always append the message so it's there when opened
+                            if (msg.message) {
+                                appendMessage(msg.message, 'other');
+                            }
+
+                            // If modal is hidden, show notification
+                            if (modal.classList.contains('hidden')) {
+                                // Play sound
+                                if (chatSound) {
+                                    chatSound.currentTime = 0;
+                                    chatSound.play().catch(e => console.log('Audio play failed', e));
+                                }
+                                // Show red dot
+                                if (notificationBadge) {
+                                    notificationBadge.classList.remove('scale-0');
+                                    notificationBadge.classList.add('scale-100');
+                                    notificationBadge.classList.add('animate-pulse');
+                                }
+                            }
                         });
 
                         // Typing states from doctor (simulated for now)
@@ -655,9 +682,16 @@
                             const modal = document.getElementById('chat-modal');
                             if (modal.classList.contains('hidden')) {
                                 modal.classList.remove('hidden');
+                                // Hide badge when opening
+                                if (notificationBadge) {
+                                    notificationBadge.classList.remove('scale-100', 'animate-pulse');
+                                    notificationBadge.classList.add('scale-0');
+                                }
                                 setTimeout(() => {
                                     modal.classList.remove('scale-95', 'opacity-0');
                                     modal.classList.add('scale-100', 'opacity-100');
+                                    // Scroll to bottom
+                                    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
                                 }, 10);
                             } else {
                                 modal.classList.remove('scale-100', 'opacity-100');
