@@ -67,7 +67,7 @@ export const getDashboard = async (req, res) => {
 
         // Fetch Scheduled/Pending Orders
         const ordersRes = await db.query(
-            "SELECT o.*, u.full_name as user_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status IN ('scheduled', 'pending', 'processing') ORDER BY o.created_at ASC"
+            "SELECT o.*, u.full_name as user_name, u.phone as user_phone FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status IN ('scheduled', 'pending', 'processing') ORDER BY o.created_at ASC"
         );
         const activeOrders = ordersRes.rows;
 
@@ -223,7 +223,7 @@ export const getDashboardStats = async (req, res) => {
 export const getAllOrders = async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT o.*, u.full_name as user_name, u.email as user_email 
+            SELECT o.*, u.full_name as user_name, u.email as user_email, u.phone as user_phone
             FROM orders o 
             LEFT JOIN users u ON o.user_id = u.id 
             ORDER BY o.created_at DESC
