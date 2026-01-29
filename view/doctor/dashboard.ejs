@@ -1046,6 +1046,18 @@
                                 <i class="fas fa-undo"></i>
                                 Process New Return
                             </button>
+                            </button>
+                        </div>
+
+                        <!-- Pending Requests Container -->
+                        <div id="pending-requests-section" class="mb-8 hidden animate-fade-in">
+                            <h3 class="font-bold dark:text-white mb-4 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                Pending Verification
+                            </h3>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4" id="pending-returns-container">
+                                <!-- Requests loaded via JS -->
+                            </div>
                         </div>
 
                         <!-- Returns Warning -->
@@ -1872,6 +1884,7 @@
 
             let selectedReturnOrderId = null;
             let returnItemsCache = [];
+            let selectedPendingReturn = null; // Store pending return data
 
             function openReturnModal() {
                 document.getElementById('return-modal').classList.remove('hidden');
@@ -1882,6 +1895,172 @@
                 document.getElementById('return-modal').classList.add('hidden');
                 resetReturnForm();
             }
+
+            // --- Pending Requests Logic --- //
+            async function loadPendingReturns() {
+                const container = document.getElementById('pending-returns-container');
+                if (!container) return;
+
+                try {
+                    const res = await fetch('/doctor/returns/pending');
+                    const data = await res.json();
+
+                    if (data.success && data.returns.length > 0) {
+                        document.getElementById('pending-requests-section').classList.remove('hidden');
+
+                        container.innerHTML = data.returns.map(r => `
+                            <div class="bg-white dark:bg-slate-800 rounded-xl border border-orange-100 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-2 h-full bg-orange-500"></div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h4 class="font-bold dark:text-white flex items-center gap-2">
+                                            Return Req #${r.id.substring(0, 6)}
+                                            <span class="bg-orange-100 text-orange-600 text-[10px] uppercase px-2 py-0.5 rounded-full font-bold">Pending</span>
+                                        </h4>
+                                        <p class="text-xs text-gray-500 mt-1">Order #${r.order_uid} • ${r.user_name}</p>
+                                    </div>
+                                    <button onclick='openProcessRequestModal(${JSON.stringify(r)})' 
+                                        class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-orange-500/20">
+                                        Review
+                                    </button>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3 text-xs">
+                                     <p class="text-gray-500 mb-2 font-bold uppercase">Items:</p>
+                                     <ul class="space-y-1">
+                                        ${r.items.map(i => `
+                                            <li class="flex justify-between">
+                                                <span class="dark:text-gray-300">• ${i.medicine_name} (x${i.quantity})</span>
+                                            </li>
+                                        `).join('')}
+                                     </ul>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-3 italic">Reason: "${r.reason}"</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        document.getElementById('pending-requests-section').classList.add('hidden');
+                        container.innerHTML = '';
+                    }
+                } catch (e) {
+                    console.error("Failed to load pending returns", e);
+                }
+            }
+
+            // Open Modal for Existing Request
+            function openProcessRequestModal(returnData) {
+                selectedPendingReturn = returnData;
+
+                // Populate Modal UI
+                // We'll reuse a new modal or a specific section of the existing one?
+                // Let's create a dedicated simplified modal dynamically or inject into DOM if cleaner.
+                // For speed, let's assume we have a 'process-request-modal' in HTML or we build one.
+                // Since I can't easily edit the HTML structure higher up without a huge replace, 
+                // I will inject the modal into the body if it doesn't exist, or use a JS prompt/confirm flow 
+                // properly. But for a good UX, let's create a visual modal string and insert it.
+
+                const modalHtml = `
+                    <div id="process-request-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                        <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-slate-800 animate-slide-up">
+                            <h3 class="text-xl font-black dark:text-white mb-4">Process Return Request</h3>
+                            <div class="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 mb-4">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm text-gray-500">Customer</span>
+                                    <span class="text-sm font-bold dark:text-white">${returnData.user_name}</span>
+                                </div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm text-gray-500">Order</span>
+                                    <span class="text-sm font-bold dark:text-white">#${returnData.order_uid}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500">Reason</span>
+                                    <span class="text-sm italic dark:text-gray-300">"${returnData.reason}"</span>
+                                </div>
+                            </div>
+
+                            <h4 class="font-bold text-sm text-gray-500 uppercase mb-3">Items to Return</h4>
+                            <div class="space-y-3 mb-6">
+                                ${returnData.items.map(item => `
+                                    <div class="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
+                                        <div>
+                                            <p class="font-bold text-sm dark:text-white">${item.medicine_name}</p>
+                                            <p class="text-xs text-gray-400">Qty: ${item.quantity}</p>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <label class="text-xs text-gray-500">Condition:</label>
+                                            <select id="condition-${item.id}" class="text-xs rounded border-gray-300 dark:bg-slate-800">
+                                                <option value="good">Good (Restock)</option>
+                                                <option value="damaged">Damaged (Discard)</option>
+                                                <option value="expired">Expired (Discard)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <label class="block text-sm font-bold mb-2 dark:text-white">Admin Notes</label>
+                            <textarea id="admin-notes" class="w-full text-sm rounded-xl border-gray-300 dark:bg-slate-800 mb-6" placeholder="Optional notes..."></textarea>
+
+                            <div class="flex gap-3 justify-end">
+                                <button onclick="document.getElementById('process-request-modal').remove()" class="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-xl">Cancel</button>
+                                <button onclick="submitRequestAction('reject')" class="px-4 py-2 font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl">Reject</button>
+                                <button onclick="submitRequestAction('approve')" class="px-6 py-2 font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-lg">Approve Check</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+
+            async function submitRequestAction(action) {
+                if (!selectedPendingReturn) return;
+
+                const itemConditions = {};
+                selectedPendingReturn.items.forEach(item => {
+                    const val = document.getElementById(`condition-${item.id}`).value;
+                    itemConditions[item.id] = val;
+                });
+
+                const notes = document.getElementById('admin-notes').value;
+                const modal = document.getElementById('process-request-modal');
+
+                // Visual loading state
+                const btns = modal.querySelectorAll('button');
+                btns.forEach(b => b.disabled = true);
+
+                try {
+                    const res = await fetch('/doctor/returns/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            return_id: selectedPendingReturn.id,
+                            action: action,
+                            admin_notes: notes,
+                            item_conditions: itemConditions
+                        })
+                    });
+
+                    // We expect a redirect from backend usually, but since it's fetch:
+                    if (res.redirected) {
+                        window.location.href = res.url;
+                        return;
+                    }
+
+                    // Or if JSON response
+                    const data = await res.json().catch(() => ({}));
+
+                    modal.remove();
+                    showToast('success', `Request ${action}ed`);
+                    loadPendingReturns();
+                    loadRecentReturns();
+
+                } catch (e) {
+                    // If response was actually a redirect (HTML), fetch might have 'failed' JSON parse
+                    // Just reload to be safe or inspect
+                    window.location.reload();
+                }
+            }
+
+            // --- End Pending Logic --- //
 
             function resetReturnForm() {
                 selectedReturnOrderId = null;
@@ -2101,6 +2280,7 @@
                 const obs = new MutationObserver(() => {
                     if (!returnsModule.classList.contains('hidden')) {
                         loadRecentReturns();
+                        loadPendingReturns(); // Load requests too
                     }
                 });
                 obs.observe(returnsModule, { attributes: true, attributeFilter: ['class'] });

@@ -52,7 +52,13 @@ export const getOrders = async (req, res) => {
                         'quantity', oi.quantity,
                         'price', oi.price,
                         'image_url', m.image_url,
-                        'medicine_id', m.id
+                        'medicine_id', m.id,
+                        'returned_quantity', (
+                            SELECT COALESCE(SUM(ri.quantity), 0)
+                            FROM return_items ri
+                            JOIN returns r ON ri.return_id = r.id
+                            WHERE ri.medicine_id = m.id AND r.order_id = o.id AND r.status = 'approved'
+                        )
                     )
                 ) as items
             FROM orders o

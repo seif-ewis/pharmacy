@@ -21,7 +21,9 @@ const fixConstraint = async () => {
                 'shipped'::character varying, 
                 'delivered'::character varying, 
                 'canceled'::character varying, 
-                'cancelled'::character varying
+                'cancelled'::character varying,
+                'returned'::character varying,
+                'processing'::character varying
             ]::text[]));
         `;
         await db.query(constraintQuery);

@@ -59,11 +59,22 @@
                                             <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide
                                         <%= order.status === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
                                            order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                           order.status === 'returned' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
                                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' %>">
                                                 <%= order.status %>
                                             </span>
-                                            <span class="text-xl font-extrabold text-dark dark:text-white">$<%=
-                                                    parseFloat(order.total_price).toFixed(2) %></span>
+                                            <% let totalReturned=0; if (order.items) { order.items.forEach(i=>
+                                                totalReturned += parseInt(i.returned_quantity || 0));
+                                                }
+                                                if (totalReturned > 0 && order.status !== 'returned') {
+                                                %>
+                                                <span
+                                                    class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                                    Partially Returned
+                                                </span>
+                                                <% } %>
+                                                    <span class="text-xl font-extrabold text-dark dark:text-white">$<%=
+                                                            parseFloat(order.total_price).toFixed(2) %></span>
                                         </div>
                                     </div>
 
@@ -85,8 +96,16 @@
                                                         <p class="text-sm font-bold text-dark dark:text-gray-200">
                                                             <%= item.name %>
                                                         </p>
-                                                        <p class="text-xs text-gray-400">Qty: <%= item.quantity %>
-                                                        </p>
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-xs text-gray-400">Qty: <%= item.quantity %>
+                                                            </p>
+                                                            <% if (item.returned_quantity> 0) { %>
+                                                                <span
+                                                                    class="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded">
+                                                                    Returned: <%= item.returned_quantity %>
+                                                                </span>
+                                                                <% } %>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <span class="text-sm font-bold text-gray-500 dark:text-gray-400">$<%=

@@ -121,9 +121,11 @@ router.post("/doctor/chats/send", ensureDoctor, doctorController.sendChatMessage
 
 // Doctor Returns Module Routes
 router.get("/doctor/returns/recent", ensureDoctor, doctorController.getRecentReturns);
+router.get("/doctor/returns/pending", ensureDoctor, returnController.getPendingReturns);
 router.get("/doctor/returns/search-order", ensureDoctor, doctorController.searchReturnOrder);
 router.get("/doctor/returns/order-items/:orderId", ensureDoctor, doctorController.getOrderItemsForReturn);
 router.post("/doctor/returns/process", ensureDoctor, doctorController.processReturn);
+router.post("/doctor/returns/action", ensureDoctor, returnController.processReturn); // For approving/rejecting requests
 
 // Doctor Reports Analytics
 router.get("/doctor/reports/analytics", ensureDoctor, analyticsController.getDoctorAnalytics);
