@@ -230,17 +230,17 @@
                                         </div>
                                         <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                             <span>Delivery Fee</span>
-                                            <span class="font-bold text-dark dark:text-gray-200"
-                                                id="checkout-delivery"></span>
-                                            <%= (typeof deliveryFee !=='undefined' && deliveryFee> 0) ? '$' +
-                                                deliveryFee.toFixed(2) : 'Free' %>
-                                                </span>
+                                            <span class="font-bold text-dark dark:text-gray-200" id="checkout-delivery">
+                                                <%= (typeof deliveryFee !=='undefined' && deliveryFee> 0) ? '$' +
+                                                    deliveryFee.toFixed(2) : 'Free' %>
+                                            </span>
                                         </div>
+                                        <!-- Tax Row Commented Out
                                         <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                             <span>Tax (10%)</span>
-                                            <span class="font-bold text-dark dark:text-gray-200"
-                                                id="checkout-tax">$...</span>
+                                            <span class="font-bold text-dark dark:text-gray-200" id="checkout-tax">$...</span>
                                         </div>
+                                        -->
                                     </div>
 
                                     <div class="border-t border-gray-100 dark:border-slate-800 my-4 pt-4">
@@ -338,7 +338,7 @@
                             if (data.success) {
                                 document.getElementById('checkout-subtotal').innerText = `$${data.subtotal}`;
                                 document.getElementById('checkout-delivery').innerText = parseFloat(data.delivery) > 0 ? `$${data.delivery}` : 'Free';
-                                document.getElementById('checkout-tax').innerText = `$${data.tax}`;
+                                // document.getElementById('checkout-tax').innerText = `$${data.tax}`;
                                 document.getElementById('checkout-total').innerText = `$${data.total}`;
 
                                 if (data.discount > 0) {
@@ -464,7 +464,7 @@
                         }
                     }
                 </script>
-                <%- include('partials/footer') %>
+
     </body>
 
 </html>
