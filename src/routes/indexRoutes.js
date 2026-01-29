@@ -13,12 +13,15 @@ import * as doctorController from "../controllers/doctorController.js";
 import * as adminController from "../controllers/adminController.js";
 import * as announcementController from "../controllers/announcementController.js";
 import * as analyticsController from "../controllers/analyticsController.js";
+import * as categoryController from "../controllers/categoryController.js";
 
 import { ensureAuthenticated, ensureDoctor, ensureAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.get("/", homeController.getHomePage);
+router.get("/category/:slug", categoryController.getCategoryPage);
+router.get("/api/category/:slug/products", categoryController.getMoreProducts);
 router.get("/search", searchController.searchMedicines);
 router.get("/notifications", notificationController.getNotifications);
 router.post("/notifications/read-all", notificationController.markAllAsRead);

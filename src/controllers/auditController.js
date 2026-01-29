@@ -3,18 +3,18 @@ import db from "../config/dataBase.js";
 
 /**
  * Log an audit event.
- * @param {string} actionType - 'ORDER_EDIT', 'PRICE_CHANGE', 'PRESCRIPTION_CONFIRM', 'SHIFT_CLOSE', etc.
+ * @param {string} action - 'ORDER_EDIT', 'PRICE_CHANGE', 'PRESCRIPTION_CONFIRM', 'SHIFT_CLOSE', etc.
  * @param {string} entityId - UUID of the entity (Order ID, Medicine ID, Shift ID).
- * @param {string} entityType - 'orders', 'medicines', 'prescriptions', 'shifts'.
- * @param {string} performedBy - UUID of the user/admin.
- * @param {Object} details - JSON object with additional info (e.g., old/new values).
+ * @param {string} entity - 'orders', 'medicines', 'prescriptions', 'shifts'.
+ * @param {string} userId - UUID of the user/admin performing the action.
+ * @param {Object} details - (Optional) Not stored, for backwards compat only.
  */
-export const logEvent = async (actionType, entityId, entityType, performedBy, details) => {
+export const logEvent = async (action, entityId, entity, userId, details = null) => {
     try {
         await db.query(
-            `INSERT INTO audit_logs (action_type, entity_id, entity_type, performed_by, details, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [actionType, entityId, entityType, performedBy, details]
+            `INSERT INTO audit_logs (action, entity_id, entity, user_id, timestamp)
+             VALUES ($1, $2, $3, $4, NOW())`,
+            [action, entityId, entity, userId]
         );
     } catch (err) {
         console.error("Audit Logger Error:", err);
@@ -27,10 +27,10 @@ export const logEvent = async (actionType, entityId, entityType, performedBy, de
 export const getLogs = async (limit = 100) => {
     try {
         const result = await db.query(`
-            SELECT al.*, u.full_name as user_name, u.role as user_role
+            SELECT al.*, u.full_name as user_name
             FROM audit_logs al
-            JOIN users u ON al.performed_by = u.id
-            ORDER BY al.created_at DESC
+            LEFT JOIN users u ON al.user_id = u.id
+            ORDER BY al.timestamp DESC
             LIMIT $1
         `, [limit]);
         return result.rows;
