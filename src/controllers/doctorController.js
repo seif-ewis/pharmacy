@@ -276,9 +276,9 @@ export const startShift = async (req, res) => {
         );
         const newShiftId = shiftRes.rows[0].id;
 
-        // Activate Scheduled Orders
+        // Activate Scheduled & Orphan Assignments
         await db.query(
-            "UPDATE orders SET status = 'pending', shift_id = $1 WHERE status = 'scheduled'",
+            "UPDATE orders SET status = 'pending', shift_id = $1 WHERE status = 'scheduled' OR (status = 'pending' AND shift_id IS NULL)",
             [newShiftId]
         );
 
