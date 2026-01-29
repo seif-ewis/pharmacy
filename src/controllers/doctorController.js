@@ -270,11 +270,19 @@ export const startShift = async (req, res) => {
             req.flash('error', 'You already have an active shift.');
             return res.redirect('/doctor/dashboard');
         }
-        await db.query(
-            "INSERT INTO shifts (opened_by, opened_at, status) VALUES ($1, NOW(), 'open')",
+        const shiftRes = await db.query(
+            "INSERT INTO shifts (opened_by, opened_at, status) VALUES ($1, NOW(), 'open') RETURNING id",
             [doctorId]
         );
-        req.flash('success', 'Shift started successfully.');
+        const newShiftId = shiftRes.rows[0].id;
+
+        // Activate Scheduled Orders
+        await db.query(
+            "UPDATE orders SET status = 'pending', shift_id = $1 WHERE status = 'scheduled'",
+            [newShiftId]
+        );
+
+        req.flash('success', 'Shift started successfully. Scheduled orders have been activated.');
         res.redirect('/doctor/dashboard');
     } catch (err) {
         console.error('Start Shift Error:', err);

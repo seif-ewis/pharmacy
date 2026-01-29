@@ -60,6 +60,7 @@
                                         <%= order.status === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
                                            order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                                            order.status === 'returned' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                           order.status === 'scheduled' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
                                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' %>">
                                                 <%= order.status %>
                                             </span>
@@ -78,65 +79,85 @@
                                         </div>
                                     </div>
 
-                                    <!-- Order Items -->
-                                    <div class="py-6 space-y-4">
-                                        <% order.items.forEach(item=> { %>
-                                            <div class="flex items-center justify-between group">
-                                                <div class="flex items-center gap-4">
-                                                    <div
-                                                        class="w-10 h-10 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-                                                        <% if (item.image_url) { %>
-                                                            <img src="<%= item.image_url %>" alt="<%= item.name %>"
-                                                                class="w-full h-full object-cover rounded-lg">
-                                                            <% } else { %>
-                                                                <i class="fas fa-pills text-gray-400 text-xs"></i>
-                                                                <% } %>
-                                                    </div>
-                                                    <div>
-                                                        <p class="text-sm font-bold text-dark dark:text-gray-200">
-                                                            <%= item.name %>
-                                                        </p>
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-xs text-gray-400">Qty: <%= item.quantity %>
-                                                            </p>
-                                                            <% if (item.returned_quantity> 0) { %>
-                                                                <span
-                                                                    class="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded">
-                                                                    Returned: <%= item.returned_quantity %>
-                                                                </span>
-                                                                <% } %>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <span class="text-sm font-bold text-gray-500 dark:text-gray-400">$<%=
-                                                        parseFloat(item.price).toFixed(2) %></span>
+                                    <% if (order.status==='scheduled' ) { %>
+                                        <div
+                                            class="mt-4 -mb-2 bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30 rounded-xl p-3 flex items-start gap-3">
+                                            <i class="fas fa-clock text-purple-500 mt-0.5"></i>
+                                            <div>
+                                                <p class="text-sm font-bold text-purple-700 dark:text-purple-300">Order
+                                                    Scheduled</p>
+                                                <p class="text-xs text-purple-600 dark:text-purple-400">Our pharmacy is
+                                                    currently closed. Your order has been secured and will be processed
+                                                    immediately when our next shift begins.</p>
                                             </div>
-                                            <% }); %>
-                                    </div>
+                                        </div>
+                                        <% } %>
 
-                                    <!-- Actions -->
-                                    <div
-                                        class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-50 dark:border-slate-800">
-                                        <% if (order.status==='delivered' ) { %>
-                                            <a href="/orders/<%= order.id %>/return"
-                                                class="px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                                                Request Return
-                                            </a>
-                                            <% } %>
-                                                <a href="/orders/<%= order.id %>"
-                                                    class="inline-block px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-center">
-                                                    View Invoice
-                                                </a>
-                                                <% if (order.status==='pending' ) { %>
-                                                    <form action="/orders/<%= order.id %>/cancel" method="POST"
-                                                        onsubmit="return confirm('Cancel this order?');" class="inline">
-                                                        <button type="submit"
-                                                            class="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/10 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors">
-                                                            Cancel Order
-                                                        </button>
-                                                    </form>
+                                            <!-- Order Items -->
+                                            <div class="py-6 space-y-4">
+                                                <% order.items.forEach(item=> { %>
+                                                    <div class="flex items-center justify-between group">
+                                                        <div class="flex items-center gap-4">
+                                                            <div
+                                                                class="w-10 h-10 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                                                <% if (item.image_url) { %>
+                                                                    <img src="<%= item.image_url %>"
+                                                                        alt="<%= item.name %>"
+                                                                        class="w-full h-full object-cover rounded-lg">
+                                                                    <% } else { %>
+                                                                        <i
+                                                                            class="fas fa-pills text-gray-400 text-xs"></i>
+                                                                        <% } %>
+                                                            </div>
+                                                            <div>
+                                                                <p
+                                                                    class="text-sm font-bold text-dark dark:text-gray-200">
+                                                                    <%= item.name %>
+                                                                </p>
+                                                                <div class="flex items-center gap-2">
+                                                                    <p class="text-xs text-gray-400">Qty: <%=
+                                                                            item.quantity %>
+                                                                    </p>
+                                                                    <% if (item.returned_quantity> 0) { %>
+                                                                        <span
+                                                                            class="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded">
+                                                                            Returned: <%= item.returned_quantity %>
+                                                                        </span>
+                                                                        <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <span
+                                                            class="text-sm font-bold text-gray-500 dark:text-gray-400">$
+                                                            <%= parseFloat(item.price).toFixed(2) %></span>
+                                                    </div>
+                                                    <% }); %>
+                                            </div>
+
+                                            <!-- Actions -->
+                                            <div
+                                                class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-50 dark:border-slate-800">
+                                                <% if (order.status==='delivered' ) { %>
+                                                    <a href="/orders/<%= order.id %>/return"
+                                                        class="px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                                                        Request Return
+                                                    </a>
                                                     <% } %>
-                                    </div>
+                                                        <a href="/orders/<%= order.id %>"
+                                                            class="inline-block px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-center">
+                                                            View Invoice
+                                                        </a>
+                                                        <% if (order.status==='pending' ) { %>
+                                                            <form action="/orders/<%= order.id %>/cancel" method="POST"
+                                                                onsubmit="return confirm('Cancel this order?');"
+                                                                class="inline">
+                                                                <button type="submit"
+                                                                    class="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/10 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors">
+                                                                    Cancel Order
+                                                                </button>
+                                                            </form>
+                                                            <% } %>
+                                            </div>
                                 </div>
                                 <% }); %>
                                     <% } else { %>
