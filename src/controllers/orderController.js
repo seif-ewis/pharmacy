@@ -11,9 +11,14 @@ export const getCheckoutPage = async (req, res) => {
             [req.user.id]
         );
 
+        // Fetch Settings
+        const settingsRes = await client.query("SELECT delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1");
+        const deliveryFee = settingsRes.rows.length > 0 ? parseFloat(settingsRes.rows[0].delivery_fee) : 0.00;
+
         res.render("checkout", {
             user: req.user,
             addresses: addressRes.rows,
+            deliveryFee: deliveryFee,
             pageTitle: "Checkout"
         });
     } catch (err) {

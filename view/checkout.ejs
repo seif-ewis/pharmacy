@@ -231,7 +231,10 @@
                                         <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                             <span>Delivery Fee</span>
                                             <span class="font-bold text-dark dark:text-gray-200"
-                                                id="checkout-delivery">$...</span>
+                                                id="checkout-delivery"></span>
+                                            <%= (typeof deliveryFee !=='undefined' && deliveryFee> 0) ? '$' +
+                                                deliveryFee.toFixed(2) : 'Free' %>
+                                                </span>
                                         </div>
                                         <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                             <span>Tax (10%)</span>
@@ -283,7 +286,7 @@
                     } else {
                         cart = JSON.parse(localStorage.getItem('cart') || '[]');
                     }
-                    const deliveryFee = 5.00;
+                    const deliveryFee = <%= typeof deliveryFee !== 'undefined' ? deliveryFee : 0.00 %>;
 
                     document.addEventListener('DOMContentLoaded', () => {
                         renderCheckoutItems();
@@ -334,7 +337,7 @@
                             const data = await res.json();
                             if (data.success) {
                                 document.getElementById('checkout-subtotal').innerText = `$${data.subtotal}`;
-                                document.getElementById('checkout-delivery').innerText = `$${data.delivery}`;
+                                document.getElementById('checkout-delivery').innerText = parseFloat(data.delivery) > 0 ? `$${data.delivery}` : 'Free';
                                 document.getElementById('checkout-tax').innerText = `$${data.tax}`;
                                 document.getElementById('checkout-total').innerText = `$${data.total}`;
 

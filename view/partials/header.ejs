@@ -330,7 +330,7 @@
             </div>
             <div class="flex justify-between items-center text-sm">
                 <span class="text-gray-400">Delivery</span>
-                <span class="text-green-500 font-bold uppercase text-[10px]">Free</span>
+                <span id="cart-drawer-delivery" class="text-green-500 font-bold uppercase text-[10px]">Free</span>
             </div>
             <div
                 class="flex justify-between items-center pt-3 border-t border-dashed border-gray-100 dark:border-slate-800">
@@ -347,6 +347,8 @@
 </div>
 
 <script>
+    const DELIVERY_FEE = <%= (typeof pharmacySettings !== 'undefined' && pharmacySettings.delivery_fee) ? pharmacySettings.delivery_fee : 0 %>;
+
     function toggleCartDrawer() {
         const drawer = document.getElementById('cart-drawer');
         const overlay = document.getElementById('cart-overlay');
@@ -426,8 +428,24 @@
             `;
         }).join('');
 
-        document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+        const finalTotal = subtotal + parseFloat(DELIVERY_FEE);
+
+        document.getElementById('cart-subtotal').innerText = `$${finalTotal.toFixed(2)}`;
         document.getElementById('cart-items-total').innerText = `$${subtotal.toFixed(2)}`;
+
+        // Update Delivery Label
+        const deliveryEl = document.getElementById('cart-drawer-delivery');
+        if (deliveryEl) {
+            if (parseFloat(DELIVERY_FEE) > 0) {
+                deliveryEl.innerText = `$${parseFloat(DELIVERY_FEE).toFixed(2)}`;
+                deliveryEl.classList.remove('text-green-500', 'uppercase', 'text-[10px]');
+                deliveryEl.classList.add('text-dark', 'dark:text-white', 'text-sm');
+            } else {
+                deliveryEl.innerText = 'Free';
+                deliveryEl.classList.add('text-green-500', 'uppercase', 'text-[10px]');
+                deliveryEl.classList.remove('text-dark', 'dark:text-white', 'text-sm');
+            }
+        }
     }
 
     function updateQty(index, delta) {
