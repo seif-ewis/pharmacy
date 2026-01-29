@@ -39,7 +39,7 @@ export const confirmReadyRequest = async (req, res) => {
         let reqQuery = "SELECT * FROM product_requests WHERE id = $1 AND status = 'ready'";
         let params = [requestId];
 
-        if (req.user.role !== 'admin' && req.user.role !== 'pharmacist') {
+        if (!req.user.roles || (!req.user.roles.includes('admin') && !req.user.roles.includes('pharmacist'))) {
             reqQuery += " AND user_id = $2";
             params.push(userId);
         }
@@ -93,7 +93,7 @@ export const updateRequestStatus = async (req, res) => {
     const { requestId } = req.params;
     const { status, matched_medicine_id, doctor_notes } = req.body;
 
-    if (req.user.role !== 'pharmacist' && req.user.role !== 'admin') {
+    if (!req.user.roles || (!req.user.roles.includes('admin') && !req.user.roles.includes('pharmacist'))) {
         return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
@@ -132,7 +132,7 @@ export const getUserRequests = async (req, res) => {
  * Admin: Get all requests for the dashboard
  */
 export const getAdminRequests = async (req, res) => {
-    if (req.user.role !== 'pharmacist' && req.user.role !== 'admin') {
+    if (!req.user.roles || (!req.user.roles.includes('admin') && !req.user.roles.includes('pharmacist'))) {
         return res.status(403).render("403");
     }
 

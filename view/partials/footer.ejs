@@ -90,12 +90,68 @@
             </div>
         </div>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Connect for everyone (Guest or User)
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log('✅ Socket.IO connected:', socket.id);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO disconnected');
+        });
+
+        // Global Pharmacy Status Listener
+        socket.on('pharmacy:status', (data) => {
+            console.log('📡 Received pharmacy:status event:', data);
+            const statusContainers = document.querySelectorAll('.pharmacy-status-badge');
+            console.log('🎯 Found', statusContainers.length, 'status badge(s) to update');
+
+            statusContainers.forEach((container, index) => {
+                if (data.isOpen) {
+                    // Update to OPEN state
+                    container.className = 'pharmacy-status-badge flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold bg-green-100 text-green-700';
+                    container.innerHTML = '<span class="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></span>We\'re Open';
+                } else {
+                    // Update to CLOSED state
+                    container.className = 'pharmacy-status-badge flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold bg-night border border-blue-900 text-blue-100';
+                    container.innerHTML = `
+                        <div class="relative flex items-center">
+                            <i class="fas fa-moon mr-2 text-yellow-400 text-sm"></i>
+                            <div class="absolute -top-3 left-1 flex space-x-0.5 opacity-0 zzz-container">
+                                <span class="text-[8px] text-blue-200 font-bold">z</span>
+                                <span class="text-[10px] text-blue-200 font-bold">Z</span>
+                            </div>
+                            Currently Closed
+                        </div>
+                    `;
+                    // Re-trigger any anime.js animations for ZZZ if needed, though CSS animation is likely used here or elsewhere
+                    // If ZZZ was anime.js, we might need to re-init it, but based on header.ejs it seems custom.
+                    // Let's assume the ZZZ animation is CSS or handled by existing script we can't fully see or is static for now. 
+                    // Actually header ejs had 'opacity-0 zzz-container'. We might want to animate it if we can.
+                    if (typeof anime !== 'undefined') {
+                        anime({
+                            targets: '.zzz-container span',
+                            translateY: [0, -10],
+                            translateX: [0, 5],
+                            opacity: [0, 1, 0],
+                            easing: 'easeOutSine',
+                            duration: 2000,
+                            loop: true,
+                            delay: anime.stagger(200)
+                        });
+                    }
+                }
+            });
+            console.log('✅ All badges updated successfully');
+        });
+    </script>
     <% if (typeof user !=='undefined' && user) { %>
-        <script src="/socket.io/socket.io.js"></script>
-        <script>
-            // Only connect if user is logged in
-            const socket = io();
-        </script>
+        <!-- User-specific socket logic can go here if needed, but 'socket' is already const defined above. 
+             If we need to emit user-specific events, we can do it here using the same 'socket' instance 
+             which is globally available now. -->
         <% } %>
 </footer>
 <%- include('auth_modals') %>

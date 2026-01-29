@@ -1,3 +1,5 @@
+import { hasRole, hasAnyRole } from '../utils/roleManager.js';
+
 export const ensureAuthenticated = (req, res, next) => {
     if (req.isAuthenticated()) {
         return next();
@@ -14,10 +16,32 @@ export const ensureAuthenticated = (req, res, next) => {
     });
 };
 
-export const ensureDoctor = (req, res, next) => {
-    if (req.isAuthenticated() && (req.user.role === 'pharmacist' || req.user.role === 'admin')) {
+export const ensureDoctor = async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.flash("error", "Please login first.");
+        return res.redirect("/");
+    }
+
+    // Check new roles system
+    if (req.user.roles && (req.user.roles.includes('pharmacist') || req.user.roles.includes('admin') || req.user.roles.includes('doctor'))) {
         return next();
     }
+
     req.flash("error", "Access denied. Doctor or Pharmacist role required.");
+    res.redirect("/");
+};
+
+export const ensureAdmin = async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+        req.flash("error", "Please login first.");
+        return res.redirect("/");
+    }
+
+    // Check new roles system
+    if (req.user.roles && req.user.roles.includes('admin')) {
+        return next();
+    }
+
+    req.flash("error", "Access denied. Administrator privileges required.");
     res.redirect("/");
 };

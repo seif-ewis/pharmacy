@@ -4,78 +4,173 @@
 
     <body
         class="bg-gray-50 dark:bg-[#0f172a] text-slate-800 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
-        <div class="container mx-auto max-w-4xl px-4 py-12">
-            <div class="mb-8 flex items-center justify-between">
-                <h1 class="text-3xl font-black text-dark dark:text-white">Admin Control Panel</h1>
-                <a href="/doctor/dashboard"
-                    class="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
+        <div class="flex h-screen overflow-hidden">
+            <!-- SIDEBAR -->
+            <aside
+                class="w-64 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col z-50 transition-all duration-300 transform -translate-x-full md:translate-x-0 fixed md:relative h-full"
+                id="sidebar">
+                <div class="p-6 flex items-center justify-between">
+                    <a href="/admin/dashboard" class="flex items-center gap-2">
+                        <div
+                            class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-black text-lg">
+                            A</div>
+                        <span class="text-lg font-black tracking-tight dark:text-white">ADMIN<span
+                                class="text-red-600">PANEL</span></span>
+                    </a>
+                    <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-primary"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <nav class="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar">
+                    <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Management
+                    </p>
+                    <a href="/admin/dashboard"
+                        class="nav-item active flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-th-large w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Dashboard</span>
+                        </div>
+                    </a>
+                    <a href="/admin/settings"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-cog w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
+                    <a href="/admin/users"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-users w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Users</span>
+                        </div>
+                    </a>
+                    <a href="/admin/product-requests"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-box w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Product Requests</span>
+                        </div>
+                    </a>
+                    <a href="/admin/returns"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-undo w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Returns</span>
+                        </div>
+                    </a>
 
-            <div
-                class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
-                <div class="flex items-center gap-4 mb-6">
-                    <div
-                        class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-primary text-xl">
-                        <i class="fas fa-cog"></i>
+                    <div class="mt-auto pt-6 border-t border-gray-100 dark:border-slate-800 mt-6">
+                        <a href="/"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all cursor-pointer">
+                            <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                            <span>Logout</span>
+                        </a>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold dark:text-white">System Settings</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Manage global pharmacy configuration</p>
+                </nav>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="flex-1 flex flex-col h-full relative">
+                <!-- Header -->
+                <header
+                    class="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-40">
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-primary"><i
+                                class="fas fa-bars text-xl"></i></button>
+                        <h2 class="text-xl font-bold dark:text-white">Pharmacy Settings</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 font-bold text-xs uppercase">
+                            <%= user.full_name.charAt(0) %>
+                        </div>
+                        <span class="text-xs font-bold dark:text-gray-300 hidden sm:inline">Admin: <%= user.full_name %>
+                                </span>
+                    </div>
+                </header>
+
+                <!-- Settings Content -->
+                <div class="flex-1 overflow-y-auto p-6 scroll-smooth custom-scrollbar">
+                    <div class="max-w-4xl mx-auto">
+                        <div
+                            class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div
+                                    class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center text-red-600 text-xl">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold dark:text-white">System Configuration</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Manage global pharmacy settings
+                                    </p>
+                                </div>
+                            </div>
+
+                            <form onsubmit="event.preventDefault(); updateSettings();" class="space-y-8 max-w-xl">
+                                <div class="space-y-3">
+                                    <label
+                                        class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Global
+                                        Tax Rate
+                                        (%)</label>
+                                    <div class="relative">
+                                        <input type="number" step="0.01" id="setTaxRate"
+                                            value="<%= settings.tax_rate %>"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-red-600 rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
+                                        <span
+                                            class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400">Enter as decimal (e.g. 0.10 for 10%). Current:
+                                        <%= (parseFloat(settings.tax_rate) * 100).toFixed(0) %>%
+                                    </p>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Flat
+                                        Delivery Fee
+                                        ($)</label>
+                                    <div class="relative">
+                                        <input type="number" step="0.01" id="setDeliveryFee"
+                                            value="<%= settings.delivery_fee %>"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-red-600 rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
+                                        <span
+                                            class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 border-t border-gray-100 dark:border-slate-700">
+                                    <button type="submit"
+                                        class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 hover:-translate-y-1 transition-all">
+                                        <i class="fas fa-save mr-2"></i> Update Configuration
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
-
-                <form onsubmit="event.preventDefault(); updateSettings();" class="space-y-8 max-w-xl">
-                    <div class="space-y-3">
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Global Tax Rate
-                            (%)</label>
-                        <div class="relative">
-                            <input type="number" step="0.01" id="setTaxRate" value="<%= settings.tax_rate %>"
-                                class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
-                        </div>
-                        <p class="text-[10px] text-gray-400">Enter as decimal (e.g. 0.10 for 10%) or percentage
-                            depending on backend logic. Currently Logic handles Decimal (0.10).</p>
-                    </div>
-
-                    <div class="space-y-3">
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Flat Delivery Fee
-                            ($)</label>
-                        <div class="relative">
-                            <input type="number" step="0.01" id="setDeliveryFee" value="<%= settings.delivery_fee %>"
-                                class="w-full bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl px-4 py-3 outline-none dark:text-white transition-all pl-12">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-100 dark:border-slate-700">
-                        <button type="submit"
-                            class="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all">
-                            Update Configuration
-                        </button>
-                    </div>
-                </form>
-            </div>
+            </main>
         </div>
 
         <!-- Toast Container -->
         <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-3"></div>
 
         <script>
+            function toggleSidebar() {
+                const sb = document.getElementById('sidebar');
+                sb.classList.toggle('-translate-x-full');
+            }
+
             async function updateSettings() {
                 const tax_rate = document.getElementById('setTaxRate').value;
                 const delivery_fee = document.getElementById('setDeliveryFee').value;
                 const btn = document.querySelector('button[type="submit"]');
 
-                // Simple validation
                 if (tax_rate < 0 || delivery_fee < 0) {
                     alert('Values cannot be negative.');
                     return;
                 }
 
                 btn.disabled = true;
-                btn.innerText = 'Saving...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
 
                 try {
                     const res = await fetch('/admin/settings/update', {
@@ -87,6 +182,7 @@
 
                     if (data.success) {
                         showToast('Success', 'Settings updated successfully.', 'green');
+                        setTimeout(() => window.location.reload(), 1000);
                     } else {
                         alert('Failed: ' + data.message);
                     }
@@ -95,7 +191,7 @@
                     alert('Error updating settings');
                 } finally {
                     btn.disabled = false;
-                    btn.innerText = 'Update Configuration';
+                    btn.innerHTML = '<i class="fas fa-save mr-2"></i> Update Configuration';
                 }
             }
 
@@ -104,7 +200,7 @@
                 const toast = document.createElement('div');
                 toast.className = `bg-white dark:bg-slate-800 border-l-4 border-${color}-500 shadow-xl rounded-r-xl p-4 w-72 transform translate-x-full transition-all duration-300 flex items-start gap-3`;
                 toast.innerHTML = `
-                <div class="text-${color}-500 mt-1"><i class="fas fa-info-circle"></i></div>
+                <div class="text-${color}-500 mt-1"><i class="fas fa-check-circle"></i></div>
                 <div>
                     <h4 class="font-bold text-sm dark:text-white">${title}</h4>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${message}</p>

@@ -1,4 +1,5 @@
 import db from "../config/dataBase.js";
+import { logOrderStatusChange } from "../utils/orderStatusLogger.js";
 import * as inventoryController from "./inventoryController.js";
 
 // Render Checkout Page
@@ -282,21 +283,28 @@ export const createOrder = async (req, res) => {
         const finalTotal = Math.max(0, total);
 
         // 1.7 Check Pharmacy Status for Order Status
-        const pharmacyStatusRes = await client.query("SELECT is_open FROM pharmacy_settings LIMIT 1");
+        const pharmacyStatusRes = await client.query("SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1");
         const isPharmacyOpen = pharmacyStatusRes.rows[0]?.is_open ?? true;
         const initialStatus = isPharmacyOpen ? 'pending' : 'scheduled';
 
-        // 2. Create Order Record
+        // 1.8 Get Active Shift (if exists)
+        const shiftRes = await client.query("SELECT id FROM shifts WHERE status='open' ORDER BY opened_at DESC LIMIT 1");
+        const activeShiftId = shiftRes.rows[0]?.id || null;
+
+        // 2. Create Order Record (with shift_id)
         const orderRes = await client.query(
             `INSERT INTO orders (
-                user_id, address_id, status, 
+                user_id, address_id, status, shift_id,
                 subtotal, delivery_fee, tax_amount, discount_total, promotion_id, total_price, 
                 payment_status, created_at, order_uid
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
             RETURNING id`,
-            [req.user.id, address_id, initialStatus, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
+            [req.user.id, address_id, initialStatus, activeShiftId, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
         );
         const orderId = orderRes.rows[0].id;
+
+        // 2.1 Log Order Status (Audit Trail)
+        await logOrderStatusChange(orderId, null, initialStatus, req.user.id, client);
 
         // 2.5 Record Promotion Usage
         if (promotionId) {
@@ -393,7 +401,11 @@ export const cancelOrder = async (req, res) => {
         const items = itemsRes.rows;
 
         // 3. Update Order Status
+        const oldStatus = order.status; // Should be 'pending'
         await client.query("UPDATE orders SET status = 'canceled' WHERE id = $1", [id]);
+
+        // 3.1 Log Status Change (Audit Trail)
+        await logOrderStatusChange(id, oldStatus, 'canceled', req.user.id, client);
 
         // 4. Restock Inventory
         for (const item of items) {

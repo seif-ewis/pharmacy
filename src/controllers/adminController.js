@@ -32,9 +32,28 @@ export const updateSettings = async (req, res) => {
             [tax_rate, delivery_fee, adminId]
         );
 
+        // Audit Log
+        const { logEvent } = await import("./auditController.js");
+        await logEvent('PRICE_CHANGE', null, 'pharmacy_settings', adminId, { tax: tax_rate, delivery: delivery_fee });
+
         res.json({ success: true, message: "Settings updated successfully" });
     } catch (err) {
         console.error("Update Settings Error:", err);
         res.status(500).json({ success: false, message: "Failed to update settings" });
+    }
+};
+// GET: Render Audit Logs Page
+export const getAuditLogs = async (req, res) => {
+    try {
+        const { getLogs } = await import("./auditController.js");
+        const logs = await getLogs(100);
+        res.render("admin/audit", {
+            logs,
+            user: req.user,
+            pageTitle: "Audit Logs"
+        });
+    } catch (err) {
+        console.error("Get Audit Logs Error:", err);
+        res.status(500).render("500");
     }
 };

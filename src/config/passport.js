@@ -60,9 +60,12 @@ passport.use(
                 // If user doesn't exist, you might want to create one
                 // Using a placeholder password as suggested by your previous diff
                 const newUser = await db.query(
-                    "INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING *",
-                    [profile.emails[0].value.toLowerCase(), "google", profile.displayName, "patient"]
+                    "INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING *",
+                    [profile.emails[0].value.toLowerCase(), "google", profile.displayName]
                 );
+                const { assignRole } = await import("../utils/roleManager.js");
+                await assignRole(newUser.rows[0].id, 'patient');
+
                 return cb(null, newUser.rows[0]);
             } else {
                 return cb(null, result.rows[0]);
@@ -80,7 +83,12 @@ passport.serializeUser((user, cb) => {
 passport.deserializeUser(async (id, cb) => {
     try {
         const result = await db.query("SELECT * FROM users WHERE id = $1", [id]);
-        cb(null, result.rows[0]);
+        const user = result.rows[0];
+        if (user) {
+            const { getUserRoles } = await import("../utils/roleManager.js");
+            user.roles = await getUserRoles(user.id);
+        }
+        cb(null, user);
     } catch (err) {
         cb(err);
     }

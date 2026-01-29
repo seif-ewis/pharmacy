@@ -23,6 +23,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 const server = createServer(app);
 const io = new Server(server);
+app.set("io", io);
 
 // 2. Configure Session Middleware
 const sessionMiddleware = session({
@@ -71,11 +72,28 @@ app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
 
 // Socket Logic
+// Socket Logic
+const onlineUsers = new Set();
+// Only doctor/admin are allowed to hear about online status of patients in this simple model
+// or maybe we broadcast to everyone? For now, 'doctors' room receives status updates.
+
 io.on("connection", (socket) => {
     const user = socket.request.user;
+
     if (user) {
-        console.log(`User connected: ${user.full_name} (${user.id})`);
-        socket.join(`user_${user.id}`);
+        console.log(`User connected: ${user.full_name} (${user.role})`);
+
+        // Groups
+        if (user.role === 'pharmacist' || user.role === 'admin' || user.role === 'doctor') {
+            socket.join('doctors');
+            // Send current online users to this doctor
+            socket.emit('online:users', Array.from(onlineUsers));
+        } else {
+            socket.join(`user_${user.id}`);
+            onlineUsers.add(user.id);
+            // Notify doctors that a user is online
+            io.to('doctors').emit('user:online', { userId: user.id });
+        }
 
         socket.on("chat message", async (msg) => {
             // Validation & Sanitization
@@ -93,15 +111,16 @@ io.on("connection", (socket) => {
                 }
             } catch (err) {
                 console.error("Failed to save chat message:", err);
-                return; // Don't broadcast if save failed (optional decision)
+                return;
             }
 
             // Forward to Doctors
-            io.to('doctors').emit('doctor notification', {
-                userId: user.id,
-                userName: user.full_name,
+            // We include properties to help UI: userId, userName
+            io.to('doctors').emit('chat:message', {
+                senderId: user.id,
+                senderName: user.full_name,
                 message: cleanMsg,
-                time: new Date()
+                timestamp: new Date()
             });
         });
 
@@ -112,11 +131,14 @@ io.on("connection", (socket) => {
         socket.on("stop typing", () => {
             io.to('doctors').emit('user stop typing', { userId: user.id });
         });
-    }
 
-    socket.on("disconnect", () => {
-        // console.log("User disconnected");
-    });
+        socket.on("disconnect", () => {
+            if (user.role !== 'pharmacist' && user.role !== 'admin' && user.role !== 'doctor') {
+                onlineUsers.delete(user.id);
+                io.to('doctors').emit('user:offline', { userId: user.id });
+            }
+        });
+    }
 });
 
 // Trust Proxy for correct IP behind load balancers/reverse proxies
@@ -128,6 +150,35 @@ app.use((req, res) => {
 
 
 
+
+// Scheduler for Announcements
+import * as announcementController from "./src/controllers/announcementController.js";
+import db from "./src/config/dataBase.js";
+
+setInterval(async () => {
+    try {
+        const now = new Date();
+        const res = await db.query(
+            `SELECT * FROM announcements WHERE status = 'scheduled' AND scheduled_for <= $1`,
+            [now]
+        );
+
+        if (res.rows.length > 0) {
+            console.log(`Processing ${res.rows.length} scheduled announcements...`);
+            for (const announcement of res.rows) {
+                // Update status
+                await db.query(`UPDATE announcements SET status = 'sent' WHERE id = $1`, [announcement.id]);
+
+                // Broadcast
+                announcementController.broadcastAnnouncement(io, announcement);
+            }
+        }
+    } catch (err) {
+        console.error("Announcement Scheduler Error:", err);
+    }
+}, 60000); // Check every minute
+
 server.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
+

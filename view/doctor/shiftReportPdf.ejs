@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Report - <%= new Date(shift.opened_at).toLocaleDateString() %>
+    </title>
+    <!-- Tailwind CSS (Print optimized) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 print:bg-white text-gray-800 p-8 print:p-0">
+
+    <div class="max-w-4xl mx-auto bg-white print:shadow-none shadow-xl rounded-2xl p-8 print:p-0">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 uppercase tracking-wide">Shift Report</h1>
+                <p class="text-sm text-gray-500 mt-1">Generated: <%= generatedAt.toLocaleString() %>
+                </p>
+            </div>
+            <div class="text-right">
+                <h2 class="font-bold text-xl">
+                    <%= doctor.full_name %>
+                </h2>
+                <p class="text-gray-500 text-sm">Pharmacist ID: <%= doctor.id.split('-')[0] %>
+                </p>
+            </div>
+        </div>
+
+        <!-- Shift Summary -->
+        <div class="bg-slate-50 print:bg-slate-50 rounded-xl p-6 mb-8 border border-slate-200">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                    <span class="block text-xs font-bold text-gray-500 uppercase">Started</span>
+                    <span class="block font-bold text-lg">
+                        <%= new Date(shift.opened_at).toLocaleString() %>
+                    </span>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-500 uppercase">Ended</span>
+                    <span class="block font-bold text-lg">
+                        <%= shift.closed_at ? new Date(shift.closed_at).toLocaleString() : 'Ongoing' %>
+                    </span>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-500 uppercase">Total Revenue</span>
+                    <span class="block font-black text-xl text-green-600">$<%= parseFloat(shift.gross_revenue ||
+                            0).toFixed(2) %></span>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-500 uppercase">Net Revenue</span>
+                    <span class="block font-black text-xl text-slate-800">$<%= parseFloat(shift.net_revenue ||
+                            0).toFixed(2) %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <span class="block text-3xl font-black text-blue-600">
+                    <%= shift.total_orders || 0 %>
+                </span>
+                <span class="text-xs uppercase font-bold text-gray-400">Total Orders</span>
+            </div>
+            <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <span class="block text-3xl font-black text-purple-600">
+                    <%= shift.total_prescriptions || 0 %>
+                </span>
+                <span class="text-xs uppercase font-bold text-gray-400">Prescriptions</span>
+            </div>
+            <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <span class="block text-3xl font-black text-orange-600">
+                    <%= shift.total_returns || 0 %>
+                </span>
+                <span class="text-xs uppercase font-bold text-gray-400">Returns Processed</span>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="mb-8">
+            <h3 class="font-bold text-lg border-b border-gray-200 pb-2 mb-4">Orders Breakdown</h3>
+            <% if (orders && orders.length> 0) { %>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-500 uppercase text-xs border-b border-gray-100">
+                            <th class="pb-2">Time</th>
+                            <th class="pb-2">Order ID</th>
+                            <th class="pb-2">Customer</th>
+                            <th class="pb-2 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <% orders.forEach(o=> { %>
+                            <tr>
+                                <td class="py-2">
+                                    <%= new Date(o.created_at).toLocaleTimeString() %>
+                                </td>
+                                <td class="py-2 font-mono">#<%= o.order_uid %>
+                                </td>
+                                <td class="py-2">
+                                    <%= o.user_name %>
+                                </td>
+                                <td class="py-2 text-right font-bold">$<%= parseFloat(o.total_price).toFixed(2) %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+                <% } else { %>
+                    <p class="text-gray-400 text-sm italic">No orders recorded in this shift.</p>
+                    <% } %>
+        </div>
+
+        <!-- Returns Table -->
+        <% if (returns && returns.length> 0) { %>
+            <div class="mb-8">
+                <h3 class="font-bold text-lg border-b border-gray-200 pb-2 mb-4">Returns</h3>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-500 uppercase text-xs border-b border-gray-100">
+                            <th class="pb-2">Time</th>
+                            <th class="pb-2">Reason</th>
+                            <th class="pb-2">Customer</th>
+                            <th class="pb-2 text-right">Refund Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <% returns.forEach(r=> { %>
+                            <tr>
+                                <td class="py-2">
+                                    <%= new Date(r.created_at).toLocaleTimeString() %>
+                                </td>
+                                <td class="py-2 capitalize">
+                                    <%= (r.reason || '' ).replace('_', ' ' ) %>
+                                </td>
+                                <td class="py-2">
+                                    <%= r.user_name %>
+                                </td>
+                                <td class="py-2 text-right font-bold text-red-500">-$<%=
+                                        parseFloat(r.refund_amount).toFixed(2) %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+
+                <!-- Footer -->
+                <div class="mt-12 text-center text-xs text-gray-400 border-t pt-4">
+                    <p>Generated by Hosam Pharmacy System • <%= new Date().getFullYear() %>
+                    </p>
+                </div>
+
+                <!-- Print Trigger -->
+                <div class="no-print fixed bottom-8 right-8 flex gap-4">
+                    <button onclick="window.close()"
+                        class="bg-gray-500 text-white px-6 py-3 rounded-full shadow-lg font-bold hover:bg-gray-600 transition-colors">Close</button>
+                    <button onclick="window.print()"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg font-bold hover:bg-blue-700 transition-colors animate-bounce">Print
+                        / Save PDF</button>
+                </div>
+
+                <script>
+                    // Auto-print prompt on load
+                    window.onload = function () {
+                        setTimeout(() => {
+                            // window.print();
+                        }, 500);
+                    }
+                </script>
+
+    </div>
+</body>
+
+</html>

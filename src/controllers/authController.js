@@ -43,9 +43,11 @@ export const register = async (req, res) => {
     try {
         const hash = await bcrypt.hash(password, saltRound);
         const result = await db.query(
-            "INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING *",
-            [email.toLowerCase(), hash, username, "patient"]
+            "INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING *",
+            [email.toLowerCase(), hash, username]
         );
+        const { assignRole } = await import("../utils/roleManager.js");
+        await assignRole(result.rows[0].id, 'patient');
         const user = result.rows[0];
         req.login(user, (err) => {
             if (err) {

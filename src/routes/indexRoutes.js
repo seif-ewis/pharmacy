@@ -4,8 +4,17 @@ import * as searchController from "../controllers/searchController.js";
 import * as notificationController from "../controllers/notificationController.js";
 import * as orderController from "../controllers/orderController.js";
 import * as requestController from "../controllers/requestController.js";
+import * as prescriptionController from "../controllers/prescriptionController.js";
+import { upload } from "../config/cloudinary.js";
+import * as returnController from "../controllers/returnController.js";
+import * as userController from "../controllers/userController.js";
+import * as productController from "../controllers/productController.js";
+import * as doctorController from "../controllers/doctorController.js";
+import * as adminController from "../controllers/adminController.js";
+import * as announcementController from "../controllers/announcementController.js";
+import * as analyticsController from "../controllers/analyticsController.js";
 
-import { ensureAuthenticated, ensureDoctor } from "../middleware/auth.js";
+import { ensureAuthenticated, ensureDoctor, ensureAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -18,8 +27,6 @@ router.post("/notifications/subscribe", ensureAuthenticated, notificationControl
 
 // Protected prescription upload route (Server-side check)
 // Prescription Routes
-import * as prescriptionController from "../controllers/prescriptionController.js";
-import { upload } from "../config/cloudinary.js";
 
 router.get("/prescription/upload", ensureAuthenticated, prescriptionController.getUploadPage);
 router.post("/prescription/upload", ensureAuthenticated, upload.single("image"), prescriptionController.uploadPrescription);
@@ -46,7 +53,6 @@ router.get("/admin/product-requests", ensureAuthenticated, requestController.get
 router.post("/admin/requests/:requestId/status", ensureAuthenticated, requestController.updateRequestStatus);
 
 // Return Routes (User)
-import * as returnController from "../controllers/returnController.js";
 router.get("/orders/:orderId/return", ensureAuthenticated, returnController.getReturnPage);
 router.post("/orders/return", ensureAuthenticated, returnController.submitReturnRequest);
 
@@ -56,7 +62,6 @@ router.get("/admin/returns", ensureAuthenticated, returnController.getAdminRetur
 router.post("/admin/returns/process", ensureAuthenticated, returnController.processReturn);
 
 // Profile
-import * as userController from "../controllers/userController.js";
 
 // Protected profile routes
 router.get("/profile", ensureAuthenticated, userController.getProfile);
@@ -80,22 +85,23 @@ router.get("/return-policy", (req, res) => {
 });
 
 // Products
-import * as productController from "../controllers/productController.js";
 router.get("/products/:id", productController.getProductDetails);
 
 // Doctor Dashboard Routes
-// Doctor Dashboard Routes
-import * as doctorController from "../controllers/doctorController.js";
-import * as adminController from "../controllers/adminController.js"; // Import Admin Controller
 
 router.get("/doctor/dashboard", ensureDoctor, doctorController.getDashboard);
+router.get("/doctor/dashboard/stats", ensureDoctor, doctorController.getDashboardStats);
+router.get("/doctor/orders/all", ensureDoctor, doctorController.getAllOrders);
+router.get("/doctor/orders/:orderId/items", ensureDoctor, doctorController.getOrderItems);
 router.post("/doctor/shift/start", ensureDoctor, doctorController.startShift);
 router.post("/doctor/shift/end", ensureDoctor, doctorController.endShift);
+router.get("/doctor/shift/:id/export-pdf", ensureDoctor, doctorController.exportShiftPdf);
 router.post("/doctor/pharmacy/toggle", ensureDoctor, doctorController.togglePharmacyStatus);
 
-// Admin Settings Routes
-router.get("/admin/settings", ensureDoctor, adminController.getSettings);
-router.post("/admin/settings/update", ensureDoctor, adminController.updateSettings);
+// Admin Settings Routes (Admin Only)
+router.get("/admin/settings", ensureAdmin, adminController.getSettings);
+router.post("/admin/settings/update", ensureAdmin, adminController.updateSettings);
+router.get("/admin/audit", ensureAdmin, adminController.getAuditLogs);
 
 router.get("/doctor/prescriptions/:id/process", ensureDoctor, doctorController.getProcessPrescription);
 router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.submitPrescriptionProcessing);
@@ -105,7 +111,19 @@ router.post("/doctor/inventory/add", ensureDoctor, doctorController.addInventory
 // Doctor Chat Routes
 router.get("/doctor/chats/active", ensureDoctor, doctorController.getChats);
 router.get("/doctor/chats/:chatId/messages", ensureDoctor, doctorController.getChatMessages);
+// Doctor Announcement Routes
+router.post("/doctor/announcements/create", ensureDoctor, announcementController.createAnnouncement);
+router.get("/doctor/announcements", ensureDoctor, announcementController.getAnnouncements);
 router.post("/doctor/chats/send", ensureDoctor, doctorController.sendChatMessage);
+
+// Doctor Returns Module Routes
+router.get("/doctor/returns/recent", ensureDoctor, doctorController.getRecentReturns);
+router.get("/doctor/returns/search-order", ensureDoctor, doctorController.searchReturnOrder);
+router.get("/doctor/returns/order-items/:orderId", ensureDoctor, doctorController.getOrderItemsForReturn);
+router.post("/doctor/returns/process", ensureDoctor, doctorController.processReturn);
+
+// Doctor Reports Analytics
+router.get("/doctor/reports/analytics", ensureDoctor, analyticsController.getDoctorAnalytics);
 
 
 

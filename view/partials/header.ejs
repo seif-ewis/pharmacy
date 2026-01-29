@@ -15,7 +15,7 @@
 
                 <!-- Status Badge (Visible on all screens) -->
                 <div
-                    class="flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold 
+                    class="pharmacy-status-badge flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold 
                 <%= (typeof pharmacySettings !== 'undefined' && pharmacySettings.is_open) ? 'bg-green-100 text-green-700' : 'bg-night border border-blue-900 text-blue-100' %>">
                     <% if (typeof pharmacySettings !=='undefined' && pharmacySettings.is_open) { %>
                         <span class="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></span>
