@@ -2293,6 +2293,7 @@
             // ================================================
             let currentOrderStatus = 'pending';
             let ordersCache = [];
+            let expandedOrders = new Set(); // Track expanded orders
 
             async function loadOrders() {
                 try {
@@ -2364,7 +2365,9 @@
                     return;
                 }
 
-                container.innerHTML = orders.map(order => `
+                container.innerHTML = orders.map(order => {
+                    const isExpanded = expandedOrders.has(order.id);
+                    return `
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all hover:shadow-lg">
                         <!-- Order Header -->
                         <div class="p-6 flex items-center justify-between cursor-pointer" onclick="toggleOrderDetails('${order.id}')">
@@ -2385,12 +2388,12 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 ${order.shift_id ? '<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-bold">📍 Shift Assigned</span>' : '<span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full text-xs font-bold">⏳ No Shift</span>'}
-                                <i class="fas fa-chevron-down text-gray-400 transition-transform" id="chevron-${order.id}"></i>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}" id="chevron-${order.id}" style="${isExpanded ? 'transform: rotate(180deg);' : ''}"></i>
                             </div>
                         </div>
 
                         <!-- Order Details (Hidden by default) -->
-                        <div id="details-${order.id}" class="hidden border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+                        <div id="details-${order.id}" class="${isExpanded ? '' : 'hidden'} border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
                             <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <!-- Order Items -->
                                 <div class="lg:col-span-2">
@@ -2452,7 +2455,16 @@
                             </div>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                // Restore expanded items content
+                expandedOrders.forEach(orderId => {
+                    // Check if this order is still in the rendered list
+                    if (document.getElementById(`items-${orderId}`)) {
+                        loadOrderItems(orderId);
+                    }
+                });
             }
 
             function toggleOrderDetails(orderId) {
@@ -2463,6 +2475,7 @@
                 if (details.classList.contains('hidden')) {
                     details.classList.remove('hidden');
                     chevron.style.transform = 'rotate(180deg)';
+                    expandedOrders.add(orderId); // Track state
 
                     // Load order items if not loaded yet
                     if (itemsContainer.innerHTML.includes('Loading')) {
@@ -2471,6 +2484,7 @@
                 } else {
                     details.classList.add('hidden');
                     chevron.style.transform = 'rotate(0deg)';
+                    expandedOrders.delete(orderId); // Track state
                 }
             }
 
