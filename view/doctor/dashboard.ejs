@@ -925,10 +925,16 @@
                                         <i class="fas fa-fire"></i>
                                         Most Used (This Shift)
                                     </h3>
+                                    <span id="most-used-count"
+                                        class="px-3 py-1 bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-200 rounded-full text-xs font-bold">0</span>
                                 </div>
-                                <div id="most-used-list" class="space-y-2 max-h-48 overflow-y-auto">
+                                <div id="most-used-preview" class="mb-4">
                                     <p class="text-center text-gray-400 text-sm py-4">Loading...</p>
                                 </div>
+                                <button onclick="showAnalyticsModal('most-used')"
+                                    class="w-full text-center py-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                                    <i class="fas fa-arrow-right mr-2"></i>Show More
+                                </button>
                             </div>
 
                             <!-- Recently Edited -->
@@ -937,12 +943,18 @@
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2">
                                         <i class="fas fa-edit"></i>
-                                        Recently Edited
+                                        Recently Added
                                     </h3>
+                                    <span id="recently-edited-count"
+                                        class="px-3 py-1 bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-200 rounded-full text-xs font-bold">0</span>
                                 </div>
-                                <div id="recently-edited-list" class="space-y-2 max-h-48 overflow-y-auto">
+                                <div id="recently-edited-preview" class="mb-4">
                                     <p class="text-center text-gray-400 text-sm py-4">Loading...</p>
                                 </div>
+                                <button onclick="showAnalyticsModal('recently-edited')"
+                                    class="w-full text-center py-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors">
+                                    <i class="fas fa-arrow-right mr-2"></i>Show More
+                                </button>
                             </div>
 
                             <!-- Low Stock Alerts -->
@@ -956,9 +968,13 @@
                                     <span id="low-stock-count"
                                         class="px-3 py-1 bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-200 rounded-full text-xs font-bold">0</span>
                                 </div>
-                                <div id="low-stock-list" class="space-y-2 max-h-48 overflow-y-auto">
+                                <div id="low-stock-preview" class="mb-4">
                                     <p class="text-center text-gray-400 text-sm py-4">Loading...</p>
                                 </div>
+                                <button onclick="showAnalyticsModal('low-stock')"
+                                    class="w-full text-center py-2 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                                    <i class="fas fa-arrow-right mr-2"></i>Show All
+                                </button>
                             </div>
                         </div>
 
@@ -1033,6 +1049,27 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- Analytics Modal (Show More) -->
+                        <div id="analytics-modal"
+                            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+                            <div
+                                class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
+                                <div
+                                    class="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                    <h2 id="analytics-modal-title" class="text-xl font-black dark:text-white">
+                                        Products
+                                    </h2>
+                                    <button onclick="closeAnalyticsModal()"
+                                        class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 flex items-center justify-center transition-colors">
+                                        <i class="fas fa-times text-gray-500 dark:text-gray-400"></i>
+                                    </button>
+                                </div>
+                                <div id="analytics-modal-content" class="p-6 overflow-y-auto flex-1">
+                                    <p class="text-center text-gray-400 py-8">Loading...</p>
+                                </div>
                             </div>
                         </div>
 
@@ -2496,71 +2533,210 @@
                     .trim();
             }
 
-            // Update analytics cards (Most Used, Recently Edited, Low Stock)
-            function updateInventoryAnalytics() {
-                // Low Stock List
-                const lowStockItems = inventoryCache
+            // Update analytics cards (Most Used, Recently Added, Low Stock)
+            // Store analytics data for modal
+            let analyticsData = {
+                mostUsed: [],
+                recentlyEdited: [],
+                lowStock: []
+            };
+
+            async function updateInventoryAnalytics() {
+                // Fetch REAL sales data from API (not assuming low stock = most sold)
+                try {
+                    const res = await fetch('/doctor/inventory/most-sold');
+                    const data = await res.json();
+                    if (data.success) {
+                        analyticsData.mostUsed = data.mostSold || [];
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch most sold:', e);
+                    analyticsData.mostUsed = [];
+                }
+
+                // Recently Added (by created_at)
+                analyticsData.recentlyEdited = [...inventoryCache]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 10); // Limit to 10 for modal
+
+                // Low Stock (ALL items below threshold)
+                analyticsData.lowStock = inventoryCache
                     .filter(item => item.current_stock <= (item.low_stock_threshold || 10))
                     .sort((a, b) => a.current_stock - b.current_stock);
 
+                // Update Most Used Preview (show #1 only - REAL sales data)
+                const mostUsedPreview = document.getElementById('most-used-preview');
+                const mostUsedCount = document.getElementById('most-used-count');
+                if (mostUsedCount) mostUsedCount.textContent = analyticsData.mostUsed.length;
+
+                if (mostUsedPreview) {
+                    if (analyticsData.mostUsed.length === 0) {
+                        mostUsedPreview.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-shopping-cart text-3xl text-gray-300 mb-2"></i>
+                                <p class="text-gray-400 text-sm">No sales this shift yet</p>
+                            </div>`;
+                    } else {
+                        const top = analyticsData.mostUsed[0];
+                        mostUsedPreview.innerHTML = `
+                            <div class="flex items-center gap-3 p-3 bg-white/70 dark:bg-slate-800/70 rounded-xl">
+                                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                    <i class="fas fa-fire text-blue-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800 dark:text-white">${top.name}</p>
+                                    <p class="text-xs text-gray-500">${formatCategory(top.category)}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-blue-600">${top.total_sold} sold</p>
+                                    <p class="text-xs text-gray-400">${top.order_count} orders</p>
+                                </div>
+                            </div>`;
+                    }
+                }
+
+                // Update Recently Added Preview (show #1 only)
+                const recentPreview = document.getElementById('recently-edited-preview');
+                const recentCount = document.getElementById('recently-edited-count');
+                if (recentCount) recentCount.textContent = analyticsData.recentlyEdited.length;
+
+                if (recentPreview) {
+                    if (analyticsData.recentlyEdited.length === 0) {
+                        recentPreview.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-inbox text-3xl text-gray-300 mb-2"></i>
+                                <p class="text-gray-400 text-sm">No products yet</p>
+                            </div>`;
+                    } else {
+                        const top = analyticsData.recentlyEdited[0];
+                        recentPreview.innerHTML = `
+                            <div class="flex items-center gap-3 p-3 bg-white/70 dark:bg-slate-800/70 rounded-xl">
+                                <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                                    <i class="fas fa-clock text-purple-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800 dark:text-white">${top.name}</p>
+                                    <p class="text-xs text-gray-500">${formatCategory(top.category)}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-purple-600">${new Date(top.created_at).toLocaleDateString()}</p>
+                                    <p class="text-xs text-gray-400">added</p>
+                                </div>
+                            </div>`;
+                    }
+                }
+
+                // Update Low Stock Preview (show #1 only)
+                const lowStockPreview = document.getElementById('low-stock-preview');
                 const lowStockCount = document.getElementById('low-stock-count');
-                const lowStockList = document.getElementById('low-stock-list');
+                if (lowStockCount) lowStockCount.textContent = analyticsData.lowStock.length;
 
-                if (lowStockCount) {
-                    lowStockCount.textContent = lowStockItems.length;
-                }
-
-                if (lowStockList) {
-                    if (lowStockItems.length === 0) {
-                        lowStockList.innerHTML = '<p class="text-center text-green-500 text-sm py-4"><i class="fas fa-check-circle mr-2"></i>All items in stock!</p>';
+                if (lowStockPreview) {
+                    if (analyticsData.lowStock.length === 0) {
+                        lowStockPreview.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-3xl text-green-400 mb-2"></i>
+                                <p class="text-green-500 text-sm font-medium">All products in stock!</p>
+                            </div>`;
                     } else {
-                        lowStockList.innerHTML = lowStockItems.slice(0, 5).map(item => `
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
-                                <span class="text-red-500 font-bold text-sm">${item.current_stock} left</span>
-                            </div>
-                        `).join('');
+                        const top = analyticsData.lowStock[0];
+                        lowStockPreview.innerHTML = `
+                            <div class="flex items-center gap-3 p-3 bg-white/70 dark:bg-slate-800/70 rounded-xl">
+                                <div class="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold text-gray-800 dark:text-white">${top.name}</p>
+                                    <p class="text-xs text-gray-500">${formatCategory(top.category)}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-red-600">${top.current_stock}</p>
+                                    <p class="text-xs text-gray-400">left</p>
+                                </div>
+                            </div>`;
                     }
                 }
+            }
 
-                // Most Used (items with most sales - based on low calculated stock vs threshold)
-                const mostUsedList = document.getElementById('most-used-list');
-                if (mostUsedList) {
-                    // Sort by how much below starting point they are (proxy for most sold)
-                    const mostUsed = [...inventoryCache]
-                        .sort((a, b) => a.current_stock - b.current_stock)
-                        .slice(0, 5);
+            // Show Analytics Modal with full list
+            function showAnalyticsModal(type) {
+                const modal = document.getElementById('analytics-modal');
+                const title = document.getElementById('analytics-modal-title');
+                const content = document.getElementById('analytics-modal-content');
 
-                    if (mostUsed.length === 0) {
-                        mostUsedList.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No data yet</p>';
-                    } else {
-                        mostUsedList.innerHTML = mostUsed.map(item => `
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
-                                <span class="text-blue-500 font-bold text-sm">${item.current_stock} in stock</span>
-                            </div>
-                        `).join('');
-                    }
+                if (!modal || !title || !content) return;
+
+                let items = [];
+                let titleText = '';
+                let colorClass = '';
+                let iconClass = '';
+
+                switch (type) {
+                    case 'most-used':
+                        items = analyticsData.mostUsed;
+                        titleText = 'Most Used Products (This Shift)';
+                        colorClass = 'blue';
+                        iconClass = 'fa-fire';
+                        break;
+                    case 'recently-edited':
+                        items = analyticsData.recentlyEdited;
+                        titleText = 'Recently Added Products';
+                        colorClass = 'purple';
+                        iconClass = 'fa-clock';
+                        break;
+                    case 'low-stock':
+                        items = analyticsData.lowStock;
+                        titleText = `Low Stock Products (${items.length} items)`;
+                        colorClass = 'red';
+                        iconClass = 'fa-exclamation-triangle';
+                        break;
                 }
 
-                // Recently Edited (by created_at since we don't have updated_at)
-                const recentlyEditedList = document.getElementById('recently-edited-list');
-                if (recentlyEditedList) {
-                    const recentlyEdited = [...inventoryCache]
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                        .slice(0, 5);
+                title.innerHTML = `<i class="fas ${iconClass} text-${colorClass}-500 mr-2"></i>${titleText}`;
 
-                    if (recentlyEdited.length === 0) {
-                        recentlyEditedList.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No recent edits</p>';
-                    } else {
-                        recentlyEditedList.innerHTML = recentlyEdited.map(item => `
-                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
-                                <span class="text-purple-500 text-xs">${new Date(item.created_at).toLocaleDateString()}</span>
+                if (items.length === 0) {
+                    content.innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="fas fa-inbox text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                            <p class="text-gray-500 dark:text-gray-400">No products to show</p>
+                        </div>`;
+                } else {
+                    content.innerHTML = items.map((item, index) => `
+                        <div class="flex items-center gap-4 p-4 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-slate-700/30' : ''} rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-${colorClass}-100 dark:bg-${colorClass}-900/30 flex items-center justify-center text-${colorClass}-600 dark:text-${colorClass}-400 font-bold text-sm">
+                                ${index + 1}
                             </div>
-                        `).join('');
-                    }
+                            ${item.image_url ?
+                            `<img src="${item.image_url}" class="w-12 h-12 rounded-lg object-cover" alt="${item.name}">` :
+                            `<div class="w-12 h-12 rounded-lg bg-gray-200 dark:bg-slate-600 flex items-center justify-center"><i class="fas fa-pills text-gray-400"></i></div>`
+                        }
+                            <div class="flex-1">
+                                <p class="font-bold text-gray-800 dark:text-white">${item.name}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">${formatCategory(item.category)}</p>
+                            </div>
+                            <div class="text-right">
+                                ${type === 'low-stock' ?
+                            `<p class="font-bold text-red-500">${item.current_stock} left</p>
+                                     <p class="text-xs text-gray-400">Threshold: ${item.low_stock_threshold || 10}</p>` :
+                            type === 'recently-edited' ?
+                                `<p class="font-bold text-purple-600 dark:text-purple-400">${new Date(item.created_at).toLocaleDateString()}</p>
+                                     <p class="text-xs text-gray-400">Stock: ${item.current_stock}</p>` :
+                                `<p class="font-bold text-blue-600 dark:text-blue-400">${item.total_sold || 0} sold</p>
+                                     <p class="text-xs text-gray-400">${item.order_count || 0} orders</p>`
+                        }
+                            </div>
+                            <button onclick="openEditModal('${item.id}')" class="text-gray-400 hover:text-blue-500 transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    `).join('');
                 }
+
+                modal.classList.remove('hidden');
+            }
+
+            function closeAnalyticsModal() {
+                document.getElementById('analytics-modal')?.classList.add('hidden');
             }
 
             function openInventoryModal() {

@@ -113,6 +113,7 @@ router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderS
 
 // Doctor Inventory Routes (CRUD)
 router.get("/doctor/inventory", ensureDoctor, doctorController.getInventory);
+router.get("/doctor/inventory/most-sold", ensureDoctor, doctorController.getMostSoldThisShift);
 router.post("/doctor/inventory/create", ensureDoctor, doctorController.createInventoryItem);
 router.put("/doctor/inventory/update/:id", ensureDoctor, doctorController.updateInventoryItem);
 router.delete("/doctor/inventory/delete/:id", ensureDoctor, doctorController.deleteInventoryItem);

@@ -571,6 +571,60 @@ export const getInventory = async (req, res) => {
     }
 };
 
+// Get Most Sold Products This Shift (REAL sales data)
+export const getMostSoldThisShift = async (req, res) => {
+    try {
+        // Get current active shift
+        const shiftRes = await db.query(
+            "SELECT id FROM shifts WHERE status = 'open' ORDER BY opened_at DESC LIMIT 1"
+        );
+
+        const activeShiftId = shiftRes.rows[0]?.id;
+
+        if (!activeShiftId) {
+            return res.json({
+                success: true,
+                mostSold: [],
+                message: 'No active shift'
+            });
+        }
+
+        // Query actual sales from order_items joined with orders for this shift
+        const result = await db.query(`
+            SELECT 
+                m.id,
+                m.name,
+                m.category,
+                m.image_url,
+                m.price,
+                COALESCE(ms.current_stock, 0) as current_stock,
+                SUM(oi.quantity) as total_sold,
+                COUNT(DISTINCT o.id) as order_count
+            FROM order_items oi
+            JOIN orders o ON o.id = oi.order_id
+            JOIN medicines m ON m.id = oi.medicine_id
+            LEFT JOIN medicine_stock ms ON ms.id = m.id
+            WHERE o.shift_id = $1
+              AND o.status NOT IN ('cancelled', 'returned')
+            GROUP BY m.id, m.name, m.category, m.image_url, m.price, ms.current_stock
+            ORDER BY total_sold DESC
+            LIMIT 10
+        `, [activeShiftId]);
+
+        res.json({
+            success: true,
+            shiftId: activeShiftId,
+            mostSold: result.rows
+        });
+    } catch (err) {
+        console.error('Get Most Sold Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load most sold products'
+        });
+    }
+};
+
 // Create New Inventory Item
 export const createInventoryItem = async (req, res) => {
     const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
