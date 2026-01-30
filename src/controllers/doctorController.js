@@ -627,7 +627,7 @@ export const getMostSoldThisShift = async (req, res) => {
 
 // Create New Inventory Item
 export const createInventoryItem = async (req, res) => {
-    const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
+    const { name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects } = req.body;
 
     // Validation
     if (!name || !price || !quantity || !category) {
@@ -644,10 +644,10 @@ export const createInventoryItem = async (req, res) => {
         // Create medicine record WITHOUT stock
         const result = await client.query(
             `INSERT INTO medicines
-            (name, price, category, description, image_url, low_stock_threshold, created_at, updated_at)
-        VALUES($1, $2, $3, $4, $5, $6, NOW(), NOW())
+            (name, price, category, description, image_url, low_stock_threshold, benefits, side_effects, created_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         RETURNING * `,
-            [name, price, category, description || null, imageUrl || null, lowStockThreshold || 10]
+            [name, price, category, description || null, imageUrl || null, lowStockThreshold || 10, benefits || null, sideEffects || null]
         );
 
         const newProduct = result.rows[0];
@@ -688,7 +688,7 @@ export const createInventoryItem = async (req, res) => {
 // Update Inventory Item
 export const updateInventoryItem = async (req, res) => {
     const { id } = req.params;
-    const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
+    const { name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects } = req.body;
 
     const client = await db.connect();
     try {
@@ -707,10 +707,11 @@ export const updateInventoryItem = async (req, res) => {
             description = $4,
             image_url = $5,
             low_stock_threshold = $6,
-            updated_at = CURRENT_TIMESTAMP
-            WHERE id = $7
+            benefits = $7,
+            side_effects = $8
+            WHERE id = $9
         RETURNING * `,
-            [name, price, category, description, imageUrl, lowStockThreshold || 10, id]
+            [name, price, category, description, imageUrl, lowStockThreshold || 10, benefits || null, sideEffects || null, id]
         );
 
         if (result.rows.length === 0) {

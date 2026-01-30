@@ -1122,14 +1122,29 @@
                                             required
                                             class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
 
-                                        <input type="text" id="product-category" placeholder="Category *" required
+                                        <select id="product-category" required
                                             class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                                            <option value="" disabled selected>Select Category *</option>
+                                            <option value="featuredMedicines">Featured Medicines</option>
+                                            <option value="dailyEssentials">Daily Essentials</option>
+                                            <option value="wellnessProducts">Wellness Products</option>
+                                            <option value="servicesProducts">Services</option>
+                                        </select>
 
                                         <input type="number" id="product-low-stock" placeholder="Low Stock Threshold"
                                             class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
                                     </div>
 
                                     <textarea id="product-description" placeholder="Description" rows="3"
+                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
+
+                                    <textarea id="product-benefits"
+                                        placeholder="Benefits (e.g. Supports general health and wellness...)" rows="2"
+                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
+
+                                    <textarea id="product-side-effects"
+                                        placeholder="Side Effects (e.g. Consult physician if adverse reactions occur...)"
+                                        rows="2"
                                         class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
 
                                     <input type="url" id="product-image" placeholder="Image URL"
@@ -2760,6 +2775,8 @@
                 document.getElementById('product-category').value = product.category || '';
                 document.getElementById('product-low-stock').value = product.low_stock_threshold || 10;
                 document.getElementById('product-description').value = product.description || '';
+                document.getElementById('product-benefits').value = product.benefits || '';
+                document.getElementById('product-side-effects').value = product.side_effects || '';
                 document.getElementById('product-image').value = product.image_url || '';
 
                 document.getElementById('inventory-modal').classList.remove('hidden');
@@ -2781,6 +2798,8 @@
                     quantity: parseInt(document.getElementById('product-quantity').value),
                     category: document.getElementById('product-category').value,
                     description: document.getElementById('product-description').value,
+                    benefits: document.getElementById('product-benefits').value,
+                    sideEffects: document.getElementById('product-side-effects').value,
                     imageUrl: document.getElementById('product-image').value,
                     lowStockThreshold: parseInt(document.getElementById('product-low-stock').value) || 10
                 };
