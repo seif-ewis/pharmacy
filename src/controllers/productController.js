@@ -1,5 +1,7 @@
 
 import db from "../config/dataBase.js";
+
+import { marked } from 'marked';
 // import { formatTimeAgo } from "../utils/formatDate.js"; // REFACTORED: Now in globalState middleware
 
 // Get Product Details
@@ -22,6 +24,11 @@ export const getProductDetails = async (req, res) => {
 
         const product = result.rows[0];
 
+        // Parse description from Markdown to HTML for rich text display
+        if (product.description) {
+            product.description = marked.parse(product.description);
+        }
+
         // Use actual original_price from DB
         product.originalPrice = product.original_price;
 
@@ -31,7 +38,7 @@ export const getProductDetails = async (req, res) => {
         // Fetch Related Products (same category, excluding current item)
         const relatedRes = await db.query(
             `SELECT 
-                m.id, m.name, m.price, m.image_url, m.icon,
+                m.id, m.name, m.price, m.image_url, m.icon, m.description,
                 COALESCE(ms.current_stock, 0) as quantity
              FROM medicines m
              LEFT JOIN medicine_stock ms ON ms.id = m.id
@@ -61,3 +68,4 @@ export const getProductDetails = async (req, res) => {
         res.status(500).render("500", { pageTitle: "Server Error" });
     }
 };
+
