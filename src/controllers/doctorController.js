@@ -151,9 +151,12 @@ export const getDashboardStats = async (req, res) => {
         const prescriptionsCount = parseInt(presCountRes.rows[0].count);
 
         // Get low stock items count (stock < 10)
-        const lowStockRes = await db.query(
-            "SELECT COUNT(*) as count FROM medicines WHERE quantity < 10"
-        );
+        const lowStockRes = await db.query(`
+            SELECT COUNT(*) as count 
+            FROM medicines m
+            LEFT JOIN medicine_stock ms ON ms.id = m.id
+            WHERE COALESCE(ms.current_stock, 0) < 10
+        `);
         const lowStockCount = parseInt(lowStockRes.rows[0].count);
 
         // Get scheduled orders count (waiting for pharmacy to open)
@@ -540,18 +543,19 @@ export const getInventory = async (req, res) => {
     try {
         const result = await db.query(`
             SELECT 
-                id, 
-                name, 
-                price, 
-                stock_quantity, 
-                category, 
-                description, 
-                image_url,
-                low_stock_threshold,
-                created_at,
-                updated_at
-            FROM medicines
-            ORDER BY name ASC
+                m.id, 
+                m.name, 
+                m.price, 
+                m.category, 
+                m.description, 
+                m.image_url,
+                m.low_stock_threshold,
+                m.created_at,
+                COALESCE(ms.current_stock, 0) as current_stock,
+                COALESCE(ms.is_low_stock, false) as is_low_stock
+            FROM medicines m
+            LEFT JOIN medicine_stock ms ON ms.id = m.id
+            ORDER BY m.name ASC
         `);
 
         res.json({
@@ -579,19 +583,44 @@ export const createInventoryItem = async (req, res) => {
         });
     }
 
+    const client = await db.connect();
     try {
-        const result = await db.query(
-            `INSERT INTO medicines 
-            (name, price, stock_quantity, category, description, image_url, low_stock_threshold) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *`,
-            [name, price, quantity, category, description || null, imageUrl || null, lowStockThreshold || 10]
+        await client.query('BEGIN');
+
+        // Create medicine record WITHOUT stock
+        const result = await client.query(
+            `INSERT INTO medicines
+            (name, price, category, description, image_url, low_stock_threshold, created_at, updated_at)
+        VALUES($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING * `,
+            [name, price, category, description || null, imageUrl || null, lowStockThreshold || 10]
         );
+
+        const newProduct = result.rows[0];
+
+        // Get current shift for tracking
+        const currentShift = await inventoryController.getCurrentShift(client, req.user.id);
+
+        // Log initial stock via adjustment if quantity > 0
+        if (quantity > 0) {
+            await inventoryController.logAdjustment(
+                client,
+                newProduct.id,
+                'initial_stock',
+                parseInt(quantity),
+                null,
+                req.user.id,
+                `Initial stock on product creation: ${name} `,
+                currentShift  // Pass shift ID for tracking
+            );
+        }
+
+        await client.query('COMMIT');
 
         res.json({
             success: true,
             message: 'Product added successfully',
-            product: result.rows[0]
+            product: { ...newProduct, current_stock: quantity }
         });
     } catch (err) {
         console.error('Create Inventory Item Error:', err);
@@ -607,33 +636,60 @@ export const updateInventoryItem = async (req, res) => {
     const { id } = req.params;
     const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
 
+    const client = await db.connect();
     try {
-        const result = await db.query(
+        await client.query('BEGIN');
+
+        // Get current stock
+        const oldStock = await inventoryController.getStock(client, id);
+        const stockDelta = parseInt(quantity) - oldStock;
+
+        // Update medicine details (NO stock_quantity field)
+        const result = await client.query(
             `UPDATE medicines 
-            SET name = $1, 
-                price = $2, 
-                stock_quantity = $3, 
-                category = $4, 
-                description = $5, 
-                image_url = $6,
-                low_stock_threshold = $7,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $8
-            RETURNING *`,
-            [name, price, quantity, category, description, imageUrl, lowStockThreshold || 10, id]
+            SET name = $1,
+            price = $2,
+            category = $3,
+            description = $4,
+            image_url = $5,
+            low_stock_threshold = $6,
+            updated_at = CURRENT_TIMESTAMP
+            WHERE id = $7
+        RETURNING * `,
+            [name, price, category, description, imageUrl, lowStockThreshold || 10, id]
         );
 
         if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({
                 success: false,
                 error: 'Product not found'
             });
         }
 
+        // Get current shift for tracking
+        const currentShift = await inventoryController.getCurrentShift(client, req.user.id);
+
+        // Log adjustment if quantity changed
+        if (stockDelta !== 0) {
+            await inventoryController.logAdjustment(
+                client,
+                id,
+                'manual_adjustment',
+                stockDelta,
+                null,
+                req.user.id,
+                `Manual stock adjustment: ${oldStock} → ${quantity} (${stockDelta > 0 ? '+' : ''}${stockDelta})`,
+                currentShift  // Pass shift ID for tracking
+            );
+        }
+
+        await client.query('COMMIT');
+
         res.json({
             success: true,
             message: 'Product updated successfully',
-            product: result.rows[0]
+            product: { ...result.rows[0], current_stock: quantity }
         });
     } catch (err) {
         console.error('Update Inventory Item Error:', err);
@@ -693,7 +749,7 @@ export const getChats = async (req, res) => {
         const chatsRes = await db.query(`
             SELECT c.*, u.full_name as patient_name, u.id as patient_id,
             (SELECT order_uid FROM orders WHERE user_id = c.patient_id ORDER BY created_at DESC LIMIT 1) as latest_order_uid,
-            (SELECT id FROM orders WHERE user_id = c.patient_id ORDER BY created_at DESC LIMIT 1) as latest_order_id
+                (SELECT id FROM orders WHERE user_id = c.patient_id ORDER BY created_at DESC LIMIT 1) as latest_order_id
             FROM chats c 
             JOIN users u ON c.patient_id = u.id 
             WHERE c.status = 'active' 
@@ -742,7 +798,7 @@ export const sendChatMessage = async (req, res) => {
         // Realtime Emit
         const io = req.app.get('io');
         if (io && patientId) {
-            io.to(`user_${patientId}`).emit('chat:message', {
+            io.to(`user_${patientId} `).emit('chat:message', {
                 senderId: doctorId,
                 message: message,
                 timestamp: new Date(),
@@ -768,16 +824,16 @@ export const searchReturnOrder = async (req, res) => {
         if (!query) return res.json({ success: false, error: 'Query required' });
 
         const sql = `
-            SELECT o.id, o.order_uid, o.created_at, o.total_price, 
-                   u.full_name as user_name, u.email as user_email
+            SELECT o.id, o.order_uid, o.created_at, o.total_price,
+            u.full_name as user_name, u.email as user_email
             FROM orders o
             JOIN users u ON o.user_id = u.id
-            WHERE (o.order_uid ILIKE $1 OR u.email ILIKE $1 OR u.phone ILIKE $1 OR u.full_name ILIKE $1)
-            AND o.status IN ('completed', 'delivered')
+        WHERE(o.order_uid ILIKE $1 OR u.email ILIKE $1 OR u.phone ILIKE $1 OR u.full_name ILIKE $1)
+            AND o.status IN('completed', 'delivered')
             ORDER BY o.created_at DESC
             LIMIT 5
-        `;
-        const result = await db.query(sql, [`%${query}%`]);
+            `;
+        const result = await db.query(sql, [`% ${query}% `]);
         res.json({ success: true, orders: result.rows });
     } catch (err) {
         console.error('Search Return Order Error:', err);
@@ -794,7 +850,7 @@ export const getOrderItemsForReturn = async (req, res) => {
             FROM order_items oi
             JOIN medicines m ON oi.medicine_id = m.id
             WHERE oi.order_id = $1
-        `, [orderId]);
+            `, [orderId]);
         res.json({ success: true, items: result.rows });
     } catch (err) {
         console.error('Get Order Items Error:', err);
@@ -830,11 +886,11 @@ export const processReturn = async (req, res) => {
 
         // 3. Create Return Record
         const returnRes = await client.query(
-            `INSERT INTO returns (
+            `INSERT INTO returns(
                 order_id, user_id, status, reason, admin_notes, refund_amount, shift_id, created_at, updated_at
-            ) VALUES (
-                $1, 
-                (SELECT user_id FROM orders WHERE id = $1), 
+            ) VALUES(
+                $1,
+                (SELECT user_id FROM orders WHERE id = $1),
                 'approved', $2, $3, $4, $5, NOW(), NOW()
             ) RETURNING id`,
             [orderId, reason, notes, totalRefund, shiftId]
@@ -845,8 +901,8 @@ export const processReturn = async (req, res) => {
         for (const item of items) {
             // Insert into return_items
             await client.query(
-                `INSERT INTO return_items (return_id, medicine_id, quantity, condition)
-                 VALUES ($1, $2, $3, $4)`,
+                `INSERT INTO return_items(return_id, medicine_id, quantity, condition)
+VALUES($1, $2, $3, $4)`,
                 [returnId, item.medicine_id, item.quantity, condition]
             );
 
@@ -892,7 +948,7 @@ export const getRecentReturns = async (req, res) => {
             JOIN orders o ON r.order_id = o.id
             ORDER BY r.created_at DESC
             LIMIT 10
-        `);
+    `);
         res.json({ success: true, returns: result.rows });
     } catch (err) {
         console.error('Get Recent Returns Error:', err);

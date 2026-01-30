@@ -9,9 +9,12 @@ export const searchMedicines = async (req, res) => {
 
     try {
         const result = await db.query(
-            `SELECT id, name, description, price, icon, quantity, category
-             FROM medicines
-             WHERE name ILIKE $1 OR description ILIKE $1
+            `SELECT 
+                m.id, m.name, m.description, m.price, m.icon, m.category,
+                COALESCE(ms.current_stock, 0) as quantity
+             FROM medicines m
+             LEFT JOIN medicine_stock ms ON ms.id = m.id
+             WHERE m.name ILIKE $1 OR m.description ILIKE $1
              LIMIT 50`,
             [`%${query}%`]
         );

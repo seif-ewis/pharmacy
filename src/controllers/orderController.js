@@ -230,11 +230,19 @@ export const createOrder = async (req, res) => {
 
         // 1. Validate Items & Stock
         for (const item of items) {
-            const medRes = await client.query("SELECT * FROM medicines WHERE id = $1", [item.medicine_id]);
+            const medRes = await client.query(`
+                SELECT 
+                    m.*,
+                    COALESCE(ms.current_stock, 0) as current_stock
+                FROM medicines m
+                LEFT JOIN medicine_stock ms ON ms.id = m.id
+                WHERE m.id = $1
+            `, [item.medicine_id]);
+
             if (medRes.rows.length === 0) throw new Error(`Medicine ${item.medicine_id} not found`);
 
             const med = medRes.rows[0];
-            if (med.quantity < item.quantity) {
+            if (med.current_stock < item.quantity) {
                 throw new Error(`Insufficient stock for ${med.name}`);
             }
 
@@ -303,15 +311,17 @@ export const createOrder = async (req, res) => {
         const shiftRes = await client.query("SELECT id FROM shifts WHERE status='open' ORDER BY opened_at DESC LIMIT 1");
         const activeShiftId = shiftRes.rows[0]?.id || null;
 
-        // 2. Create Order Record (with shift_id)
+        // 2. Create Order Record (with shift_id and completed_shift_id)
+        // IMPORTANT: completed_shift_id is IMMUTABLE - never changes after creation
+        // This provides permanent linkage: Order -> Revenue -> Inventory
         const orderRes = await client.query(
             `INSERT INTO orders (
-                user_id, address_id, status, shift_id,
+                user_id, address_id, status, shift_id, completed_shift_id,
                 subtotal, delivery_fee, tax_amount, discount_total, promotion_id, total_price, 
                 payment_status, created_at, order_uid
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
             RETURNING id`,
-            [req.user.id, address_id, initialStatus, activeShiftId, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
+            [req.user.id, address_id, initialStatus, activeShiftId, activeShiftId, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
         );
         const orderId = orderRes.rows[0].id;
 
@@ -336,8 +346,9 @@ export const createOrder = async (req, res) => {
                 [orderId, item.medicine_id, item.quantity, item.price]
             );
 
-            // Log Inventory Adjustment (Sale)
+            // Log Inventory Adjustment (Sale) with shift tracking
             // Note: quantityChange is NEGATIVE for sales
+            // Stock deduction belongs to the shift that COMPLETES the order
             await inventoryController.logAdjustment(
                 client,
                 item.medicine_id,
@@ -345,7 +356,8 @@ export const createOrder = async (req, res) => {
                 -Math.abs(item.quantity), // Ensure it's negative
                 orderIdStr,
                 req.user.id,
-                `Order Sale #${orderIdStr.substring(0, 8)}`
+                `Order Sale #${orderIdStr.substring(0, 8)}`,
+                activeShiftId  // Pass the active shift for tracking
             );
         }
 
@@ -419,6 +431,9 @@ export const cancelOrder = async (req, res) => {
         // 3.1 Log Status Change (Audit Trail)
         await logOrderStatusChange(id, oldStatus, 'canceled', req.user.id, client);
 
+        // 3.2 Get Current Shift for Restocking Attribution
+        const currentShift = await inventoryController.getCurrentShift(client, req.user.id);
+
         // 4. Restock Inventory
         for (const item of items) {
             // Fix: Cast orderId to string to prevent crash if it's an integer
@@ -430,7 +445,8 @@ export const cancelOrder = async (req, res) => {
                 Math.abs(item.quantity), // Positive value to ADD stock
                 orderIdStr,
                 req.user.id,
-                `Order Cancellation #${orderIdStr.substring(0, 8)}`
+                `Order Cancellation #${orderIdStr.substring(0, 8)}`,
+                currentShift  // Track which shift performed the restock
             );
         }
 

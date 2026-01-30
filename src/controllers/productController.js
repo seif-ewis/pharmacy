@@ -23,7 +23,14 @@ export const getProductDetails = async (req, res) => {
 
         // Fetch Related Products (same category, excluding current item)
         const relatedRes = await db.query(
-            "SELECT id, name, price, image_url, icon, quantity FROM medicines WHERE category = $1 AND id != $2 ORDER BY random() LIMIT 4",
+            `SELECT 
+                m.id, m.name, m.price, m.image_url, m.icon,
+                COALESCE(ms.current_stock, 0) as quantity
+             FROM medicines m
+             LEFT JOIN medicine_stock ms ON ms.id = m.id
+             WHERE m.category = $1 AND m.id != $2 
+             ORDER BY random() 
+             LIMIT 4`,
             [product.category, id]
         );
         const relatedProducts = relatedRes.rows;

@@ -965,8 +965,8 @@
                         <!-- Search & Filter -->
                         <div
                             class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-4 mb-6">
-                            <div class="flex gap-4">
-                                <div class="flex-1 relative">
+                            <div class="flex flex-wrap gap-4">
+                                <div class="flex-1 min-w-[200px] relative">
                                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                                     <input type="text" id="inventory-search" placeholder="Search by name, category..."
                                         class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"
@@ -975,11 +975,36 @@
                                 <select id="category-filter" onchange="filterInventory()"
                                     class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
                                     <option value="">All Categories</option>
+                                    <option value="featuredMedicines">Featured Medicines</option>
+                                    <option value="dailyEssentials">Daily Essentials</option>
+                                    <option value="wellnessProducts">Wellness Products</option>
+                                    <option value="servicesProducts">Services</option>
                                     <option value="Antibiotics">Antibiotics</option>
                                     <option value="Pain Relief">Pain Relief</option>
                                     <option value="Vitamins">Vitamins</option>
                                     <option value="Supplements">Supplements</option>
                                 </select>
+                                <select id="stock-filter" onchange="filterInventory()"
+                                    class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                                    <option value="">All Stock</option>
+                                    <option value="available">In Stock</option>
+                                    <option value="low">Low Stock</option>
+                                    <option value="out">Out of Stock</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <button onclick="filterInventory('stock-asc')" title="Sort: Lowest Stock First"
+                                        class="bg-gray-50 dark:bg-slate-900 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl px-3 py-3 transition-colors">
+                                        <i class="fas fa-sort-amount-down text-red-500"></i>
+                                    </button>
+                                    <button onclick="filterInventory('stock-desc')" title="Sort: Highest Stock First"
+                                        class="bg-gray-50 dark:bg-slate-900 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-xl px-3 py-3 transition-colors">
+                                        <i class="fas fa-sort-amount-up text-green-500"></i>
+                                    </button>
+                                    <button onclick="filterInventory('name')" title="Sort: A-Z"
+                                        class="bg-gray-50 dark:bg-slate-900 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl px-3 py-3 transition-colors">
+                                        <i class="fas fa-sort-alpha-down text-blue-500"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -2374,9 +2399,10 @@
                 }
             }
 
-            function filterInventory() {
+            function filterInventory(sortBy = null) {
                 const searchTerm = document.getElementById('inventory-search')?.value.toLowerCase() || '';
                 const categoryFilter = document.getElementById('category-filter')?.value || '';
+                const stockFilter = document.getElementById('stock-filter')?.value || '';
                 const tbody = document.getElementById('inventory-table-body');
 
                 if (!tbody) return;
@@ -2385,8 +2411,33 @@
                     const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
                         (item.category && item.category.toLowerCase().includes(searchTerm));
                     const matchesCategory = !categoryFilter || item.category === categoryFilter;
-                    return matchesSearch && matchesCategory;
+
+                    // Stock filter
+                    let matchesStock = true;
+                    if (stockFilter === 'low') {
+                        matchesStock = item.current_stock <= (item.low_stock_threshold || 10);
+                    } else if (stockFilter === 'out') {
+                        matchesStock = item.current_stock <= 0;
+                    } else if (stockFilter === 'available') {
+                        matchesStock = item.current_stock > 0;
+                    }
+
+                    return matchesSearch && matchesCategory && matchesStock;
                 });
+
+                // Sort options
+                if (sortBy === 'stock-asc') {
+                    filtered.sort((a, b) => a.current_stock - b.current_stock);
+                } else if (sortBy === 'stock-desc') {
+                    filtered.sort((a, b) => b.current_stock - a.current_stock);
+                } else if (sortBy === 'name') {
+                    filtered.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (sortBy === 'price') {
+                    filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+                }
+
+                // Update low stock analytics
+                updateInventoryAnalytics();
 
                 if (filtered.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">No items match your filters</td></tr>';
@@ -2394,7 +2445,7 @@
                 }
 
                 tbody.innerHTML = filtered.map(item => {
-                    const isLowStock = item.stock_quantity <= (item.low_stock_threshold || 10);
+                    const isLowStock = item.current_stock <= (item.low_stock_threshold || 10);
                     const stockClass = isLowStock ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400';
 
                     return `
@@ -2406,19 +2457,19 @@
                             '<div class="w-10 h-10 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center"><i class="fas fa-pills text-gray-400"></i></div>'}
                                     <div>
                                         <p class="font-bold text-sm dark:text-white">${item.name}</p>
-                                        <p class="text-xs text-gray-400">${item.category || 'Uncategorized'}</p>
+                                        <p class="text-xs text-gray-400">${formatCategory(item.category)}</p>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center ${stockClass}">
-                                ${item.stock_quantity}
+                                ${item.current_stock}
                                 ${isLowStock ? '<i class="fas fa-exclamation-triangle ml-1 text-xs"></i>' : ''}
                             </td>
                             <td class="px-6 py-4 text-center font-bold text-green-600">
                                 $${parseFloat(item.price).toFixed(2)}
                             </td>
-                            <td class="px-6 py-4 text-center text-xs text-gray-400">
-                                ${new Date(item.updated_at || item.created_at).toLocaleDateString()}
+                            <td class="px-6 py-4 text-center text-sm dark:text-gray-300">
+                                ${formatCategory(item.category) || 'Uncategorized'}
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <button onclick="openEditModal('${item.id}')" 
@@ -2433,6 +2484,83 @@
                         </tr>
                     `;
                 }).join('');
+            }
+
+            // Format category name for display
+            function formatCategory(category) {
+                if (!category) return 'Uncategorized';
+                // Convert camelCase to Title Case
+                return category
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase())
+                    .trim();
+            }
+
+            // Update analytics cards (Most Used, Recently Edited, Low Stock)
+            function updateInventoryAnalytics() {
+                // Low Stock List
+                const lowStockItems = inventoryCache
+                    .filter(item => item.current_stock <= (item.low_stock_threshold || 10))
+                    .sort((a, b) => a.current_stock - b.current_stock);
+
+                const lowStockCount = document.getElementById('low-stock-count');
+                const lowStockList = document.getElementById('low-stock-list');
+
+                if (lowStockCount) {
+                    lowStockCount.textContent = lowStockItems.length;
+                }
+
+                if (lowStockList) {
+                    if (lowStockItems.length === 0) {
+                        lowStockList.innerHTML = '<p class="text-center text-green-500 text-sm py-4"><i class="fas fa-check-circle mr-2"></i>All items in stock!</p>';
+                    } else {
+                        lowStockList.innerHTML = lowStockItems.slice(0, 5).map(item => `
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
+                                <span class="text-red-500 font-bold text-sm">${item.current_stock} left</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // Most Used (items with most sales - based on low calculated stock vs threshold)
+                const mostUsedList = document.getElementById('most-used-list');
+                if (mostUsedList) {
+                    // Sort by how much below starting point they are (proxy for most sold)
+                    const mostUsed = [...inventoryCache]
+                        .sort((a, b) => a.current_stock - b.current_stock)
+                        .slice(0, 5);
+
+                    if (mostUsed.length === 0) {
+                        mostUsedList.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No data yet</p>';
+                    } else {
+                        mostUsedList.innerHTML = mostUsed.map(item => `
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
+                                <span class="text-blue-500 font-bold text-sm">${item.current_stock} in stock</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // Recently Edited (by created_at since we don't have updated_at)
+                const recentlyEditedList = document.getElementById('recently-edited-list');
+                if (recentlyEditedList) {
+                    const recentlyEdited = [...inventoryCache]
+                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                        .slice(0, 5);
+
+                    if (recentlyEdited.length === 0) {
+                        recentlyEditedList.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No recent edits</p>';
+                    } else {
+                        recentlyEditedList.innerHTML = recentlyEdited.map(item => `
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                                <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
+                                <span class="text-purple-500 text-xs">${new Date(item.created_at).toLocaleDateString()}</span>
+                            </div>
+                        `).join('');
+                    }
+                }
             }
 
             function openInventoryModal() {
@@ -2452,7 +2580,7 @@
                 document.getElementById('product-id').value = productId;
                 document.getElementById('product-name').value = product.name;
                 document.getElementById('product-price').value = product.price;
-                document.getElementById('product-quantity').value = product.stock_quantity;
+                document.getElementById('product-quantity').value = product.current_stock;
                 document.getElementById('product-category').value = product.category || '';
                 document.getElementById('product-low-stock').value = product.low_stock_threshold || 10;
                 document.getElementById('product-description').value = product.description || '';

@@ -15,14 +15,23 @@ export const getHomePage = async (req, res) => {
 
     try {
         const result = await db.query(`
-            SELECT id, name, description, price, original_price, icon, quantity, category
+            SELECT 
+                m.id, 
+                m.name, 
+                m.description, 
+                m.price, 
+                m.original_price, 
+                m.icon, 
+                COALESCE(ms.current_stock, 0) as quantity,
+                m.category
             FROM (
                 SELECT *,
                        ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC) AS rn
                 FROM medicines
                 WHERE category = ANY($1)
-            ) sub
-            WHERE rn <= 10
+            ) m
+            LEFT JOIN medicine_stock ms ON ms.id = m.id
+            WHERE m.rn <= 10
         `, [CATEGORIES]);
 
         // Group by category
