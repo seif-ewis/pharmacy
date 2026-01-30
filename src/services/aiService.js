@@ -118,3 +118,69 @@ export const generateProductDetails = async (productName) => {
         throw new Error("Failed to generate AI content. Please try again or fill manually.");
     }
 };
+
+/**
+ * Analyze a prescription image using AI Vision capabilities.
+ * @param {string} imageBase64 - Base64 encoded image string (with or without data prefix)
+ * @returns {Promise<Object>} JSON object with medicines array and confidence score
+ */
+export const analyzePrescription = async (imageBase64) => {
+    // 1. Mock Mode (Fallback)
+    if (!model) {
+        console.log(`🤖 AI Mock: Analyzing prescription image`);
+        return {
+            medicines: [
+                { name: "Amoxicillin (Mock)", dosage: "500mg", instructions: "Twice daily", quantity: 20 },
+                { name: "Paracetamol (Mock)", dosage: "500mg", instructions: "As needed for pain", quantity: 30 }
+            ],
+            confidence_score: 85,
+            notes: "Mock analysis result",
+            ai_generated: true
+        };
+    }
+
+    // 2. Real AI Generation
+    try {
+        const prompt = `
+        You are an expert pharmacist assistant. Analyze this prescription image.
+        Extract the medicines listed. 
+        DO NOT try to match them to any specific database. Just transcribe the names as written or as inferred from context.
+        
+        If the image is not a prescription or is too blurry to read, return:
+        { "error": "Unreadable prescription or not a valid prescription image" }
+
+        Otherwise, return ONLY valid JSON in this format:
+        {
+            "medicines": [ { "name": "Medicine Name", "dosage": "500mg", "instructions": "...", "quantity": 1 } ],
+            "confidence_score": 90,
+            "notes": "Any unreadable parts or warnings"
+        }
+        
+        Confidence score (0-100) should reflect how legible the handwriting is.
+        `;
+
+
+        // Clean base64 string if it has prefix
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+        const imagePart = {
+            inlineData: {
+                data: base64Data,
+                mimeType: "image/jpeg",
+            },
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+
+        // Cleanup markdown
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return JSON.parse(cleanText);
+
+    } catch (error) {
+        console.error("AI Prescription Analysis Error:", error);
+        throw new Error("Failed to analyze prescription. Please try again.");
+    }
+};

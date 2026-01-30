@@ -3,7 +3,8 @@ import db from '../config/dataBase.js';
 import * as inventoryController from './inventoryController.js';
 import { formatTimeAgo } from '../utils/formatDate.js';
 import { logOrderStatusChange } from '../utils/orderStatusLogger.js';
-import { generateProductDetails as aiGenerate } from '../services/aiService.js';
+import { generateProductDetails as aiGenerate, analyzePrescription } from '../services/aiService.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Get Dashboard
 export const getDashboard = async (req, res) => {
@@ -1094,5 +1095,234 @@ export const exportShiftPdf = async (req, res) => {
         console.error('Export Shift PDF Error:', err);
         req.flash('error', 'Failed to generate report.');
         res.redirect('/doctor/dashboard');
+    }
+};
+
+// ==========================================
+// PRESCRIPTION MODAL API
+// ==========================================
+
+// Get Single Prescription Details (JSON)
+export const getPrescriptionDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Fetch Prescription + User Info
+        const presRes = await db.query(`
+            SELECT p.*, u.full_name as user_name, u.email as user_email, u.phone as user_phone
+            FROM prescriptions p 
+            JOIN users u ON p.user_id = u.id 
+            WHERE p.id = $1
+        `, [id]);
+
+        if (presRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Prescription not found' });
+        }
+
+        const prescription = presRes.rows[0];
+
+        // Fetch AI Results (if any)
+        const aiRes = await db.query(`
+            SELECT * FROM prescription_ai_results WHERE prescription_id = $1
+        `, [id]);
+
+        const aiResult = aiRes.rows[0] || null;
+
+        res.json({
+            success: true,
+            prescription,
+            aiResult
+        });
+
+    } catch (err) {
+        console.error('Get Prescription Details Error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// Search Medicines (JSON)
+export const searchMedicines = async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query || query.length < 2) {
+            return res.json({ success: true, medicines: [] });
+        }
+
+        const result = await db.query(`
+            SELECT id, name, price, category, image_url, description 
+            FROM medicines 
+            WHERE name ILIKE $1 
+            ORDER BY name ASC 
+            LIMIT 20
+        `, [`%${query}%`]);
+
+        res.json({
+            success: true,
+            medicines: result.rows
+        });
+
+    } catch (err) {
+        console.error('Search Medicines Error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// Process Prescription (Approve/Reject)
+export const processPrescriptionDecision = async (req, res) => {
+    const { prescriptionId, action, medicines, notes } = req.body; // action: 'approve' | 'reject'
+    const doctorId = req.user.id;
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        if (action === 'reject') {
+            await client.query(
+                "UPDATE prescriptions SET status = 'rejected' WHERE id = $1",
+                [prescriptionId]
+            );
+            // Optionally notify user
+        } else if (action === 'approve') {
+            // 1. Get Active Shift
+            const shiftRes = await client.query(
+                "SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
+                [doctorId]
+            );
+            const shiftId = shiftRes.rows[0]?.id || null;
+
+            // 2. Create Order
+            // Calculate total
+            const total = medicines.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+
+            // Get User ID from prescription
+            const presRes = await client.query("SELECT user_id FROM prescriptions WHERE id = $1", [prescriptionId]);
+            const userId = presRes.rows[0]?.user_id;
+
+            // Create Order
+            const orderRes = await client.query(`
+                INSERT INTO orders (user_id, total_price, status, created_at, shift_id, prescription_id)
+                VALUES ($1, $2, 'pending', NOW(), $3, $4)
+                RETURNING id
+            `, [userId, total, shiftId, prescriptionId]);
+
+            const orderId = orderRes.rows[0].id;
+
+            // 3. Insert Order Items
+            for (const item of medicines) {
+                await client.query(`
+                    INSERT INTO order_items (order_id, medicine_id, quantity, price)
+                    VALUES ($1, $2, $3, $4)
+                 `, [orderId, item.id, item.quantity, item.price]);
+            }
+
+            // 4. Update Prescription Status
+            await client.query(
+                "UPDATE prescriptions SET status = 'approved', shift_id = $1 WHERE id = $2",
+                [shiftId, prescriptionId]
+            );
+
+            // 5. Save Decision to prescription_final
+            await client.query(`
+                INSERT INTO prescription_final (prescription_id, approved_by, final_meds, notes, total_price, approved_at)
+                VALUES ($1, $2, $3, $4, $5, NOW())
+            `, [prescriptionId, doctorId, JSON.stringify(medicines), notes || '', total]);
+
+            // 6. Update Shift Stats
+            if (shiftId) {
+                await client.query(
+                    "UPDATE shifts SET total_orders = COALESCE(total_orders, 0) + 1, total_prescriptions = COALESCE(total_prescriptions, 0) + 1, gross_revenue = COALESCE(gross_revenue, 0) + $2 WHERE id = $1",
+                    [shiftId, total]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: `Prescription ${action}ed successfully` });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Process Prescription Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to process prescription' });
+    } finally {
+        client.release();
+    }
+};
+
+// Analyze Prescription with AI
+export const analyzePrescriptionObject = async (req, res) => {
+    try {
+        const { prescriptionId } = req.body;
+
+        // 1. Fetch prescription image URL
+        const presRes = await db.query("SELECT image_url FROM prescriptions WHERE id = $1", [prescriptionId]);
+        if (presRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Prescription not found' });
+
+        const imageUrl = presRes.rows[0].image_url;
+
+        // 2. Analyze with AI Service
+        // Note: imageUrl needs to be converted to base64 or passed if service supports URL. 
+        // Assuming service handles URL or we fetch it here. Only base64 supported by Gemini currently.
+        // For now, let's assume we need to fetch the image buffer and convert.
+
+        // Quick hack: If it's a URL, we might need to fetch it. 
+        // BUT, for speed, let's assume the frontend passes the base64 if available, 
+        // OR we just use the existing logic if it supports URLs (it doesn't, it expects base64).
+
+        // Since we don't have an easy way to fetch URL to base64 here without extra libs (axios/node-fetch),
+        // and commonly the image is on Cloudinary.
+        // Let's rely on the service to handle it or mock it if we can't fetch.
+
+        // WAIT: The aiService expects `imageBase64`. 
+        // We can use a simple fetch if node version supports global fetch (Node 18+).
+
+        let base64Data = null;
+        try {
+            if (imageUrl.startsWith('http')) {
+                const imgRes = await fetch(imageUrl);
+                const arrayBuffer = await imgRes.arrayBuffer();
+                base64Data = Buffer.from(arrayBuffer).toString('base64');
+            } else {
+                base64Data = imageUrl; // data URI
+            }
+        } catch (imgErr) {
+            console.error("Image Fetch/Process Error:", imgErr);
+            return res.json({ success: true, aiResult: { error: "Image too large or inaccessible for AI analysis." } });
+        }
+
+        const aiResult = await analyzePrescription(base64Data);
+
+        // Check if AI returned an explicit error (e.g. unreadable)
+        if (aiResult.error) {
+            return res.json({ success: true, aiResult });
+        }
+
+        // 3. Save result to DB
+        await db.query(
+            "INSERT INTO prescription_ai_results (id, prescription_id, suggested_meds, confidence_score, created_at) VALUES ($1, $2, $3, $4, NOW()) ON CONFLICT (prescription_id) DO UPDATE SET suggested_meds = $3, confidence_score = $4, created_at = NOW()",
+            [uuidv4(), prescriptionId, JSON.stringify(aiResult.medicines), aiResult.confidence_score]
+        );
+
+        res.json({ success: true, aiResult });
+
+    } catch (err) {
+        console.error('AI Analysis Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to analyze prescription' });
+    }
+};
+
+// Get Pending Prescriptions (JSON for polling)
+export const getPendingPrescriptions = async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT p.*, u.full_name as user_name 
+            FROM prescriptions p 
+            JOIN users u ON p.user_id = u.id 
+            WHERE p.status = 'pending' 
+            ORDER BY p.created_at ASC
+        `);
+        res.json({ success: true, prescriptions: result.rows });
+    } catch (err) {
+        console.error('Error fetching pending prescriptions:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch prescriptions' });
     }
 };

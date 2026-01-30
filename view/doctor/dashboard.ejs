@@ -824,6 +824,16 @@
 
                                 <!-- RIGHT: Review Panel -->
                                 <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 flex flex-col overflow-y-auto">
+                                    <!-- AI Analysis Actions -->
+                                    <div id="ai-actions-section" class="hidden mb-6">
+                                        <button onclick="analyzePrescription()"
+                                            class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+                                            <i class="fas fa-magic"></i> Analyze with AI
+                                        </button>
+                                        <p class="text-xs text-center text-gray-400 mt-2">Get medicine suggestions from
+                                            the prescription image</p>
+                                    </div>
+
                                     <!-- AI Results (if available) -->
                                     <div id="ai-results-section" class="hidden mb-6">
                                         <div
@@ -891,6 +901,10 @@
                                             class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg">
                                             <i class="fas fa-check-circle"></i>
                                             Create Invoice & Approve
+                                        </button>
+                                        <button onclick="rejectPrescription()"
+                                            class="w-full mt-3 border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                                            <i class="fas fa-times-circle"></i> Reject Prescription
                                         </button>
                                         <p class="text-xs text-center text-gray-400 mt-2">Must review prescription
                                             before approval</p>
@@ -3581,6 +3595,439 @@
                 });
                 obs.observe(reportModule, { attributes: true, attributeFilter: ['class'] });
             }
+            // ================================================
+            // PRESCRIPTION MODULE LOGIC
+            // ================================================
+            let currentPrescriptionId = null;
+            let currentPrescriptionMedicines = []; // {id, name, price, quantity}
+
+            async function openPrescriptionViewer(id) {
+                currentPrescriptionId = id;
+                currentPrescriptionMedicines = [];
+                const modal = document.getElementById('prescription-viewer-modal');
+                if (!modal) return;
+
+                modal.classList.remove('hidden');
+
+                // Reset UI
+                document.getElementById('viewer-patient-name').textContent = 'Loading...';
+                document.getElementById('viewer-image').src = '';
+                document.getElementById('ai-results-section').classList.add('hidden');
+                document.getElementById('ai-actions-section').classList.add('hidden'); // Reset actions
+                renderSelectedMedicines();
+                updatePrescriptionTotal();
+
+                const approveBtn = document.getElementById('approve-prescription-btn');
+                if (approveBtn) approveBtn.disabled = true;
+
+                const checkbox = document.getElementById('manual-review-checkbox');
+                if (checkbox) {
+                    checkbox.checked = false;
+                    checkbox.addEventListener('change', () => {
+                        if (approveBtn) approveBtn.disabled = !checkbox.checked || currentPrescriptionMedicines.length === 0;
+                    });
+                }
+
+                // Fetch details
+                try {
+                    const res = await fetch(`/doctor/prescriptions/${id}/details`);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const p = data.prescription;
+                        document.getElementById('viewer-patient-name').textContent = `${p.user_name} • ${new Date(p.created_at).toLocaleString()}`;
+                        document.getElementById('viewer-image').src = p.image_url;
+
+                        // AI Results
+                        if (data.aiResult) {
+                            const ai = data.aiResult;
+                            document.getElementById('ai-results-section').classList.remove('hidden');
+                            document.getElementById('ai-actions-section').classList.add('hidden'); // Hide analyze button if result exists
+                            document.getElementById('ai-confidence').textContent = `${ai.confidence_score}% Confidence`;
+
+                            // Parse suggested meds
+                            let meds = [];
+                            try {
+                                // Handle both stringified JSON and array
+                                meds = typeof ai.suggested_meds === 'string' ? JSON.parse(ai.suggested_meds) : ai.suggested_meds;
+                            } catch (e) { meds = [] }
+
+                            const aiContainer = document.getElementById('ai-suggested-medicines');
+                            if (meds && meds.length > 0) {
+                                aiContainer.innerHTML = meds.map(m => {
+                                    const name = typeof m === 'object' ? m.name : m;
+                                    return `
+                                    <div class="flex justify-between items-center text-sm bg-white dark:bg-slate-800 p-2 rounded border border-blue-100 dark:border-blue-800">
+                                         <span class="dark:text-gray-300 font-medium">${name}</span>
+                                         <button onclick="searchAndAdd('${name.replace(/'/g, "\\'")}')" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold hover:bg-blue-200">
+                                            <i class="fas fa-plus mr-1"></i> Add
+                                         </button>
+                                    </div>
+                                 `}).join('');
+                            } else {
+                                aiContainer.innerHTML = '<p class="text-xs text-gray-500">No specific medicines identified.</p>';
+                            }
+                        } else {
+                            // No AI result yet, show Analyze button
+                            document.getElementById('ai-actions-section').classList.remove('hidden');
+                        }
+                    } else {
+                        showToast('error', data.message || 'Failed to load');
+                        closePrescriptionViewer();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('error', 'Network error');
+                    closePrescriptionViewer();
+                }
+            }
+
+            async function analyzePrescription() {
+                if (!currentPrescriptionId) return;
+
+                const btn = document.querySelector('#ai-actions-section button');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+
+                try {
+                    const res = await fetch('/doctor/prescriptions/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prescriptionId: currentPrescriptionId })
+                    });
+                    const data = await res.json();
+
+                    if (data.success && data.aiResult) {
+                        // Check for specific AI error (unreadable)
+                        if (data.aiResult.error) {
+                            showToast('error', data.aiResult.error); // "Unreadable prescription..."
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                            return;
+                        }
+
+                        showToast('success', 'Analysis Complete');
+                        // Reload viewer with new data effectively
+                        openPrescriptionViewer(currentPrescriptionId);
+                    } else {
+                        showToast('error', data.message || 'Analysis failed');
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('error', 'Network error during analysis');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+
+            function closePrescriptionViewer() {
+                const modal = document.getElementById('prescription-viewer-modal');
+                if (modal) modal.classList.add('hidden');
+                currentPrescriptionId = null;
+            }
+
+            // Live Update Logic for Prescriptions
+            async function loadPendingPrescriptions() {
+                const container = document.getElementById('pending-prescriptions-container');
+                if (!container) return; // helper to find container
+
+                // We need a container for the cards. 
+                // Currently the EJS loop renders them directly into the grid.
+                // We should target the grid container. 
+                // Let's assume the grid container has an ID or we add one.
+                // Looking at previous view_file, the grid is likely the parent of the cards.
+
+                try {
+                    const res = await fetch('/doctor/prescriptions/pending');
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const grid = document.querySelector('#module-prescriptions .grid');
+                        if (grid) {
+                            if (data.prescriptions.length === 0) {
+                                grid.innerHTML = `
+                                <div class="col-span-full text-center py-12">
+                                    <div class="bg-gray-50 dark:bg-slate-700/50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-check text-3xl text-green-500"></i>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">All Caught Up!</h3>
+                                    <p class="text-gray-500 dark:text-gray-400">No pending prescriptions to review.</p>
+                                </div>`;
+                            } else {
+                                grid.innerHTML = data.prescriptions.map(p => `
+                                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700 relative overflow-hidden group">
+                                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
+                                        <i class="fas fa-file-medical text-6xl text-blue-500 transform rotate-12"></i>
+                                    </div>
+                                    <div class="relative z-10">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl">
+                                                <i class="fas fa-camera text-blue-600 dark:text-blue-400 text-xl"></i>
+                                            </div>
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 animate-pulse">
+                                                PENDING REVIEW
+                                            </span>
+                                        </div>
+                                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-1">${p.user_name}</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                            <i class="far fa-clock mr-1"></i> ${new Date(p.created_at).toLocaleString()}
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <button onclick="openPrescriptionViewer('${p.id}')" 
+                                                class="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 rounded-xl font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                                                Review
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                `).join('');
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load prescriptions", e);
+                }
+            }
+
+            // Auto-load prescriptions when module active
+            const presModule = document.getElementById('module-prescriptions');
+            if (presModule) {
+                const obs = new MutationObserver(() => {
+                    if (!presModule.classList.contains('hidden')) {
+                        loadPendingPrescriptions();
+                    }
+                });
+                obs.observe(presModule, { attributes: true, attributeFilter: ['class'] });
+
+                // Also poll every 30 seconds if visible
+                setInterval(() => {
+                    if (!presModule.classList.contains('hidden')) {
+                        loadPendingPrescriptions();
+                    }
+                }, 30000);
+            }
+
+            // Search Modal Injection & Logic
+            function searchMedicine() {
+                if (!document.getElementById('med-search-modal')) {
+                    const html = `
+                        <div id="med-search-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center hidden p-4 animate-fade-in">
+                             <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-gray-100 dark:border-slate-700">
+                                  <div class="flex justify-between items-center mb-4">
+                                       <h3 class="font-bold text-lg dark:text-white">Search Medicine</h3>
+                                       <button onclick="document.getElementById('med-search-modal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200"><i class="fas fa-times"></i></button>
+                                  </div>
+                                  <div class="relative mb-4">
+                                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    <input type="text" id="med-search-input" class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Type medicine name..." oninput="performMedSearch()">
+                                  </div>
+                                  <div id="med-search-results" class="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                    <p class="text-center text-gray-400 text-sm py-8">Start typing to search...</p>
+                                  </div>
+                             </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', html);
+                }
+                document.getElementById('med-search-modal').classList.remove('hidden');
+                const input = document.getElementById('med-search-input');
+                input.value = '';
+                input.focus();
+                document.getElementById('med-search-results').innerHTML = '<p class="text-center text-gray-400 text-sm py-8">Start typing to search...</p>';
+            }
+
+            // Helper to search and auto-fill from AI suggestion
+            function searchAndAdd(query) {
+                searchMedicine();
+                const input = document.getElementById('med-search-input');
+                input.value = query;
+                performMedSearch();
+            }
+
+            let searchDebounce;
+            async function performMedSearch() {
+                const query = document.getElementById('med-search-input').value.trim();
+                const resultsContainer = document.getElementById('med-search-results');
+
+                if (query.length < 2) return;
+
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(async () => {
+                    resultsContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-gray-400"></i></div>';
+
+                    try {
+                        const res = await fetch(`/doctor/medicines/search?query=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+
+                        if (data.success && data.medicines.length > 0) {
+                            resultsContainer.innerHTML = data.medicines.map(m => `
+                                <div onclick="addMedicineToRxList('${m.id}', '${m.name.replace(/'/g, "\\'")}', ${m.price})" 
+                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 border border-transparent transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        ${m.image_url ? `<img src="${m.image_url}" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-white dark:bg-slate-600 flex items-center justify-center"><i class="fas fa-pills text-gray-300"></i></div>`}
+                                        <div>
+                                            <p class="font-bold text-sm dark:text-white">${m.name}</p>
+                                            <p class="text-xs text-gray-400">$${parseFloat(m.price).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">Select</span>
+                                </div>
+                            `).join('');
+                        } else {
+                            resultsContainer.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No medicines found</p>';
+                        }
+                    } catch (e) {
+                        resultsContainer.innerHTML = '<p class="text-center text-red-400 text-sm">Search failed</p>';
+                    }
+                }, 300);
+            }
+
+            function addMedicineToRxList(id, name, price) {
+                // Check dupes
+                if (currentPrescriptionMedicines.find(m => m.id == id)) {
+                    showToast('info', 'Medicine already added');
+                    return;
+                }
+
+                currentPrescriptionMedicines.push({ id, name, price, quantity: 1 });
+                renderSelectedMedicines();
+                updatePrescriptionTotal();
+                document.getElementById('med-search-modal').classList.add('hidden');
+
+                // Keep approve button sync
+                const checkbox = document.getElementById('manual-review-checkbox');
+                const btn = document.getElementById('approve-prescription-btn');
+                if (btn && checkbox) btn.disabled = !checkbox.checked;
+            }
+
+            function removeRxMedicine(index) {
+                currentPrescriptionMedicines.splice(index, 1);
+                renderSelectedMedicines();
+                updatePrescriptionTotal();
+
+                // Keep approve button sync
+                const checkbox = document.getElementById('manual-review-checkbox');
+                const btn = document.getElementById('approve-prescription-btn');
+                if (btn) btn.disabled = currentPrescriptionMedicines.length === 0 || (checkbox && !checkbox.checked);
+            }
+
+            function renderSelectedMedicines() {
+                const container = document.getElementById('selected-medicines');
+                if (currentPrescriptionMedicines.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No medicines selected yet</p>';
+                    return;
+                }
+
+                container.innerHTML = currentPrescriptionMedicines.map((m, idx) => `
+                    <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 p-2 rounded-lg">
+                        <div class="flex-1">
+                            <p class="font-bold text-sm dark:text-white">${m.name}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-gray-400">$${parseFloat(m.price).toFixed(2)}</span>
+                                <input type="number" min="1" value="${m.quantity}" 
+                                    onchange="updateRxQty(${idx}, this.value)"
+                                    class="w-16 text-xs bg-white dark:bg-slate-800 border-none rounded px-2 py-1 outline-none">
+                            </div>
+                        </div>
+                        <button onclick="removeRxMedicine(${idx})" class="text-red-500 hover:text-red-600 p-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
+            }
+
+            function updateRxQty(idx, val) {
+                if (val < 1) val = 1;
+                currentPrescriptionMedicines[idx].quantity = parseInt(val);
+                updatePrescriptionTotal();
+            }
+
+            function updatePrescriptionTotal() {
+                const total = currentPrescriptionMedicines.reduce((sum, m) => sum + (m.price * m.quantity), 0);
+                document.getElementById('prescription-total').textContent = `$${total.toFixed(2)}`;
+            }
+
+            async function rejectPrescription() {
+                if (!confirm('Are you sure you want to reject this prescription? This action cannot be undone.')) return;
+
+                if (!currentPrescriptionId) return;
+
+                const btn = document.querySelector('button[onclick="rejectPrescription()"]');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rejecting...';
+
+                try {
+                    const res = await fetch('/doctor/prescriptions/decision', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prescriptionId: currentPrescriptionId,
+                            action: 'reject'
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', 'Prescription Rejected');
+                        closePrescriptionViewer();
+                        window.location.reload();
+                    } else {
+                        showToast('error', data.message || 'Failed to reject');
+                    }
+                } catch (e) {
+                    showToast('error', 'Network error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+
+            // Approve Action with Event Listener binding?
+            // The button id is approve-prescription-btn
+            document.addEventListener('DOMContentLoaded', () => {
+                const btn = document.getElementById('approve-prescription-btn');
+                if (btn) {
+                    btn.addEventListener('click', async () => {
+                        if (!currentPrescriptionId) return;
+                        if (currentPrescriptionMedicines.length === 0) return showToast('error', 'Select at least one medicine');
+                        if (!document.getElementById('manual-review-checkbox').checked) return showToast('error', 'Please confirm manual review');
+
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+                        try {
+                            const res = await fetch('/doctor/prescriptions/decision', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    prescriptionId: currentPrescriptionId,
+                                    action: 'approve',
+                                    medicines: currentPrescriptionMedicines,
+                                    notes: 'Approved via Doctor Dashboard'
+                                })
+                            });
+                            const data = await res.json();
+
+                            if (data.success) {
+                                showToast('success', 'Prescription Approved & Order Created');
+                                closePrescriptionViewer();
+                                window.location.reload(); // To update lists
+                            } else {
+                                showToast('error', data.message || 'Failed');
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fas fa-check-circle"></i> Create Invoice & Approve';
+                            }
+                        } catch (e) {
+                            showToast('error', 'Network error');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-check-circle"></i> Create Invoice & Approve';
+                        }
+                    });
+                }
+            });
+
         </script>
     </body>
 

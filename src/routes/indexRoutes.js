@@ -109,6 +109,13 @@ router.get("/admin/audit", ensureAdmin, adminController.getAuditLogs);
 
 router.get("/doctor/prescriptions/:id/process", ensureDoctor, doctorController.getProcessPrescription);
 router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.submitPrescriptionProcessing);
+
+// New Prescription Modal Routes
+router.get("/doctor/prescriptions/:id/details", ensureDoctor, doctorController.getPrescriptionDetails);
+router.get("/doctor/medicines/search", ensureDoctor, doctorController.searchMedicines);
+router.post("/doctor/prescriptions/decision", ensureDoctor, doctorController.processPrescriptionDecision);
+router.post("/doctor/prescriptions/analyze", ensureDoctor, doctorController.analyzePrescriptionObject);
+router.get("/doctor/prescriptions/pending", ensureDoctor, doctorController.getPendingPrescriptions);
 router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderState);
 
 // Doctor Inventory Routes (CRUD)
