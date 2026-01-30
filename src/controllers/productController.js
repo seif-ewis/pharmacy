@@ -1,5 +1,6 @@
 
 import db from "../config/dataBase.js";
+// import { formatTimeAgo } from "../utils/formatDate.js"; // REFACTORED: Now in globalState middleware
 
 // Get Product Details
 export const getProductDetails = async (req, res) => {
@@ -16,7 +17,7 @@ export const getProductDetails = async (req, res) => {
 
         if (result.rows.length === 0) {
             // Render 404 if product not found
-            return res.status(404).render("404", { pageTitle: "Page Not Found", user: req.user });
+            return res.status(404).render("404", { pageTitle: "Page Not Found" });
         }
 
         const product = result.rows[0];
@@ -41,11 +42,13 @@ export const getProductDetails = async (req, res) => {
         );
         const relatedProducts = relatedRes.rows;
 
+        // Notifications now handled globally in globalState middleware
+
         res.render("product", {
-            user: req.user,
             product: product,
             isService: isService,
             relatedProducts: relatedProducts,
+            // notifications: notifications, // NOW GLOBAL
             pageTitle: product.name
         });
 
@@ -53,8 +56,8 @@ export const getProductDetails = async (req, res) => {
         console.error("Get Product Details Error:", err);
         // Check for UUID syntax error which means ID is invalid -> 404
         if (err.code === '22P02') {
-            return res.status(404).render("404", { pageTitle: "Page Not Found", user: req.user });
+            return res.status(404).render("404", { pageTitle: "Page Not Found" });
         }
-        res.status(500).render("500", { pageTitle: "Server Error", user: req.user });
+        res.status(500).render("500", { pageTitle: "Server Error" });
     }
 };

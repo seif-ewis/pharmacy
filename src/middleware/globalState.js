@@ -11,10 +11,12 @@ export const invalidateSettingsCache = () => {
     lastCacheTime = 0;
 };
 
+import { formatTimeAgo } from "../utils/formatDate.js";
+
+// ... existing code ...
+
 export const globalState = async (req, res, next) => {
     // 1. Security: Sanitize User Object
-    // Only pass necessary UI fields to the view layer. 
-    // This prevents accidental leakage of sensitive data like password_hash.
     if (req.user) {
         res.locals.user = {
             id: req.user.id,
@@ -24,8 +26,31 @@ export const globalState = async (req, res, next) => {
             phone: req.user.phone,
             avatar: req.user.avatar
         };
+
+        // 1.5 Fetch Unread Notifications (Global UI)
+        try {
+            const notifResult = await db.query(
+                `
+                SELECT n.id, n.title, n.message, n.type, n.created_at, un.read
+                FROM user_notifications un
+                JOIN notifications n ON n.id = un.notification_id
+                WHERE un.user_id = $1 AND un.read = false
+                ORDER BY un.sent_at DESC
+                LIMIT 5
+                `,
+                [req.user.id]
+            );
+            res.locals.notifications = notifResult.rows.map(n => ({
+                ...n,
+                time: formatTimeAgo(n.created_at)
+            }));
+        } catch (err) {
+            console.error("Global notification fetch error:", err);
+            res.locals.notifications = [];
+        }
     } else {
         res.locals.user = null;
+        res.locals.notifications = [];
     }
 
     // 2. Performance & Reliability: Cache Pharmacy Settings

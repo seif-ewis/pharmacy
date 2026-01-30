@@ -4,6 +4,12 @@ export const ensureAuthenticated = (req, res, next) => {
     if (req.isAuthenticated()) {
         return next();
     }
+
+    // Check for AJAX/JSON request
+    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
     // Store the intended URL to redirect back after login
     req.session.returnTo = req.originalUrl;
     req.flash("error", "Please login to access this page.");

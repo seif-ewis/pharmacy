@@ -448,24 +448,33 @@
                     try {
                         const res = await fetch('/notifications/subscribe', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
                             body: JSON.stringify({ medicineId })
                         });
+
                         const data = await res.json();
+
                         if (data.success) {
                             btn.innerHTML = '<i class="fas fa-check"></i> We will notify you!';
                             btn.classList.replace('bg-secondary', 'bg-green-500');
                             btn.disabled = true;
                         } else {
                             if (res.status === 401) {
-                                // Redirect to login or show modal
-                                window.location.href = '/profile'; // Or wherever auth is handled
+                                // Open login modal for guests
+                                if (typeof openAuthModal === 'function') {
+                                    openAuthModal('login');
+                                } else {
+                                    window.location.href = '/profile';
+                                }
                             } else {
                                 alert(data.message);
                             }
                         }
                     } catch (err) {
-                        console.error(err);
+                        console.error('Subscribe error:', err);
                     }
                 }
             </script>

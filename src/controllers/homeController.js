@@ -1,5 +1,5 @@
 import db from "../config/dataBase.js";
-import { formatTimeAgo } from "../utils/formatDate.js";
+// import { formatTimeAgo } from "../utils/formatDate.js"; // REFACTORED: Now in globalState middleware
 import * as chatController from "./chatController.js";
 
 export const getHomePage = async (req, res) => {
@@ -60,32 +60,7 @@ export const getHomePage = async (req, res) => {
 
     // ...
 
-    /* ================= Notifications ================= */
-
-    let notifications = [];
-
-    if (req.isAuthenticated()) {
-        try {
-            const notifResult = await db.query(
-                `
-                SELECT n.id, n.title, n.message, n.type, n.created_at, un.read
-                FROM user_notifications un
-                JOIN notifications n ON n.id = un.notification_id
-                WHERE un.user_id = $1 AND un.read = false
-                ORDER BY un.sent_at DESC
-                LIMIT 5
-                `,
-                [req.user.id]
-
-            );
-            notifications = notifResult.rows.map(n => ({
-                ...n,
-                time: formatTimeAgo(n.created_at)
-            }));
-        } catch (err) {
-            console.error("Notifications error:", err);
-        }
-    }
+    // Notifications now handled globally in globalState middleware
 
     /* ================= Chat History ================= */
     let activeChat = null;
@@ -103,7 +78,7 @@ export const getHomePage = async (req, res) => {
     /* ================= Render ================= */
 
     res.render("home", {
-        notifications,
+        // notifications, // NOW GLOBAL
         // pharmacySettings, // NOW GLOBAL
         activeChat,
         chatMessages,
