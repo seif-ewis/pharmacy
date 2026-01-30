@@ -3,6 +3,7 @@ import db from '../config/dataBase.js';
 import * as inventoryController from './inventoryController.js';
 import { formatTimeAgo } from '../utils/formatDate.js';
 import { logOrderStatusChange } from '../utils/orderStatusLogger.js';
+import { generateProductDetails as aiGenerate } from '../services/aiService.js';
 
 // Get Dashboard
 export const getDashboard = async (req, res) => {
@@ -625,9 +626,29 @@ export const getMostSoldThisShift = async (req, res) => {
     }
 };
 
+
+// Generate AI Product Details
+export const generateProductDetails = async (req, res) => {
+    try {
+        const { productName } = req.body;
+        if (!productName) {
+            return res.status(400).json({ success: false, error: "Product name is required" });
+        }
+
+        const details = await aiGenerate(productName);
+        res.json({ success: true, data: details });
+    } catch (err) {
+        console.error("AI Generate Error:", err);
+        res.status(500).json({ success: false, error: "AI Generation Failed" });
+    }
+};
+
 // Create New Inventory Item
 export const createInventoryItem = async (req, res) => {
-    const { name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects } = req.body;
+    const {
+        name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects,
+        aiGenerated, aiReviewed
+    } = req.body;
 
     // Validation
     if (!name || !price || !quantity || !category) {
@@ -637,17 +658,34 @@ export const createInventoryItem = async (req, res) => {
         });
     }
 
+    // AI Safety Enforcement (Strict)
+    if (aiGenerated === true || aiGenerated === 'true') {
+        if (!aiReviewed || (aiReviewed !== true && aiReviewed !== 'true')) {
+            return res.status(400).json({
+                success: false,
+                error: 'AI-generated content must be reviewed and verified before saving.'
+            });
+        }
+    }
+
     const client = await db.connect();
     try {
         await client.query('BEGIN');
 
+        const isAiGenerated = aiGenerated === true || aiGenerated === 'true';
+        const isAiReviewed = aiReviewed === true || aiReviewed === 'true';
+        const aiReviewedAt = isAiReviewed ? new Date() : null;
+
         // Create medicine record WITHOUT stock
         const result = await client.query(
             `INSERT INTO medicines
-            (name, price, category, description, image_url, low_stock_threshold, benefits, side_effects, created_at)
-        VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            (name, price, category, description, image_url, low_stock_threshold, benefits, side_effects, ai_generated, ai_reviewed, ai_reviewed_at, created_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
         RETURNING * `,
-            [name, price, category, description || null, imageUrl || null, lowStockThreshold || 10, benefits || null, sideEffects || null]
+            [
+                name, price, category, description || null, imageUrl || null, lowStockThreshold || 10, benefits || null, sideEffects || null,
+                isAiGenerated, isAiReviewed, aiReviewedAt
+            ]
         );
 
         const newProduct = result.rows[0];

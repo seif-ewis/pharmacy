@@ -112,6 +112,7 @@ router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.subm
 router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderState);
 
 // Doctor Inventory Routes (CRUD)
+router.post("/doctor/product/ai-assist", ensureDoctor, doctorController.generateProductDetails);
 router.get("/doctor/inventory", ensureDoctor, doctorController.getInventory);
 router.get("/doctor/inventory/most-sold", ensureDoctor, doctorController.getMostSoldThisShift);
 router.post("/doctor/inventory/create", ensureDoctor, doctorController.createInventoryItem);

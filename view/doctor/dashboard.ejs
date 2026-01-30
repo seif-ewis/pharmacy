@@ -1150,6 +1150,24 @@
                                     <input type="url" id="product-image" placeholder="Image URL"
                                         class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
 
+                                    <!-- AI Review Checkbox (Hidden initially) -->
+                                    <div id="ai-review-section"
+                                        class="hidden bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+                                        <label class="flex items-start gap-3 cursor-pointer">
+                                            <input type="checkbox" id="ai-reviewed"
+                                                class="w-6 h-6 rounded accent-yellow-600 mt-1">
+                                            <div>
+                                                <span class="font-bold text-yellow-900 dark:text-yellow-200 block">
+                                                    I have reviewed and verified the AI-generated content.
+                                                </span>
+                                                <span class="text-xs text-yellow-700 dark:text-yellow-300">
+                                                    Required: I confirm that the description, benefits, side effects,
+                                                    and price are medically accurate.
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+
                                     <div class="flex gap-3">
                                         <button type="button" onclick="closeInventoryModal()"
                                             class="flex-1 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white font-bold py-3 rounded-xl transition-colors">
@@ -2555,6 +2573,7 @@
                 recentlyEdited: [],
                 lowStock: []
             };
+            let aiUsed = false; // Track AI usage
 
             async function updateInventoryAnalytics() {
                 // Fetch REAL sales data from API (not assuming low stock = most sold)
@@ -2786,6 +2805,10 @@
                 document.getElementById('inventory-modal').classList.add('hidden');
                 document.getElementById('inventory-form').reset();
                 editingProductId = null;
+                // Reset AI State
+                aiUsed = false;
+                document.getElementById('ai-review-section').classList.add('hidden');
+                document.getElementById('ai-reviewed').checked = false;
             }
 
             // Form submit handler
@@ -2803,6 +2826,17 @@
                     imageUrl: document.getElementById('product-image').value,
                     lowStockThreshold: parseInt(document.getElementById('product-low-stock').value) || 10
                 };
+
+                // AI Validation
+                if (aiUsed) {
+                    const isReviewed = document.getElementById('ai-reviewed').checked;
+                    if (!isReviewed) {
+                        showToast('error', 'Please review and verify the AI-generated content.');
+                        return;
+                    }
+                    productData.aiGenerated = true;
+                    productData.aiReviewed = true;
+                }
 
                 try {
                     let res;
@@ -2870,9 +2904,55 @@
                 obs.observe(inventoryModule, { attributes: true, attributeFilter: ['class'] });
             }
 
-            // Placeholder for AI Assist (optional future feature)
-            function aiAssistFill() {
-                showToast('info', 'AI Assist is coming soon!');
+            // AI Assist Logic
+            async function aiAssistFill() {
+                const nameInput = document.getElementById('product-name');
+                const productName = nameInput.value.trim();
+
+                if (!productName) {
+                    showToast('error', 'Please enter a product name first.');
+                    nameInput.focus();
+                    return;
+                }
+
+                // UI Loading State
+                const btn = document.querySelector('button[onclick="aiAssistFill()"]');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Generating...';
+
+                try {
+                    const res = await fetch('/doctor/product/ai-assist', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ productName })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const { description, benefits, side_effects, price } = data.data;
+
+                        // Fill Fields
+                        document.getElementById('product-description').value = description || '';
+                        document.getElementById('product-benefits').value = benefits || '';
+                        document.getElementById('product-side-effects').value = side_effects || '';
+                        if (price) document.getElementById('product-price').value = price;
+
+                        // Set State & Show Review Checkbox
+                        aiUsed = true;
+                        document.getElementById('ai-review-section').classList.remove('hidden');
+
+                        showToast('success', 'AI suggestions applied. Please review.');
+                    } else {
+                        showToast('error', data.error || 'AI generation failed');
+                    }
+                } catch (err) {
+                    console.error('AI Assist Error:', err);
+                    showToast('error', 'Network error during AI request');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
             }
 
 
