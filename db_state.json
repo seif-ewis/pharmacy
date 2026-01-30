@@ -1,0 +1,32 @@
+{
+  "statuses": [
+    {
+      "status": "reviewing"
+    },
+    {
+      "status": "done"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "prescriptions_id_not_null",
+      "pg_get_constraintdef": "NOT NULL id"
+    },
+    {
+      "conname": "prescriptions_pkey",
+      "pg_get_constraintdef": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "prescriptions_user_id_fkey",
+      "pg_get_constraintdef": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "conname": "prescriptions_status_check",
+      "pg_get_constraintdef": "CHECK (((status)::text = ANY ((ARRAY['reviewing'::character varying, 'processing'::character varying, 'outtodelevery'::character varying, 'canceled'::character varying, 'done'::character varying])::text[])))"
+    },
+    {
+      "conname": "prescriptions_shift_id_fkey",
+      "pg_get_constraintdef": "FOREIGN KEY (shift_id) REFERENCES shifts(id) ON DELETE SET NULL"
+    }
+  ]
+}

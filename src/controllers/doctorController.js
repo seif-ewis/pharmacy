@@ -1200,10 +1200,10 @@ export const processPrescriptionDecision = async (req, res) => {
 
             // Create Order
             const orderRes = await client.query(`
-                INSERT INTO orders (user_id, total_price, status, created_at, shift_id, prescription_id)
-                VALUES ($1, $2, 'pending', NOW(), $3, $4)
+                INSERT INTO orders (user_id, total_price, status, created_at, shift_id, prescription_id, order_uid)
+                VALUES ($1, $2, 'pending', NOW(), $3, $4, $5)
                 RETURNING id
-            `, [userId, total, shiftId, prescriptionId]);
+            `, [userId, total, shiftId, prescriptionId, uuidv4()]);
 
             const orderId = orderRes.rows[0].id;
 
