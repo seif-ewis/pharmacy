@@ -9,12 +9,22 @@ export const getDashboard = async (req, res) => {
     try {
         const doctorId = req.user.id;
 
-        // Check for active shift
+        // Check for active shift (My Shift)
         const shiftRes = await db.query(
             "SELECT * FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
             [doctorId]
         );
         let activeShift = shiftRes.rows[0] || null;
+
+        // Check for ANY active shift (Global Lock)
+        const globalShiftRes = await db.query(`
+            SELECT s.*, u.full_name as doctor_name 
+            FROM shifts s 
+            JOIN users u ON s.opened_by = u.id 
+            WHERE s.status = 'open' 
+            LIMIT 1
+        `);
+        const globalActiveShift = globalShiftRes.rows[0] || null;
 
         // Calculate LIVE Shift Stats (since shift table is only updated on close)
         if (activeShift) {
@@ -100,6 +110,7 @@ export const getDashboard = async (req, res) => {
         res.render('doctor/dashboard', {
             user: req.user,
             activeShift,
+            globalActiveShift, // Pass global shift info
             previousShifts,
             pendingPrescriptions,
             activeOrders,
@@ -350,6 +361,23 @@ export const endShift = async (req, res) => {
         console.error('End Shift Error:', err);
         req.flash('error', 'Failed to end shift.');
         res.redirect('/doctor/dashboard');
+    }
+};
+
+// Get Shift Details (JSON)
+export const getShiftDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const shiftRes = await db.query("SELECT * FROM shifts WHERE id = $1", [id]);
+
+        if (shiftRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Shift not found' });
+        }
+
+        res.json({ success: true, shift: shiftRes.rows[0] });
+    } catch (err) {
+        console.error('Get Shift Details Error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 

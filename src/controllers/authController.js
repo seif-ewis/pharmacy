@@ -71,7 +71,7 @@ export const register = async (req, res) => {
     }
 };
 
-export const logout = (req, res) => {
+export const logout = (req, res, next) => {
     req.logout((err) => {
         if (err) {
             req.flash("error", "Error logging out.");

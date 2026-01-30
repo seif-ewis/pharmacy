@@ -98,6 +98,7 @@ router.get("/doctor/orders/all", ensureDoctor, doctorController.getAllOrders);
 router.get("/doctor/orders/:orderId/items", ensureDoctor, doctorController.getOrderItems);
 router.post("/doctor/shift/start", ensureDoctor, doctorController.startShift);
 router.post("/doctor/shift/end", ensureDoctor, doctorController.endShift);
+router.get("/doctor/shift/:id", ensureDoctor, doctorController.getShiftDetails);
 router.get("/doctor/shift/:id/export-pdf", ensureDoctor, doctorController.exportShiftPdf);
 router.post("/doctor/pharmacy/toggle", ensureDoctor, doctorController.togglePharmacyStatus);
 
