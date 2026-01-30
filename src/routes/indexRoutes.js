@@ -110,7 +110,12 @@ router.get("/admin/audit", ensureAdmin, adminController.getAuditLogs);
 router.get("/doctor/prescriptions/:id/process", ensureDoctor, doctorController.getProcessPrescription);
 router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.submitPrescriptionProcessing);
 router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderState);
-router.post("/doctor/inventory/add", ensureDoctor, doctorController.addInventoryItem);
+
+// Doctor Inventory Routes (CRUD)
+router.get("/doctor/inventory", ensureDoctor, doctorController.getInventory);
+router.post("/doctor/inventory/create", ensureDoctor, doctorController.createInventoryItem);
+router.put("/doctor/inventory/update/:id", ensureDoctor, doctorController.updateInventoryItem);
+router.delete("/doctor/inventory/delete/:id", ensureDoctor, doctorController.deleteInventoryItem);
 
 // Doctor Chat Routes
 router.get("/doctor/chats/active", ensureDoctor, doctorController.getChats);

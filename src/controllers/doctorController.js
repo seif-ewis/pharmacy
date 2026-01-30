@@ -531,20 +531,159 @@ export const updateOrderState = async (req, res) => {
     }
 };
 
-// Add Inventory Item
-export const addInventoryItem = async (req, res) => {
-    const { name, price, description, category, imageUrl } = req.body;
+// ==========================================
+// INVENTORY MODULE (CRUD)
+// ==========================================
+
+// Get All Inventory Items
+export const getInventory = async (req, res) => {
     try {
-        await db.query(
-            "INSERT INTO medicines (name, price, description, category, image_url) VALUES ($1, $2, $3, $4, $5)",
-            [name, price, description, category, imageUrl]
-        );
-        req.flash('success', 'Medicine added to inventory.');
-        res.redirect('/doctor/dashboard');
+        const result = await db.query(`
+            SELECT 
+                id, 
+                name, 
+                price, 
+                stock_quantity, 
+                category, 
+                description, 
+                image_url,
+                low_stock_threshold,
+                created_at,
+                updated_at
+            FROM medicines
+            ORDER BY name ASC
+        `);
+
+        res.json({
+            success: true,
+            inventory: result.rows
+        });
     } catch (err) {
-        console.error('Add Inventory Error:', err);
-        req.flash('error', 'Failed to add medicine.');
-        res.redirect('/doctor/dashboard');
+        console.error('Get Inventory Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load inventory'
+        });
+    }
+};
+
+// Create New Inventory Item
+export const createInventoryItem = async (req, res) => {
+    const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
+
+    // Validation
+    if (!name || !price || !quantity || !category) {
+        return res.status(400).json({
+            success: false,
+            error: 'Name, price, quantity, and category are required'
+        });
+    }
+
+    try {
+        const result = await db.query(
+            `INSERT INTO medicines 
+            (name, price, stock_quantity, category, description, image_url, low_stock_threshold) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *`,
+            [name, price, quantity, category, description || null, imageUrl || null, lowStockThreshold || 10]
+        );
+
+        res.json({
+            success: true,
+            message: 'Product added successfully',
+            product: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Create Inventory Item Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add product'
+        });
+    }
+};
+
+// Update Inventory Item
+export const updateInventoryItem = async (req, res) => {
+    const { id } = req.params;
+    const { name, price, quantity, category, description, imageUrl, lowStockThreshold } = req.body;
+
+    try {
+        const result = await db.query(
+            `UPDATE medicines 
+            SET name = $1, 
+                price = $2, 
+                stock_quantity = $3, 
+                category = $4, 
+                description = $5, 
+                image_url = $6,
+                low_stock_threshold = $7,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $8
+            RETURNING *`,
+            [name, price, quantity, category, description, imageUrl, lowStockThreshold || 10, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Product updated successfully',
+            product: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Update Inventory Item Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update product'
+        });
+    }
+};
+
+// Delete Inventory Item
+export const deleteInventoryItem = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Check if medicine is used in any orders
+        const ordersCheck = await db.query(
+            'SELECT COUNT(*) FROM order_items WHERE medicine_id = $1',
+            [id]
+        );
+
+        if (parseInt(ordersCheck.rows[0].count) > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot delete medicine that has been ordered. Set stock to 0 instead.'
+            });
+        }
+
+        const result = await db.query(
+            'DELETE FROM medicines WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Product deleted successfully'
+        });
+    } catch (err) {
+        console.error('Delete Inventory Item Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete product'
+        });
     }
 };
 

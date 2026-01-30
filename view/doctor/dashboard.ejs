@@ -618,6 +618,33 @@
                         </div>
 
                         <!-- Status Tabs -->
+                        <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                            <!-- Search -->
+                            <div class="relative flex-1 w-full md:max-w-md">
+                                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="order-search-input" oninput="applyOrderFilters()"
+                                    class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-sm"
+                                    placeholder="Search by Order ID or Customer Name...">
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="flex items-center gap-2 w-full md:w-auto">
+                                <select id="order-sort-input" onchange="applyOrderFilters()"
+                                    class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                </select>
+
+                                <select id="order-date-input" onchange="applyOrderFilters()"
+                                    class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
+                                    <option value="today">Today</option>
+                                    <option value="yesterday">Yesterday</option>
+                                    <option value="week">Last 7 Days</option>
+                                    <option value="all" selected>All Time</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div
                             class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6 p-2 overflow-x-auto">
                             <div class="flex gap-2 min-w-max">
@@ -2319,13 +2346,224 @@
             }
 
             // ================================================
+            // INVENTORY MODULE - Full CRUD
+            // ================================================
+
+            let inventoryCache = [];
+            let editingProductId = null;
+
+            async function loadInventory() {
+                const tbody = document.getElementById('inventory-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-4xl mb-3"></i><p>Loading inventory...</p></td></tr>';
+
+                try {
+                    const res = await fetch('/doctor/inventory');
+                    const data = await res.json();
+
+                    if (data.success && data.inventory.length > 0) {
+                        inventoryCache = data.inventory;
+                        filterInventory(); // Apply any active filters
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fas fa-box-open text-4xl mb-3"></i><p>No products in inventory</p></td></tr>';
+                    }
+                } catch (e) {
+                    console.error('Load inventory error:', e);
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-400"><i class="fas fa-exclamation-circle text-4xl mb-3"></i><p>Failed to load inventory</p></td></tr>';
+                }
+            }
+
+            function filterInventory() {
+                const searchTerm = document.getElementById('inventory-search')?.value.toLowerCase() || '';
+                const categoryFilter = document.getElementById('category-filter')?.value || '';
+                const tbody = document.getElementById('inventory-table-body');
+
+                if (!tbody) return;
+
+                let filtered = inventoryCache.filter(item => {
+                    const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
+                        (item.category && item.category.toLowerCase().includes(searchTerm));
+                    const matchesCategory = !categoryFilter || item.category === categoryFilter;
+                    return matchesSearch && matchesCategory;
+                });
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">No items match your filters</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(item => {
+                    const isLowStock = item.stock_quantity <= (item.low_stock_threshold || 10);
+                    const stockClass = isLowStock ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400';
+
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    ${item.image_url ?
+                            `<img src="${item.image_url}" class="w-10 h-10 rounded-lg object-cover" alt="${item.name}">` :
+                            '<div class="w-10 h-10 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center"><i class="fas fa-pills text-gray-400"></i></div>'}
+                                    <div>
+                                        <p class="font-bold text-sm dark:text-white">${item.name}</p>
+                                        <p class="text-xs text-gray-400">${item.category || 'Uncategorized'}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center ${stockClass}">
+                                ${item.stock_quantity}
+                                ${isLowStock ? '<i class="fas fa-exclamation-triangle ml-1 text-xs"></i>' : ''}
+                            </td>
+                            <td class="px-6 py-4 text-center font-bold text-green-600">
+                                $${parseFloat(item.price).toFixed(2)}
+                            </td>
+                            <td class="px-6 py-4 text-center text-xs text-gray-400">
+                                ${new Date(item.updated_at || item.created_at).toLocaleDateString()}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="openEditModal('${item.id}')" 
+                                    class="text-blue-500 hover:text-blue-700 mr-3 transition-colors">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteProduct('${item.id}', '${item.name.replace(/'/g, "\\'")}')" 
+                                    class="text-red-500 hover:text-red-700 transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            function openInventoryModal() {
+                editingProductId = null;
+                document.getElementById('modal-title').textContent = 'Add Product';
+                document.getElementById('inventory-form').reset();
+                document.getElementById('product-id').value = '';
+                document.getElementById('inventory-modal').classList.remove('hidden');
+            }
+
+            function openEditModal(productId) {
+                const product = inventoryCache.find(p => p.id === productId);
+                if (!product) return;
+
+                editingProductId = productId;
+                document.getElementById('modal-title').textContent = 'Edit Product';
+                document.getElementById('product-id').value = productId;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('product-quantity').value = product.stock_quantity;
+                document.getElementById('product-category').value = product.category || '';
+                document.getElementById('product-low-stock').value = product.low_stock_threshold || 10;
+                document.getElementById('product-description').value = product.description || '';
+                document.getElementById('product-image').value = product.image_url || '';
+
+                document.getElementById('inventory-modal').classList.remove('hidden');
+            }
+
+            function closeInventoryModal() {
+                document.getElementById('inventory-modal').classList.add('hidden');
+                document.getElementById('inventory-form').reset();
+                editingProductId = null;
+            }
+
+            // Form submit handler
+            document.getElementById('inventory-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const productData = {
+                    name: document.getElementById('product-name').value,
+                    price: parseFloat(document.getElementById('product-price').value),
+                    quantity: parseInt(document.getElementById('product-quantity').value),
+                    category: document.getElementById('product-category').value,
+                    description: document.getElementById('product-description').value,
+                    imageUrl: document.getElementById('product-image').value,
+                    lowStockThreshold: parseInt(document.getElementById('product-low-stock').value) || 10
+                };
+
+                try {
+                    let res;
+                    if (editingProductId) {
+                        // Update existing
+                        res = await fetch(`/doctor/inventory/update/${editingProductId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(productData)
+                        });
+                    } else {
+                        // Create new
+                        res = await fetch('/doctor/inventory/create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(productData)
+                        });
+                    }
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', data.message || 'Product saved successfully');
+                        closeInventoryModal();
+                        loadInventory(); // Reload table
+                    } else {
+                        showToast('error', data.error || 'Failed to save product');
+                    }
+                } catch (err) {
+                    console.error('Save product error:', err);
+                    showToast('error', 'Network error');
+                }
+            });
+
+            async function deleteProduct(productId, productName) {
+                if (!confirm(`Delete "${productName}"?\n\nThis action cannot be undone.`)) return;
+
+                try {
+                    const res = await fetch(`/doctor/inventory/delete/${productId}`, {
+                        method: 'DELETE'
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', 'Product deleted');
+                        loadInventory(); // Reload table
+                    } else {
+                        showToast('error', data.error || 'Failed to delete product');
+                    }
+                } catch (err) {
+                    console.error('Delete product error:', err);
+                    showToast('error', 'Network error');
+                }
+            }
+
+            // Auto-load inventory when module active
+            const inventoryModule = document.getElementById('module-inventory');
+            if (inventoryModule) {
+                const obs = new MutationObserver(() => {
+                    if (!inventoryModule.classList.contains('hidden')) {
+                        loadInventory();
+                    }
+                });
+                obs.observe(inventoryModule, { attributes: true, attributeFilter: ['class'] });
+            }
+
+            // Placeholder for AI Assist (optional future feature)
+            function aiAssistFill() {
+                showToast('info', 'AI Assist is coming soon!');
+            }
+
+
+            // ================================================
             // ORDERS WORK QUEUE - Real-time Management
             // ================================================
             let currentOrderStatus = 'pending';
             let ordersCache = [];
             let expandedOrders = new Set(); // Track expanded orders
+            let currentPage = 1;
+            const itemsPerPage = 10;
+            let filteredOrders = [];
 
-            async function loadOrders() {
+            async function loadOrders(keepPage = false) {
                 try {
                     const res = await fetch('/doctor/orders/all');
                     const data = await res.json();
@@ -2333,7 +2571,7 @@
                     if (data.success) {
                         ordersCache = data.orders;
                         updateOrderCounts(data.orders);
-                        filterOrdersByStatus(currentOrderStatus, false);
+                        filterOrdersByStatus(currentOrderStatus, false, keepPage);
                     }
                 } catch (err) {
                     console.error('Failed to load orders:', err);
@@ -2361,7 +2599,60 @@
                 });
             }
 
-            function filterOrdersByStatus(status, shouldLoad = true) {
+            function applyOrderFilters(keepPage = false) {
+                const queryInput = document.getElementById('order-search-input');
+                const sortInput = document.getElementById('order-sort-input');
+                const dateInput = document.getElementById('order-date-input');
+
+                const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
+                const sort = sortInput ? sortInput.value : 'newest';
+                const dateRange = dateInput ? dateInput.value : 'all';
+
+                filteredOrders = ordersCache.filter(o => o.status === currentOrderStatus);
+
+                // 1. Date Filter
+                if (dateRange !== 'all') {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    const lastWeek = new Date(today);
+                    lastWeek.setDate(lastWeek.getDate() - 7);
+
+                    filteredOrders = filteredOrders.filter(o => {
+                        const d = new Date(o.created_at);
+                        d.setHours(0, 0, 0, 0);
+
+                        if (dateRange === 'today') return d.getTime() === today.getTime();
+                        if (dateRange === 'yesterday') return d.getTime() === yesterday.getTime();
+                        if (dateRange === 'week') return d >= lastWeek;
+                        return true;
+                    });
+                }
+
+                // 2. Search Filter
+                if (query) {
+                    filteredOrders = filteredOrders.filter(o => {
+                        const matchesId = o.order_uid && o.order_uid.toLowerCase().includes(query);
+                        const matchesName = o.user_name && o.user_name.toLowerCase().includes(query);
+                        return matchesId || matchesName;
+                    });
+                }
+
+                // 3. Sort
+                filteredOrders.sort((a, b) => {
+                    const da = new Date(a.created_at);
+                    const db = new Date(b.created_at);
+                    return sort === 'oldest' ? da - db : db - da; // Default to newest
+                });
+
+                if (!keepPage) currentPage = 1;
+                renderPagination();
+            }
+
+            function filterOrdersByStatus(status, shouldLoad = true, keepPage = false) {
                 currentOrderStatus = status;
 
                 // Update tab active state
@@ -2376,26 +2667,37 @@
                 }
 
                 if (shouldLoad) {
-                    loadOrders();
+                    loadOrders(keepPage);
                 } else {
-                    renderOrders(ordersCache.filter(o => o.status === status));
+                    applyOrderFilters(keepPage);
                 }
             }
 
-            function renderOrders(orders) {
-                const container = document.getElementById('orders-container');
+            function changePage(page) {
+                if (page < 1 || page > Math.ceil(filteredOrders.length / itemsPerPage)) return;
+                currentPage = page;
+                renderPagination();
+                document.getElementById('module-orders').scrollIntoView({ behavior: 'smooth' });
+            }
 
-                if (orders.length === 0) {
+            function renderPagination() {
+                const container = document.getElementById('orders-container');
+                const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+                if (filteredOrders.length === 0) {
                     container.innerHTML = `
                         <div class="text-center py-12 text-gray-400">
                             <i class="fas fa-inbox text-5xl mb-3 opacity-30"></i>
-                            <p class="text-lg font-bold">No ${currentOrderStatus} orders</p>
+                            <p class="text-lg font-bold">No ${currentOrderStatus} orders found</p>
                         </div>
                     `;
                     return;
                 }
 
-                container.innerHTML = orders.map(order => {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const slice = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+
+                let html = slice.map(order => {
                     const isExpanded = expandedOrders.has(order.id);
                     return `
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all hover:shadow-lg">
@@ -2488,9 +2790,30 @@
                     `;
                 }).join('');
 
-                // Restore expanded items content
+                // Pagination Controls
+                if (totalPages > 1) {
+                    html += `
+                        <div class="flex items-center justify-center gap-4 mt-8">
+                            <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} 
+                                class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm border border-gray-100 dark:border-slate-700">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            
+                            <span class="text-sm font-bold text-gray-500">
+                                Page <span class="text-primary">${currentPage}</span> of ${totalPages}
+                            </span>
+                            
+                            <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}
+                                class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm border border-gray-100 dark:border-slate-700">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+
                 expandedOrders.forEach(orderId => {
-                    // Check if this order is still in the rendered list
                     if (document.getElementById(`items-${orderId}`)) {
                         loadOrderItems(orderId);
                     }
@@ -2586,7 +2909,7 @@
                 // Real-time polling every 3 seconds when module is active
                 setInterval(() => {
                     if (!ordersModule.classList.contains('hidden')) {
-                        loadOrders();
+                        loadOrders(true);
                     }
                 }, 3000);
             }
