@@ -116,7 +116,8 @@
                         <% if (product.originalPrice) { %>
                             <span
                                 class="text-xl text-red-500 line-through decoration-red-500 decoration-2 font-medium">$
-                                <%= parseFloat(product.originalPrice).toFixed(2) %></span>
+                                <%= parseFloat(product.originalPrice).toFixed(2) %>
+                            </span>
                             <span
                                 class="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full uppercase tracking-wide">SALE</span>
                             <% } %>
@@ -156,7 +157,7 @@
                     <div class="pt-6 border-t border-gray-200 dark:border-slate-700">
                         <div class="flex items-center justify-between mb-6">
                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Availability:</span>
-                            <% if (product.quantity> 0) { %>
+                            <% if (Number(product.quantity)> 0) { %>
                                 <span class="text-green-500 font-bold flex items-center gap-1">
                                     <i class="fas fa-circle text-[8px]"></i> In Stock (<%= product.quantity %>
                                         available)
@@ -185,7 +186,7 @@
                                 </button>
                             </div>
 
-                            <% if (product.quantity> 0) { %>
+                            <% if (Number(product.quantity)> 0) { %>
                                 <button
                                     onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price %>, <%= product.quantity %>)"
                                     class="flex-1 bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
@@ -225,9 +226,9 @@
                     <% if (typeof relatedProducts !=='undefined' && relatedProducts.length> 0) { %>
                         <% relatedProducts.forEach(function(rProd) { %>
                             <div
-                                class="min-w-[280px] bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof rProd.quantity !== 'undefined' && rProd.quantity === 0) ? 'opacity-60 grayscale' : '' %>">
+                                class="min-w-[280px] bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof rProd.quantity !== 'undefined' && Number(rProd.quantity) <= 0) ? 'opacity-60 grayscale' : '' %>">
 
-                                <% if (typeof rProd.quantity !=='undefined' && rProd.quantity===0) { %>
+                                <% if (typeof rProd.quantity !=='undefined' && Number(rProd.quantity) <=0) { %>
                                     <div
                                         class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                                         Out of Stock
@@ -264,7 +265,8 @@
                                             <span class="text-xl font-bold text-primary dark:text-blue-400">$<%=
                                                     parseFloat(rProd.price).toFixed(2) %></span>
 
-                                            <% if (typeof rProd.quantity !=='undefined' && rProd.quantity===0) { %>
+                                            <% if (typeof rProd.quantity !=='undefined' && Number(rProd.quantity) <=0) {
+                                                %>
                                                 <button disabled
                                                     class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
                                                     <i class="fas fa-ban"></i>
@@ -318,7 +320,7 @@
                                 <i class="fas fa-cubes text-blue-500 mt-1"></i>
                                 <span class="text-gray-600 dark:text-gray-400 text-sm">
                                     <strong class="text-dark dark:text-gray-200">Availability:</strong>
-                                    <%= product.quantity> 0 ? 'In Stock' : 'Out of Stock' %>
+                                    <%= Number(product.quantity)> 0 ? 'In Stock' : 'Out of Stock' %>
                                 </span>
                             </li>
                         </ul>

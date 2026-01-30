@@ -130,9 +130,9 @@
                             <% if (typeof featuredMedicines !=='undefined' ) { %>
                                 <% featuredMedicines.forEach(function(med) { %>
                                     <div
-                                        class="min-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && med.stock === 0) ? 'opacity-60 grayscale' : '' %>">
+                                        class="min-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && Number(med.stock) <= 0) ? 'opacity-60 grayscale' : '' %>">
                                         <!-- Out of Stock Overlay -->
-                                        <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                        <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) { %>
                                             <div
                                                 class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                                                 Out of Stock
@@ -175,7 +175,8 @@
                                                             <% } %>
                                                     </div>
 
-                                                    <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                                    <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) {
+                                                        %>
                                                         <button disabled
                                                             class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
                                                             <i class="fas fa-ban"></i>
@@ -234,9 +235,9 @@
                             <% if (typeof dailyEssentials !=='undefined' ) { %>
                                 <% dailyEssentials.forEach(function(med) { %>
                                     <div
-                                        class="min-w-[280px] bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && med.stock === 0) ? 'opacity-60 grayscale' : '' %>">
+                                        class="min-w-[280px] bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && Number(med.stock) <= 0) ? 'opacity-60 grayscale' : '' %>">
                                         <!-- Out of Stock Overlay -->
-                                        <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                        <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) { %>
                                             <div
                                                 class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                                                 Out of Stock
@@ -272,7 +273,8 @@
                                                             <% } %>
                                                     </div>
 
-                                                    <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                                    <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) {
+                                                        %>
                                                         <button disabled
                                                             class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
                                                             <i class="fas fa-ban"></i>
@@ -331,9 +333,9 @@
                             <% if (typeof wellnessProducts !=='undefined' ) { %>
                                 <% wellnessProducts.forEach(function(med) { %>
                                     <div
-                                        class="min-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && med.stock === 0) ? 'opacity-60 grayscale' : '' %>">
+                                        class="min-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-slate-700 med-card relative group/card <%= (typeof med.stock !== 'undefined' && Number(med.stock) <= 0) ? 'opacity-60 grayscale' : '' %>">
                                         <!-- Out of Stock Overlay -->
-                                        <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                        <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) { %>
                                             <div
                                                 class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                                                 Out of Stock
@@ -369,7 +371,8 @@
                                                             <% } %>
                                                     </div>
 
-                                                    <% if (typeof med.stock !=='undefined' && med.stock===0) { %>
+                                                    <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) {
+                                                        %>
                                                         <button disabled
                                                             class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed flex items-center justify-center">
                                                             <i class="fas fa-ban"></i>

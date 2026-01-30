@@ -6,7 +6,13 @@ export const getProductDetails = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const result = await db.query("SELECT * FROM medicines WHERE id = $1", [id]);
+        // Join medicine_stock to get real stock data
+        const result = await db.query(`
+            SELECT m.*, COALESCE(ms.current_stock, 0) as quantity
+            FROM medicines m
+            LEFT JOIN medicine_stock ms ON ms.id = m.id
+            WHERE m.id = $1
+        `, [id]);
 
         if (result.rows.length === 0) {
             // Render 404 if product not found
