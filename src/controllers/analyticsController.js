@@ -7,7 +7,7 @@ export const getDoctorAnalytics = async (req, res) => {
         const { range } = req.query; // '7', '30', '90'
         const days = parseInt(range) || 30;
 
-        // 1. Revenue Over Time (Gross - Returns)
+        // 1. Net Revenue Over Time (Earned on completed_at, Reversed on returned_at)
         const revenueRes = await db.query(`
             WITH RECURSIVE dates AS (
                 SELECT CURRENT_DATE - ($1 * INTERVAL '1 day') AS date
@@ -15,18 +15,36 @@ export const getDoctorAnalytics = async (req, res) => {
                 SELECT date + INTERVAL '1 day'
                 FROM dates
                 WHERE date < CURRENT_DATE
+            ),
+            daily_stats AS (
+                SELECT 
+                    DATE(completed_at) as event_date,
+                    SUM(total_price) as earned,
+                    0 as reversed
+                FROM orders
+                WHERE completed_at IS NOT NULL
+                AND completed_at >= CURRENT_DATE - ($1 * INTERVAL '1 day')
+                GROUP BY 1
+                UNION ALL
+                SELECT 
+                    DATE(returned_at) as event_date,
+                    0 as earned,
+                    SUM(total_price) as reversed
+                FROM orders
+                WHERE returned_at IS NOT NULL
+                AND returned_at >= CURRENT_DATE - ($1 * INTERVAL '1 day')
+                GROUP BY 1
             )
             SELECT 
                 d.date,
-                COALESCE(SUM(o.total_price), 0) - COALESCE(SUM(r.refund_amount), 0) as amount
+                COALESCE(SUM(s.earned - s.reversed), 0) as amount
             FROM dates d
-            LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.date) AND o.status IN ('completed', 'delivered')
-            LEFT JOIN returns r ON DATE(r.created_at) = DATE(d.date) AND r.status = 'approved'
+            LEFT JOIN daily_stats s ON d.date = s.event_date
             GROUP BY d.date
             ORDER BY d.date ASC
         `, [days]);
 
-        // 2. Orders Over Time
+        // 2. Successful Orders Over Time (Grouped by completed_at)
         const ordersRes = await db.query(`
             WITH RECURSIVE dates AS (
                 SELECT CURRENT_DATE - ($1 * INTERVAL '1 day') AS date
@@ -39,16 +57,16 @@ export const getDoctorAnalytics = async (req, res) => {
                 d.date,
                 COUNT(o.id) as count
             FROM dates d
-            LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.date) AND o.status IN ('completed', 'delivered', 'pending', 'processing')
+            LEFT JOIN orders o ON DATE(o.completed_at) = DATE(d.date) AND o.completed_at IS NOT NULL
             GROUP BY d.date
             ORDER BY d.date ASC
         `, [days]);
 
-        // 3. Returns vs Sales (Pie Chart Data)
+        // 3. Returns vs Sales (Pie Chart Data) - Operational view
         const returnVsSalesRes = await db.query(`
             SELECT 
-                (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')) as sales,
-                (SELECT COALESCE(SUM(refund_amount), 0) FROM returns WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')) as returns
+                (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE completed_at IS NOT NULL AND completed_at >= NOW() - ($1 * INTERVAL '1 day')) as sales,
+                (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE returned_at IS NOT NULL AND returned_at >= NOW() - ($1 * INTERVAL '1 day')) as returns
         `, [days]);
 
         // 4. Requested Medicines Stats (Category distribution from product_requests is tricky if no category, so we group by name)
@@ -61,7 +79,7 @@ export const getDoctorAnalytics = async (req, res) => {
              LIMIT 5
         `, [days]);
 
-        // 5. Inventory Turnover (Top Selling Medicines)
+        // 5. Inventory Turnover (Top Selling Medicines - by completed_at)
         const topMoversRes = await db.query(`
             SELECT 
                 m.name,
@@ -70,8 +88,8 @@ export const getDoctorAnalytics = async (req, res) => {
             FROM order_items oi
             JOIN medicines m ON oi.medicine_id = m.id
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.status IN ('completed', 'delivered')
-            AND o.created_at >= NOW() - ($1 * INTERVAL '1 day')
+            WHERE o.completed_at IS NOT NULL
+            AND o.completed_at >= NOW() - ($1 * INTERVAL '1 day')
             GROUP BY m.name
             ORDER BY total_sold DESC
             LIMIT 10

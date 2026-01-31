@@ -307,21 +307,19 @@ export const createOrder = async (req, res) => {
         const isPharmacyOpen = pharmacyStatusRes.rows[0]?.is_open ?? true;
         const initialStatus = isPharmacyOpen ? 'pending' : 'scheduled';
 
-        // 1.8 Get Active Shift (if exists)
+        // 1.8 Get Active Shift (if exists) - Optional for creation
         const shiftRes = await client.query("SELECT id FROM shifts WHERE status='open' ORDER BY opened_at DESC LIMIT 1");
         const activeShiftId = shiftRes.rows[0]?.id || null;
 
-        // 2. Create Order Record (with shift_id and completed_shift_id)
-        // IMPORTANT: completed_shift_id is IMMUTABLE - never changes after creation
-        // This provides permanent linkage: Order -> Revenue -> Inventory
+        // 2. Create Order Record (with shift_id)
         const orderRes = await client.query(
             `INSERT INTO orders (
                 user_id, address_id, status, shift_id, completed_shift_id,
                 subtotal, delivery_fee, tax_amount, discount_total, promotion_id, total_price, 
                 payment_status, created_at, order_uid
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
+            ) VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, 'paid', NOW(), substr(md5(random()::text), 1, 8)) 
             RETURNING id`,
-            [req.user.id, address_id, initialStatus, activeShiftId, activeShiftId, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
+            [req.user.id, address_id, initialStatus, activeShiftId, subtotal, deliveryFee, tax, discountAmount, promotionId, finalTotal]
         );
         const orderId = orderRes.rows[0].id;
 
@@ -341,8 +339,8 @@ export const createOrder = async (req, res) => {
         for (const item of validItems) {
             // Insert Order Item
             await client.query(
-                `INSERT INTO order_items (order_id, medicine_id, quantity, price)
-                 VALUES ($1, $2, $3, $4)`,
+                `INSERT INTO order_items(order_id, medicine_id, quantity, price)
+VALUES($1, $2, $3, $4)`,
                 [orderId, item.medicine_id, item.quantity, item.price]
             );
 
@@ -356,7 +354,7 @@ export const createOrder = async (req, res) => {
                 -Math.abs(item.quantity), // Ensure it's negative
                 orderIdStr,
                 req.user.id,
-                `Order Sale #${orderIdStr.substring(0, 8)}`,
+                `Order Sale #${orderIdStr.substring(0, 8)} `,
                 activeShiftId  // Pass the active shift for tracking
             );
         }
@@ -383,7 +381,7 @@ export const createOrder = async (req, res) => {
             res.json({ success: true, order_id: orderId });
         } else {
             req.flash("success", "Order placed successfully!");
-            res.redirect(`/profile`);
+            res.redirect(`/ profile`);
         }
 
     } catch (err) {
@@ -420,13 +418,18 @@ export const cancelOrder = async (req, res) => {
         }
         const order = orderRes.rows[0];
 
+        // 1.5 Guard: Only allow cancellation if order is NOT completed/delivered
+        if (order.completed_shift_id) {
+            throw new Error("Cannot cancel an order that has already been completed or delivered.");
+        }
+
         // 2. Fetch Order Items for Restocking
         const itemsRes = await client.query("SELECT * FROM order_items WHERE order_id = $1", [id]);
         const items = itemsRes.rows;
 
-        // 3. Update Order Status
+        // 3. Update Order Status & Timestamp
         const oldStatus = order.status; // Should be 'pending'
-        await client.query("UPDATE orders SET status = 'canceled' WHERE id = $1", [id]);
+        await client.query("UPDATE orders SET status = 'canceled', canceled_at = NOW() WHERE id = $1", [id]);
 
         // 3.1 Log Status Change (Audit Trail)
         await logOrderStatusChange(id, oldStatus, 'canceled', req.user.id, client);
@@ -445,7 +448,7 @@ export const cancelOrder = async (req, res) => {
                 Math.abs(item.quantity), // Positive value to ADD stock
                 orderIdStr,
                 req.user.id,
-                `Order Cancellation #${orderIdStr.substring(0, 8)}`,
+                `Order Cancellation #${orderIdStr.substring(0, 8)} `,
                 currentShift  // Track which shift performed the restock
             );
         }
@@ -473,25 +476,25 @@ export const getOrderDetails = async (req, res) => {
         // Fetch Order with Items, Address, and Medicine Details
         // Fetch Order with Items, Address, and Medicine Details
         const query = `
-            SELECT 
-                o.*,
-                a.label as address_label, a.street, a.city,
-                json_agg(
-                    json_build_object(
-                        'name', m.name,
-                        'quantity', oi.quantity,
-                        'price', oi.price,
-                        'total', (oi.quantity * oi.price),
-                        'image_url', m.image_url
-                    )
-                ) as items
+SELECT
+o.*,
+    a.label as address_label, a.street, a.city,
+    json_agg(
+        json_build_object(
+            'name', m.name,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'total', (oi.quantity * oi.price),
+            'image_url', m.image_url
+        )
+    ) as items
             FROM orders o
             LEFT JOIN addresses a ON o.address_id = a.id
             JOIN order_items oi ON o.id = oi.order_id
             JOIN medicines m ON oi.medicine_id = m.id
             WHERE o.id = $1 AND o.user_id = $2
             GROUP BY o.id, a.id, a.label, a.street, a.city
-        `;
+    `;
         const result = await client.query(query, [id, req.user.id]);
 
         if (result.rows.length === 0) {
@@ -502,7 +505,7 @@ export const getOrderDetails = async (req, res) => {
         res.render("orders/details", {
             user: req.user,
             order: result.rows[0],
-            pageTitle: `Order #${result.rows[0].order_uid || id}`
+            pageTitle: `Order #${result.rows[0].order_uid || id} `
         });
 
     } catch (err) {

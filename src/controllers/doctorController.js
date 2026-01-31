@@ -12,6 +12,11 @@ export const getDashboard = async (req, res) => {
         const doctorId = req.user.id;
 
         // Check for active shift (My Shift)
+        /**
+         * NOTE: Shift-based revenue reporting is OPERATIONAL, not accounting-grade.
+         * Revenue is earned in the shift of completion (completed_shift_id) 
+         * and reversed in the shift of return (returned_shift_id).
+         */
         const shiftRes = await db.query(
             "SELECT * FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
             [doctorId]
@@ -28,25 +33,24 @@ export const getDashboard = async (req, res) => {
         `);
         const globalActiveShift = globalShiftRes.rows[0] || null;
 
-        // Calculate LIVE Shift Stats (since shift table is only updated on close)
+        // Calculate LIVE Shift Stats (Operational Model)
         if (activeShift) {
-            // Live Revenue & Orders from Orders Table
-            const shiftMetricsRes = await db.query(
-                `SELECT 
-                    COALESCE(SUM(total_price), 0) as gross_revenue,
-                    COUNT(*) as total_orders
-                 FROM orders 
-                 WHERE shift_id = $1`,
-                [activeShift.id]
-            );
+            const shiftMetricsRes = await db.query(`
+                SELECT 
+                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) as gross_revenue,
+                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) as total_refunds,
+                    COUNT(id) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as total_orders,
+                    COUNT(id) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) as total_returns
+                FROM orders
+                WHERE completed_shift_id = $1 OR returned_shift_id = $1
+            `, [activeShift.id]);
 
-            // Live Returns
-            const shiftReturnsRes = await db.query(
-                `SELECT COALESCE(SUM(refund_amount), 0) as total_refunds 
-                 FROM returns 
-                 WHERE shift_id = $1`,
-                [activeShift.id]
-            );
+            const metrics = shiftMetricsRes.rows[0];
+            activeShift.gross_revenue = parseFloat(metrics.gross_revenue);
+            activeShift.total_refunds = parseFloat(metrics.total_refunds);
+            activeShift.net_revenue = activeShift.gross_revenue - activeShift.total_refunds;
+            activeShift.total_orders = parseInt(metrics.total_orders);
+            activeShift.total_returns = parseInt(metrics.total_returns);
 
             // Live Prescriptions Processed in Shift
             const shiftPresRes = await db.query(
@@ -56,14 +60,14 @@ export const getDashboard = async (req, res) => {
                 [activeShift.id]
             );
 
-            const gross = parseFloat(shiftMetricsRes.rows[0].gross_revenue || 0);
-            const refunds = parseFloat(shiftReturnsRes.rows[0].total_refunds || 0);
-
             // Overwrite stale shift data with live data
             activeShift = {
                 ...activeShift,
-                gross_revenue: (gross - refunds).toFixed(2),
-                total_orders: parseInt(shiftMetricsRes.rows[0].total_orders || 0),
+                gross_revenue: activeShift.gross_revenue.toFixed(2),
+                total_refunds: activeShift.total_refunds.toFixed(2),
+                net_revenue: activeShift.net_revenue.toFixed(2),
+                total_orders: activeShift.total_orders,
+                total_returns: activeShift.total_returns,
                 total_prescriptions: parseInt(shiftPresRes.rows[0].count || 0)
             };
         }
@@ -179,29 +183,31 @@ export const getDashboardStats = async (req, res) => {
         const totalRequests = parseInt(totalRequestsRes.rows[0].count);
 
         // Calculate Live Shift Data
-        let liveRevenue = 0;
+        // Calculate Live Shift Data (Operational Model)
+        let grossRevenue = 0;
+        let returnsValue = 0;
+        let netRevenue = 0;
         let shiftOrdersCount = 0;
         let shiftPrescriptionsCount = 0;
         let shiftReturnsCount = 0;
 
         if (activeShift) {
-            // Gross Revenue & Orders Count (Orders)
-            const grossRes = await db.query(
-                "SELECT COALESCE(SUM(total_price), 0) as gross, COUNT(*) as count FROM orders WHERE shift_id = $1",
-                [activeShift.id]
-            );
-            const gross = parseFloat(grossRes.rows[0].gross || 0);
-            shiftOrdersCount = parseInt(grossRes.rows[0].count || 0);
+            const shiftMetricsRes = await db.query(`
+                SELECT 
+                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) as gross,
+                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) as refunds,
+                    COUNT(id) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as orders_count,
+                    COUNT(id) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) as returns_count
+                FROM orders
+                WHERE completed_shift_id = $1 OR returned_shift_id = $1
+            `, [activeShift.id]);
 
-            // Refunds (Returns)
-            const returnRes = await db.query(
-                "SELECT COALESCE(SUM(refund_amount), 0) as refunds, COUNT(*) as count FROM returns WHERE shift_id = $1",
-                [activeShift.id]
-            );
-            const refunds = parseFloat(returnRes.rows[0].refunds || 0);
-            shiftReturnsCount = parseInt(returnRes.rows[0].count || 0);
-
-            liveRevenue = gross - refunds;
+            const metrics = shiftMetricsRes.rows[0];
+            grossRevenue = parseFloat(metrics.gross);
+            returnsValue = parseFloat(metrics.refunds);
+            netRevenue = grossRevenue - returnsValue;
+            shiftOrdersCount = parseInt(metrics.orders_count);
+            shiftReturnsCount = parseInt(metrics.returns_count);
 
             // Prescriptions Processed in Shift
             const presRes = await db.query(
@@ -219,9 +225,11 @@ export const getDashboardStats = async (req, res) => {
             success: true,
             data: {
                 shiftActive: !!activeShift,
-                shiftActive: !!activeShift,
                 shiftStartedAt: activeShift ? activeShift.created_at : null,
-                revenue: liveRevenue.toFixed(2),
+                revenue: netRevenue.toFixed(2),
+                grossRevenue: grossRevenue.toFixed(2),
+                returnsValue: returnsValue.toFixed(2),
+                netRevenue: netRevenue.toFixed(2),
                 shiftOrdersCount,
                 shiftPrescriptionsCount,
                 shiftReturnsCount,
@@ -523,21 +531,84 @@ export const submitPrescriptionProcessing = async (req, res) => {
 // Update Order State
 export const updateOrderState = async (req, res) => {
     const { orderId, newState } = req.body;
+    const doctorId = req.user.id;
+
+    const client = await db.connect();
     try {
-        // Get current order status for logging
-        const currentOrder = await db.query("SELECT status FROM orders WHERE id = $1", [orderId]);
-        const oldStatus = currentOrder.rows[0]?.status;
+        await client.query('BEGIN');
 
-        // Update order status
-        await db.query("UPDATE orders SET status = $1 WHERE id = $2", [newState, orderId]);
+        // 1. Get current order details
+        const currentOrderRes = await client.query(
+            "SELECT status, completed_shift_id, returned_shift_id FROM orders WHERE id = $1 FOR UPDATE",
+            [orderId]
+        );
+        if (currentOrderRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        const order = currentOrderRes.rows[0];
+        const oldStatus = order.status;
 
-        // Log status change for audit trail
-        await logOrderStatusChange(orderId, oldStatus, newState, req.user.id);
+        // 2. Validate Status Transitions (Governance)
+        const terminalStates = ['completed', 'delivered', 'canceled', 'returned'];
 
+        // Prevent re-completing something already completed/delivered/canceled/returned
+        if (terminalStates.includes(oldStatus) && (newState === 'completed' || newState === 'delivered')) {
+            return res.status(400).json({ success: false, message: `Cannot change order to ${newState} once it is ${oldStatus}` });
+        }
+
+        // Prevent returned orders from moving back to any other state
+        if (oldStatus === 'returned') {
+            return res.status(400).json({ success: false, message: "Returned orders cannot change state" });
+        }
+
+        // Prevent canceled orders from moving back to any other state
+        if (oldStatus === 'canceled' && newState !== 'returned') { // Maybe allow returned if refunding canceled? Usually canceled = no money.
+            return res.status(400).json({ success: false, message: "Canceled orders cannot change state" });
+        }
+
+        // 3. Mandatory Active Shift Guard for Revenue Actions
+        let activeShiftId = null;
+        if (['completed', 'delivered', 'returned'].includes(newState)) {
+            const shiftRes = await client.query(
+                "SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
+                [doctorId]
+            );
+            activeShiftId = shiftRes.rows[0]?.id || null;
+
+            if (!activeShiftId) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ success: false, message: "Active shift required to complete or return an order" });
+            }
+        }
+
+        // 4. Attribution Logic (Immutability)
+        let setClause = "status = $1";
+        let params = [newState, orderId];
+
+        if ((newState === 'completed' || newState === 'delivered') && !order.completed_shift_id) {
+            setClause += ", completed_shift_id = $3, completed_at = NOW()";
+            params.push(activeShiftId);
+        } else if (newState === 'returned' && !order.returned_shift_id) {
+            setClause += ", returned_shift_id = $3, returned_at = NOW()";
+            params.push(activeShiftId);
+        } else if (newState === 'canceled') {
+            setClause += ", canceled_at = NOW()";
+        }
+
+        // 5. Update Order
+        await client.query(`UPDATE orders SET ${setClause} WHERE id = $2`, params);
+
+        // 6. Log status change for audit trail
+        await logOrderStatusChange(orderId, oldStatus, newState, doctorId, client);
+
+        await client.query('COMMIT');
         res.json({ success: true });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Update Order State Error:', err);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: err.message });
+    } finally {
+        client.release();
     }
 };
 
@@ -1019,11 +1090,14 @@ VALUES($1, $2, $3, $4)`,
             }
         }
 
-        // 5. Update Shift Stats (Total Returns Count)
+        // 5. Update Order with Return Attribution (Authority: returned_at)
         await client.query(
-            "UPDATE shifts SET total_returns = COALESCE(total_returns, 0) + 1 WHERE id = $1",
-            [shiftId]
+            "UPDATE orders SET returned_at = NOW(), returned_shift_id = $1, status = 'returned' WHERE id = $2",
+            [shiftId, orderId]
         );
+
+        // 6. Log Status Change (Audit Trail)
+        await logOrderStatusChange(orderId, 'completed', 'returned', doctorId, client);
 
         await client.query('COMMIT');
 
@@ -1232,11 +1306,11 @@ export const processPrescriptionDecision = async (req, res) => {
                 VALUES ($1, $2, $3, $4, $5, NOW())
             `, [prescriptionId, doctorId, JSON.stringify(medicines), notes || '', total]);
 
-            // 6. Update Shift Stats
+            // 6. Update Shift Stats (Removed direct revenue/order count updates - now calculated live)
             if (shiftId) {
                 await client.query(
-                    "UPDATE shifts SET total_orders = COALESCE(total_orders, 0) + 1, total_prescriptions = COALESCE(total_prescriptions, 0) + 1, gross_revenue = COALESCE(gross_revenue, 0) + $2 WHERE id = $1",
-                    [shiftId, total]
+                    "UPDATE shifts SET total_prescriptions = COALESCE(total_prescriptions, 0) + 1 WHERE id = $1",
+                    [shiftId]
                 );
             }
         }
@@ -1485,24 +1559,14 @@ export const processReturnInline = async (req, res) => {
                 );
             }
 
-            // 4. Check for Full Return to update Order Status
-            const qtyCheck = await client.query(`
-                SELECT 
-                    (SELECT SUM(quantity) FROM order_items WHERE order_id = $1) as total_ordered,
-                    (SELECT SUM(ri.quantity) 
-                     FROM return_items ri 
-                     JOIN returns r ON ri.return_id = r.id 
-                     WHERE r.order_id = $1 AND r.status = 'approved') as total_returned
-            `, [returnReq.order_id]);
+            // 4. Update Order with Return Attribution (Authority: returned_at)
+            await client.query(
+                "UPDATE orders SET returned_at = NOW(), returned_shift_id = $1, status = 'returned' WHERE id = $2",
+                [activeShiftId, returnReq.order_id]
+            );
 
-            const { total_ordered, total_returned } = qtyCheck.rows[0];
-
-            if (parseInt(total_returned || 0) >= parseInt(total_ordered || 0)) {
-                await client.query(
-                    "UPDATE orders SET status = 'returned' WHERE id = $1",
-                    [returnReq.order_id]
-                );
-            }
+            // 4.1 Log Status Change (Audit Trail)
+            await logOrderStatusChange(returnReq.order_id, 'completed', 'returned', userId, client);
         }
 
         // 5. Update Return Status and Shift Attribution
