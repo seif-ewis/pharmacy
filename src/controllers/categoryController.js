@@ -48,9 +48,10 @@ export const getCategoryPage = async (req, res) => {
         // Get first page of products
         // Using string interpolation for ORDER BY (safe here as values are controlled by switch)
         const result = await db.query(`
-            SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
-            FROM medicines
-            WHERE category = $1
+            SELECT m.id, m.name, m.description, m.price, m.original_price, m.icon, m.image_url, COALESCE(ms.current_stock, 0) as quantity, m.created_at
+            FROM medicines m
+            LEFT JOIN medicine_stock ms ON m.id = ms.id
+            WHERE m.category = $1
             ORDER BY ${orderBy}
             LIMIT $2
         `, [category, ITEMS_PER_PAGE]);
