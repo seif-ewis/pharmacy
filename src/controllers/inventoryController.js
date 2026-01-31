@@ -33,9 +33,10 @@ export const logAdjustment = async (client, medicineId, type, quantityChange, re
             throw new Error(`Cannot log adjustment to ${shift.status} shift. Only open shifts allowed.`);
         }
 
-        // CRITICAL: Shift must belong to performer
-        if (shift.opened_by !== performedBy) {
-            throw new Error('Cannot log adjustment to another user\'s shift');
+        // CRITICAL: Shift must belong to performer UNLESS it's a sale (handled by system/customer)
+        // Relaxed rule: If type is 'sale', we allow the adjustment even if (shift.opened_by !== performedBy)
+        if (shift.opened_by !== performedBy && type !== 'sale') {
+            throw new Error(`Cannot log adjustment to another user's shift (Type: ${type}). Only shift owner can perform manual adjustments.`);
         }
     }
 

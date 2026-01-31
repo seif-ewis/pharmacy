@@ -128,10 +128,11 @@ export const getMoreProducts = async (req, res) => {
         const offset = parseInt(cursor) || 0;
 
         const result = await db.query(`
-            SELECT id, name, description, price, original_price, icon, image_url, quantity, created_at
-            FROM medicines
-            WHERE category = $1
-            ORDER BY ${orderBy}
+            SELECT m.id, m.name, m.description, m.price, m.original_price, m.icon, m.image_url, COALESCE(ms.current_stock, 0) as quantity, m.created_at
+            FROM medicines m
+            LEFT JOIN medicine_stock ms ON m.id = ms.id
+            WHERE m.category = $1
+            ORDER BY ${orderBy} -- Safe interpolation (controlled values)
             LIMIT $2 OFFSET $3
         `, [category, ITEMS_PER_PAGE, offset]);
 
