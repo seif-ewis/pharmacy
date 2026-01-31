@@ -109,6 +109,10 @@ export const getDashboard = async (req, res) => {
             is_open: statusRes.rows.length > 0 ? statusRes.rows[0].is_open : true
         };
 
+        // Fetch Categories
+        const catRes = await db.query("SELECT DISTINCT category FROM medicines WHERE category IS NOT NULL ORDER BY category ASC");
+        const categories = catRes.rows.map(r => r.category);
+
         res.render('doctor/dashboard', {
             user: req.user,
             activeShift,
@@ -118,6 +122,7 @@ export const getDashboard = async (req, res) => {
             activeOrders,
             trendingRequests,
             pharmacySettings,
+            categories, // Pass categories
             pageTitle: 'Doctor Dashboard'
         });
 
@@ -1326,3 +1331,87 @@ export const getPendingPrescriptions = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to fetch prescriptions' });
     }
 };
+
+// Product Requests Module
+
+/**
+ * Get Product Requests for Dashboard (Two Views: Pending vs History)
+ */
+export const getProductRequests = async (req, res) => {
+    try {
+        // 1. Pending Requests (Actionable)
+        const pendingRes = await db.query(`
+            SELECT pr.*, u.full_name, u.email, u.avatar
+            FROM product_requests pr
+            JOIN users u ON pr.user_id = u.id
+            WHERE pr.status = 'pending'
+            ORDER BY pr.created_at DESC
+        `);
+
+        // 2. Request History (Demand)
+        const historyRes = await db.query(`
+            SELECT pr.*, u.full_name
+            FROM product_requests pr
+            JOIN users u ON pr.user_id = u.id
+            WHERE pr.status != 'pending'
+            ORDER BY pr.created_at DESC
+            LIMIT 50
+        `);
+
+        res.json({
+            success: true,
+            pending: pendingRes.rows,
+            history: historyRes.rows
+        });
+    } catch (err) {
+        console.error("Get Product Requests Error:", err);
+        res.status(500).json({ success: false, message: "Failed to fetch requests" });
+    }
+};
+
+/**
+ * Fulfill a Product Request (Mark as done & Notify User)
+ */
+export const fulfillProductRequest = async (req, res) => {
+    const { requestId, matchedMedicineId } = req.body;
+
+    try {
+        // 1. Get Request Details
+        const reqRes = await db.query("SELECT * FROM product_requests WHERE id = $1", [requestId]);
+        if (reqRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Request not found" });
+        }
+        const request = reqRes.rows[0];
+
+        // 2. Update Status & Link Medicine
+        await db.query(
+            "UPDATE product_requests SET status = 'fulfilled', matched_medicine_id = $1 WHERE id = $2",
+            [matchedMedicineId || null, requestId]
+        );
+
+        // 3. Notify User
+        const title = "Request Fulfilled! 🎉";
+        let message = `Good news! The product "${request.product_name}" you requested is now available in our pharmacy.`;
+
+        // Enhance message if we have details? (Optional)
+
+        const notifInsert = await db.query(
+            "INSERT INTO notifications (title, message, type) VALUES ($1, $2, 'system') RETURNING id",
+            [title, message]
+        );
+        const notifId = notifInsert.rows[0].id;
+
+        await db.query(
+            "INSERT INTO user_notifications (user_id, notification_id, sent_at) VALUES ($1, $2, NOW())",
+            [request.user_id, notifId]
+        );
+
+        res.json({ success: true, message: "Request fulfilled and user notified!" });
+
+    } catch (err) {
+        console.error("Fulfill Request Error:", err);
+        res.status(500).json({ success: false, message: "Failed to fulfill request" });
+    }
+};
+
+

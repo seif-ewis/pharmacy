@@ -64,6 +64,18 @@
                             <%= pendingPrescriptions.length %>
                         </span>
                     </a>
+                    <a onclick="showModule('requests'); loadProductRequests();"
+                        class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i
+                                class="fas fa-hand-holding-medical w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            <span>Requests</span>
+                        </div>
+                        <span id="badge-requests"
+                            class="hidden bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-amber-500/30">
+                            0
+                        </span>
+                    </a>
                     <a onclick="showModule('inventory')"
                         class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer group">
                         <div class="flex items-center gap-3">
@@ -148,6 +160,52 @@
                 <!-- Modules Container -->
                 <div class="flex-1 overflow-y-auto p-6 scroll-smooth custom-scrollbar" id="content-area">
                     <!-- MODULE: OVERVIEW -->
+                    <!-- MODULE: PRODUCT REQUESTS -->
+                    <div id="module-requests" class="module-content hidden animate-fade-in">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 class="text-2xl font-black dark:text-white">Product Requests</h2>
+                                <p class="text-gray-500 text-sm">Manage user requests and market demand</p>
+                            </div>
+                            <div class="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+                                <button onclick="switchRequestTab('pending')" id="tab-req-pending"
+                                    class="px-4 py-2 rounded-lg text-sm font-bold bg-white dark:bg-slate-700 shadow-sm transition-all text-primary">
+                                    Actionable (Pending)
+                                </button>
+                                <button onclick="switchRequestTab('history')" id="tab-req-history"
+                                    class="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-all">
+                                    Demand History
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pending Requests Grid -->
+                        <div id="requests-pending-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- History List -->
+                        <div id="requests-history-view"
+                            class="hidden bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold mb-4 dark:text-white">Request History</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-slate-700/50">
+                                        <tr>
+                                            <th class="px-4 py-3 rounded-l-lg">Product</th>
+                                            <th class="px-4 py-3">User</th>
+                                            <th class="px-4 py-3">Status</th>
+                                            <th class="px-4 py-3 rounded-r-lg">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="requests-history-table">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="module-overview" class="module-content animate-fade-in">
 
                         <!-- Shift Status Banner -->
@@ -1088,115 +1146,7 @@
                             </div>
                         </div>
 
-                        <!-- Add/Edit Product Modal -->
-                        <div id="inventory-modal"
-                            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
-                            <div
-                                class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                                <div
-                                    class="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-800 z-10">
-                                    <h3 class="text-xl font-black dark:text-white" id="modal-title">Add Product</h3>
-                                    <button onclick="closeInventoryModal()"
-                                        class="w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full flex items-center justify-center transition-colors">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
 
-                                <form id="inventory-form" class="p-6 space-y-6">
-                                    <input type="hidden" id="product-id">
-
-                                    <!-- AI Assist Banner -->
-                                    <div
-                                        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-3">
-                                        <i class="fas fa-robot text-blue-600 text-xl flex-shrink-0 mt-1"></i>
-                                        <div class="flex-1">
-                                            <h4 class="font-bold text-blue-900 dark:text-blue-200 mb-1">AI-Assisted Fill
-                                                (Beta)</h4>
-                                            <p class="text-xs text-blue-700 dark:text-blue-300 mb-3">Describe the
-                                                medicine,
-                                                and AI
-                                                will
-                                                suggest details. Always verify before saving.</p>
-                                            <button type="button" onclick="aiAssistFill()"
-                                                class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-                                                <i class="fas fa-magic mr-1"></i>
-                                                Use AI Assist
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <input type="text" id="product-name" placeholder="Product Name *" required
-                                            class="col-span-2 bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-
-                                        <input type="number" id="product-price" step="0.01" placeholder="Price ($) *"
-                                            required
-                                            class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-
-                                        <input type="number" id="product-quantity" placeholder="Stock Quantity *"
-                                            required
-                                            class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-
-                                        <select id="product-category" required
-                                            class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-                                            <option value="" disabled selected>Select Category *</option>
-                                            <option value="featuredMedicines">Featured Medicines</option>
-                                            <option value="dailyEssentials">Daily Essentials</option>
-                                            <option value="wellnessProducts">Wellness Products</option>
-                                            <option value="servicesProducts">Services</option>
-                                        </select>
-
-                                        <input type="number" id="product-low-stock" placeholder="Low Stock Threshold"
-                                            class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-                                    </div>
-
-                                    <textarea id="product-description" placeholder="Description" rows="3"
-                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
-
-                                    <textarea id="product-benefits"
-                                        placeholder="Benefits (e.g. Supports general health and wellness...)" rows="2"
-                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
-
-                                    <textarea id="product-side-effects"
-                                        placeholder="Side Effects (e.g. Consult physician if adverse reactions occur...)"
-                                        rows="2"
-                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white"></textarea>
-
-                                    <input type="url" id="product-image" placeholder="Image URL"
-                                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-
-                                    <!-- AI Review Checkbox (Hidden initially) -->
-                                    <div id="ai-review-section"
-                                        class="hidden bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
-                                        <label class="flex items-start gap-3 cursor-pointer">
-                                            <input type="checkbox" id="ai-reviewed"
-                                                class="w-6 h-6 rounded accent-yellow-600 mt-1">
-                                            <div>
-                                                <span class="font-bold text-yellow-900 dark:text-yellow-200 block">
-                                                    I have reviewed and verified the AI-generated content.
-                                                </span>
-                                                <span class="text-xs text-yellow-700 dark:text-yellow-300">
-                                                    Required: I confirm that the description, benefits, side effects,
-                                                    and price are medically accurate.
-                                                </span>
-                                            </div>
-                                        </label>
-                                    </div>
-
-                                    <div class="flex gap-3">
-                                        <button type="button" onclick="closeInventoryModal()"
-                                            class="flex-1 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white font-bold py-3 rounded-xl transition-colors">
-                                            Cancel
-                                        </button>
-                                        <button type="submit"
-                                            class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
-                                            <i class="fas fa-save mr-2"></i>
-                                            Save Product
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- MODULE: RETURNS -->
@@ -1582,6 +1532,199 @@
                 </div>
             </main>
         </div>
+        <!-- ============================================ -->
+        <!-- INVENTORY MODAL (Add/Edit Product)           -->
+        <!-- ============================================ -->
+        <div id="inventory-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog"
+            aria-modal="true">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+                onclick="closeInventoryModal()"></div>
+
+            <div class="fixed inset-0 z-10 overflow-y-auto">
+                <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <!-- Modal Panel -->
+                    <div
+                        class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100 dark:border-slate-700">
+
+                        <!-- Header -->
+                        <div
+                            class="bg-gray-50 dark:bg-slate-900/50 px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                            <h3 class="text-lg font-black dark:text-white flex items-center gap-2" id="modal-title">
+                                <i class="fas fa-box-open text-primary"></i> Add New Product
+                            </h3>
+                            <button onclick="closeInventoryModal()"
+                                class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors">
+                                <span class="sr-only">Close</span>
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        <!-- Form -->
+                        <form id="inventory-form" onsubmit="saveProduct(event)">
+                            <input type="hidden" id="product-id">
+                            <div class="px-6 py-6 space-y-6">
+
+                                <!-- AI Assist Banner -->
+                                <div
+                                    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-3 mb-6">
+                                    <i class="fas fa-robot text-blue-600 text-xl flex-shrink-0 mt-1"></i>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-blue-900 dark:text-blue-200 mb-1">AI-Assisted Fill
+                                            (Beta)</h4>
+                                        <p class="text-xs text-blue-700 dark:text-blue-300 mb-3">Describe the medicine,
+                                            and AI will suggest details. Always verify before saving.</p>
+                                        <button type="button" onclick="aiAssistFill()"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+                                            <i class="fas fa-magic mr-1"></i> Use AI Assist
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Grid -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                    <!-- Product Name -->
+                                    <div class="col-span-2">
+                                        <label for="product-name"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Product
+                                            Name</label>
+                                        <input type="text" id="product-name" name="name" required
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-bold placeholder-gray-400 transition-all"
+                                            placeholder="e.g. Panadol Extra">
+                                    </div>
+
+                                    <!-- Category -->
+                                    <div>
+                                        <label for="product-category"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                                        <select id="product-category" name="category" required
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all appearance-none cursor-pointer">
+                                            <option value="" disabled selected>Select Category *</option>
+                                            <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+                                                <% categories.forEach(cat=> { %>
+                                                    <option value="<%= cat %>">
+                                                        <%= cat %>
+                                                    </option>
+                                                    <% }); %>
+                                                        <% } else { %>
+                                                            <option value="" disabled>No categories found in DB</option>
+                                                            <% } %>
+                                        </select>
+                                    </div>
+
+                                    <!-- Price -->
+                                    <div>
+                                        <label for="product-price"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Price
+                                            ($)</label>
+                                        <input type="number" id="product-price" name="price" step="0.01" min="0"
+                                            required
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-mono font-bold transition-all"
+                                            placeholder="0.00">
+                                    </div>
+
+                                    <!-- Stock -->
+                                    <div>
+                                        <label for="product-quantity"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Initial
+                                            Stock</label>
+                                        <input type="number" id="product-quantity" name="quantity" min="0" required
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-mono font-bold transition-all"
+                                            placeholder="0">
+                                    </div>
+
+                                    <!-- Low Stock Threshold -->
+                                    <div>
+                                        <label for="product-low-stock"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Low Stock Alert
+                                            At</label>
+                                        <input type="number" id="product-low-stock" name="lowStockThreshold" min="0"
+                                            value="10"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-mono font-bold transition-all">
+                                    </div>
+
+                                    <!-- Description -->
+                                    <div class="col-span-2">
+                                        <label for="product-description"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                                        <textarea id="product-description" name="description" rows="3"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all text-sm resize-none"
+                                            placeholder="Product details, dosage, usage..."></textarea>
+                                    </div>
+
+                                    <!-- AI Assistance Fields (Always Visible) -->
+                                    <div class="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="product-benefits"
+                                                class="block text-xs font-bold text-gray-500 uppercase mb-1">Benefits</label>
+                                            <textarea id="product-benefits" name="benefits" rows="2"
+                                                class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all text-xs resize-none"
+                                                placeholder="Key benefits..."></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="product-side-effects"
+                                                class="block text-xs font-bold text-gray-500 uppercase mb-1">Side
+                                                Effects</label>
+                                            <textarea id="product-side-effects" name="side_effects" rows="2"
+                                                class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all text-xs resize-none"
+                                                placeholder="Potential side effects..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- Image URL -->
+                                    <div class="col-span-2">
+                                        <label for="product-image"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Image
+                                            URL</label>
+                                        <input type="url" id="product-image" name="imageUrl"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white text-sm transition-all"
+                                            placeholder="https://example.com/image.jpg">
+                                    </div>
+
+                                    <!-- AI Fields (Hidden by default, shown if AI used) -->
+                                    <div class="col-span-2 hidden" id="ai-review-section">
+                                        <div
+                                            class="bg-blue-50 dark:bg-slate-800 p-4 rounded-xl border border-blue-100 dark:border-blue-900">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-robot text-blue-500 mt-1"></i>
+                                                <div>
+                                                    <p class="text-sm dark:text-gray-300 mb-2"><strong>AI Generated
+                                                            Content:</strong> Please review benefits and side effects
+                                                        above.</p>
+                                                    <div class="mt-3 flex items-center gap-2">
+                                                        <input type="checkbox" id="ai-reviewed"
+                                                            class="rounded text-primary focus:ring-primary">
+                                                        <label for="ai-reviewed"
+                                                            class="text-xs font-bold text-gray-700 dark:text-gray-300">I
+                                                            have reviewed and verified this information</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div
+                                class="bg-gray-50 dark:bg-slate-900/50 px-6 py-4 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3">
+                                <button type="button" onclick="closeInventoryModal()"
+                                    class="px-6 py-2 rounded-xl text-gray-500 font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit"
+                                    class="px-6 py-2 bg-primary hover:bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Save Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- TOAST NOTIFICATION CONTAINER -->
         <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-3"></div>
         <script src="/socket.io/socket.io.js"></script>
@@ -2789,11 +2932,35 @@
             }
 
             function openInventoryModal() {
+                console.log('>>> openInventoryModal CALLED');
                 editingProductId = null;
-                document.getElementById('modal-title').textContent = 'Add Product';
-                document.getElementById('inventory-form').reset();
-                document.getElementById('product-id').value = '';
-                document.getElementById('inventory-modal').classList.remove('hidden');
+
+                const title = document.getElementById('modal-title');
+                const form = document.getElementById('inventory-form');
+                const pid = document.getElementById('product-id');
+                const modal = document.getElementById('inventory-modal');
+
+                console.log('Elements found:', {
+                    title: !!title,
+                    form: !!form,
+                    pid: !!pid,
+                    modal: !!modal
+                });
+
+                if (title) title.textContent = 'Add Product';
+                if (form) form.reset();
+                if (pid) pid.value = '';
+
+                if (modal) {
+                    console.log('Removing hidden class from modal. Current classes:', modal.className);
+                    modal.classList.remove('hidden');
+                    console.log('New classes:', modal.className);
+                    // Force style just in case of tailwind issues
+                    modal.style.display = 'block';
+                } else {
+                    console.error('CRITICAL: inventory-modal element NOT FOUND in DOM');
+                    alert('Error: Modal element missing from page. Please reload.');
+                }
             }
 
             function openEditModal(productId) {
@@ -2873,10 +3040,25 @@
 
                     const data = await res.json();
 
+
                     if (data.success) {
                         showToast('success', data.message || 'Product saved successfully');
                         closeInventoryModal();
                         loadInventory(); // Reload table
+
+                        // Auto-Fulfill Request if applicable
+                        if (typeof activeRequestId !== 'undefined' && activeRequestId && !editingProductId) {
+                            try {
+                                await fetch('/doctor/requests/fulfill', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ requestId: activeRequestId, matchedMedicineId: data.product?.id })
+                                });
+                                showToast('success', 'User notified of availability!');
+                                if (typeof loadProductRequests === 'function') loadProductRequests();
+                                activeRequestId = null;
+                            } catch (e) { console.error("Auto-fulfill error", e); }
+                        }
                     } else {
                         showToast('error', data.error || 'Failed to save product');
                     }
@@ -4028,6 +4210,297 @@
                     });
                 }
             });
+
+
+            // ================================================
+            // PRODUCT REQUESTS MODULE
+            // ================================================
+            async function loadProductRequests() {
+                try {
+                    const res = await fetch('/doctor/requests');
+                    const data = await res.json();
+
+                    if (data.success) {
+                        renderPendingRequests(data.pending);
+                        renderRequestHistory(data.history);
+
+                        // Update badge
+                        const badge = document.getElementById('badge-requests');
+                        if (badge) {
+                            if (data.pending.length > 0) {
+                                badge.textContent = data.pending.length;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load requests:", err);
+                }
+            }
+
+            function renderPendingRequests(requests) {
+                const container = document.getElementById('requests-pending-view');
+                if (!container) return;
+
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-gray-400">
+                            <i class="fas fa-check-circle text-4xl mb-4 text-green-100 dark:text-green-900"></i>
+                            <p>No pending requests. Good job!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = requests.map(req => `
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-all relative group">
+                        <div class="absolute top-4 right-4 text-xs font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                            Pending
+                        </div>
+                        
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                                <img src="${req.avatar || '/images/default-avatar.png'}" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold dark:text-white capitalize">${req.full_name}</p>
+                                <p class="text-xs text-gray-500">${new Date(req.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-black text-gray-800 dark:text-white mb-2">${req.product_name}</h3>
+                        <p class="text-sm text-gray-500 mb-6 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-xl italic">
+                            "${req.description || 'No description provided'}"
+                        </p>
+
+                        <button onclick="fulfillRequest('${req.id}', '${req.product_name.replace(/'/g, "\\'")}', '${(req.description || '').replace(/'/g, "\\'").replace(/\n/g, " ")}')" 
+                            class="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm hover:translate-y-[-2px] hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-plus-circle"></i>
+                            Add to Site (Fulfill)
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            function renderRequestHistory(requests) {
+                const tbody = document.getElementById('requests-history-table');
+                if (!tbody) return;
+
+                tbody.innerHTML = requests.map(req => `
+                    <tr class="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition-colors">
+                        <td class="px-4 py-3 font-medium dark:text-white">${req.product_name}</td>
+                        <td class="px-4 py-3 text-gray-500 capitalize">${req.full_name}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-md text-xs font-bold ${req.status === 'fulfilled' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+                    }">${req.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">${new Date(req.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+
+            function switchRequestTab(tab) {
+                const pendingView = document.getElementById('requests-pending-view');
+                const historyView = document.getElementById('requests-history-view');
+                const tabPending = document.getElementById('tab-req-pending');
+                const tabHistory = document.getElementById('tab-req-history');
+
+                if (tab === 'pending') {
+                    pendingView.classList.remove('hidden');
+                    historyView.classList.add('hidden');
+                    tabPending.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white dark:bg-slate-700 shadow-sm transition-all text-primary";
+                    tabHistory.className = "px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-all";
+                } else {
+                    pendingView.classList.add('hidden');
+                    historyView.classList.remove('hidden');
+                    tabHistory.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white dark:bg-slate-700 shadow-sm transition-all text-primary";
+                    tabPending.className = "px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-all";
+                }
+            }
+
+            // Fulfill Logic
+            let activeRequestId = null;
+
+            function fulfillRequest(reqId, productName, description) {
+                console.log('Fulfilling request:', reqId);
+                activeRequestId = reqId;
+
+                // Ensure modal opens
+                try {
+                    openInventoryModal();
+                    console.log('Modal opened');
+                } catch (e) {
+                    console.error('Failed to open modal:', e);
+                    showToast('error', 'Error opening validation form');
+                    return;
+                }
+
+                // Pre-fill fields
+                const nameInput = document.getElementById('product-name');
+                const descInput = document.getElementById('product-description');
+
+                if (nameInput) nameInput.value = productName;
+                if (descInput) descInput.value = description;
+
+                // Scroll to top of the scrollable container, not the wrapper
+                const scrollContainer = document.querySelector('#inventory-modal > div.overflow-y-auto');
+                if (scrollContainer) scrollContainer.scrollTo(0, 0);
+
+                showToast('info', 'Fill details to add product and notify user.');
+            }
+
+            async function saveProduct(e) {
+                e.preventDefault();
+                const btn = e.target.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+                // Use optional chaining for safety
+                const getVal = (id) => document.getElementById(id)?.value || '';
+                const getCheck = (id) => document.getElementById(id)?.checked || false;
+
+                const formData = {
+                    name: getVal('product-name'),
+                    category: getVal('product-category'),
+                    price: getVal('product-price'),
+                    quantity: getVal('product-quantity'),
+                    lowStockThreshold: getVal('product-low-stock'),
+                    description: getVal('product-description'),
+                    imageUrl: getVal('product-image'),
+                    benefits: getVal('product-benefits'),
+                    sideEffects: getVal('product-side-effects'),
+                    aiReviewed: getCheck('ai-reviewed')
+                };
+
+                // Add id if editing
+                const pid = getVal('product-id');
+                if (pid) formData.id = pid;
+
+                try {
+                    const url = pid ? `/doctor/inventory/update/${pid}` : '/doctor/inventory/create';
+                    const method = pid ? 'PUT' : 'POST';
+
+                    const res = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', pid ? 'Product updated' : 'Product added successfully');
+                        closeInventoryModal();
+
+                        // Fulfill request if active and this is a NEW product
+                        if (activeRequestId && !pid) {
+                            await fulfillProductRequestAfterSave(activeRequestId, data.product.id);
+                        }
+
+                        // Reload inventory/requests if functions exist
+                        if (typeof loadInventory === 'function') loadInventory();
+                        if (typeof loadProductRequests === 'function') loadProductRequests();
+
+                    } else {
+                        showToast('error', data.message || 'Failed to save');
+                    }
+                } catch (err) {
+                    console.error('Save error:', err);
+                    showToast('error', 'Network error occurred');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+
+            async function fulfillProductRequestAfterSave(reqId, productId) {
+                try {
+                    const res = await fetch('/doctor/requests/fulfill', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requestId: reqId, matchedMedicineId: productId })
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        showToast('success', 'Request fulfilled & User notified!');
+                        activeRequestId = null;
+                        loadProductRequests(); // Refresh request list to show status change
+                    }
+                } catch (e) {
+                    console.error("Fulfillment error", e);
+                }
+            }
+
+            async function aiAssistFill() {
+                const nameInput = document.getElementById('product-name');
+                const name = nameInput.value.trim();
+
+                if (!name) {
+                    showToast('warning', 'Please enter a product name first');
+                    nameInput.focus();
+                    return;
+                }
+
+                // Find button regardless of where it is (banner or inline)
+                const btn = document.querySelector('button[onclick="aiAssistFill()"]');
+                const originalText = btn ? btn.innerHTML : 'AI Assist';
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+                }
+
+                try {
+                    const res = await fetch('/doctor/product/ai-assist', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ productName: name })
+                    });
+                    const data = await res.json();
+
+                    if (data.data) {
+                        const p = data.data;
+                        const setVal = (id, val) => {
+                            const el = document.getElementById(id);
+                            if (el && val) el.value = val;
+                        }
+
+                        if (p.description) setVal('product-description', p.description);
+                        if (p.category) setVal('product-category', p.category);
+                        if (p.price) setVal('product-price', p.price);
+
+                        // Handle benefits/side effects 
+                        const formatList = (list) => {
+                            if (!list) return '';
+                            return Array.isArray(list) ? '- ' + list.join('\n- ') : list;
+                        };
+
+                        if (p.benefits) setVal('product-benefits', formatList(p.benefits));
+                        if (p.side_effects) setVal('product-side-effects', formatList(p.side_effects));
+
+                    } else {
+                        showToast('info', 'AI could not find details for this product.');
+                    }
+                } catch (err) {
+                    console.error("AI Assist Error:", err);
+                    showToast('error', 'AI service unavailable');
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                }
+            }
+
+            function closeInventoryModal() {
+                const modal = document.getElementById('inventory-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = ''; // Clear inline display if used
+                }
+                document.getElementById('inventory-form')?.reset();
+            }
 
         </script>
     </body>

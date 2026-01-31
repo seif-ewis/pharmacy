@@ -117,6 +117,9 @@ router.post("/doctor/prescriptions/decision", ensureDoctor, doctorController.pro
 router.post("/doctor/prescriptions/analyze", ensureDoctor, doctorController.analyzePrescriptionObject);
 router.get("/doctor/prescriptions/pending", ensureDoctor, doctorController.getPendingPrescriptions);
 router.post("/doctor/orders/status", ensureDoctor, doctorController.updateOrderState);
+// Product Request Routes (Doctor Dashboard)
+router.get("/doctor/requests", ensureDoctor, doctorController.getProductRequests);
+router.post("/doctor/requests/fulfill", ensureDoctor, doctorController.fulfillProductRequest);
 
 // Doctor Inventory Routes (CRUD)
 router.post("/doctor/product/ai-assist", ensureDoctor, doctorController.generateProductDetails);
