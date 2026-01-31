@@ -1423,8 +1423,9 @@
                                             <select id="annTarget"
                                                 class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white">
                                                 <option value="all">All Users</option>
-                                                <option value="active_orders">Active Orders only</option>
-                                                <option value="staff">Staff Only (Doctors/Admin)</option>
+                                                <option value="customers">Customers</option>
+                                                <option value="doctors">Doctors</option>
+                                                <option value="admins">Admins</option>
                                             </select>
                                         </div>
 
@@ -1446,9 +1447,42 @@
                                     </form>
                                 </div>
                             </div>
-                            <div class="lg:col-span-2 space-y-4" id="announcementsList">
-                                <!-- Announcements will load here -->
-                                <p class="text-center text-gray-400">Loading announcements...</p>
+                            <div class="lg:col-span-2 space-y-4">
+                                <!-- Tabs Navigation -->
+                                <div class="flex gap-4 border-b border-gray-100 dark:border-slate-700 pb-2 mb-4">
+                                    <button onclick="switchAnnounceTab('inbox')" id="tab-ann-inbox"
+                                        class="px-4 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 transition-colors">
+                                        <i class="fas fa-inbox mr-2"></i>Inbox
+                                    </button>
+                                    <button onclick="switchAnnounceTab('sent')" id="tab-ann-sent"
+                                        class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                        <i class="fas fa-paper-plane mr-2"></i>Sent History
+                                    </button>
+                                </div>
+
+                                <!-- Inbox View -->
+                                <div id="ann-view-inbox" class="space-y-6 animate-fade-in">
+                                    <!-- Admin Section -->
+                                    <div id="ann-inbox-admin-container" class="hidden">
+                                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">From
+                                            Administration</h4>
+                                        <div id="ann-inbox-admin" class="space-y-3"></div>
+                                    </div>
+
+                                    <!-- Doctor Section -->
+                                    <div>
+                                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Staff
+                                            Messages</h4>
+                                        <div id="ann-inbox-doctors" class="space-y-3">
+                                            <p class="text-center text-gray-400 text-sm py-4">Loading messages...</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sent View -->
+                                <div id="ann-view-sent" class="hidden space-y-3 animate-fade-in">
+                                    <p class="text-center text-gray-400 text-sm py-4">Loading history...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1844,24 +1878,50 @@
                 } catch (e) { console.error(e); }
             }
             // Chat & Announcement Loaders
+            let globalAnnouncements = { inbox: { admin: [], doctors: [] }, sent: [] };
+
             async function loadAnnouncements() {
-                const list = document.getElementById('announcementsList');
                 try {
                     const res = await fetch('/doctor/announcements');
                     const data = await res.json();
                     if (data.success) {
-                        list.innerHTML = '';
-                        if (data.announcements.length === 0) list.innerHTML = '<p class="text-gray-400 text-sm">No announcements.</p>';
-                        data.announcements.forEach(prependAnnouncement);
+                        globalAnnouncements = data; // { inbox: {admin, doctors}, sent }
+                        renderAnnouncementTabs();
                     }
-                } catch (e) { list.innerHTML = 'Error loading.'; }
+                } catch (e) { console.error('Error loading announcements', e); }
             }
-            function prependAnnouncement(data) {
-                const list = document.getElementById('announcementsList');
-                const div = document.createElement('div');
-                div.className = 'bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm animate-fade-in relative overflow-hidden';
 
-                // Status Badge
+            function renderAnnouncementTabs() {
+                // Render Inbox - Admin
+                const adminCont = document.getElementById('ann-inbox-admin');
+                const adminWrapper = document.getElementById('ann-inbox-admin-container');
+                if (globalAnnouncements.inbox.admin.length > 0) {
+                    adminWrapper.classList.remove('hidden');
+                    adminCont.innerHTML = globalAnnouncements.inbox.admin.map(renderAnnouncementCard).join('');
+                } else {
+                    adminWrapper.classList.add('hidden');
+                    adminCont.innerHTML = '';
+                }
+
+                // Render Inbox - Doctors
+                const docCont = document.getElementById('ann-inbox-doctors');
+                if (globalAnnouncements.inbox.doctors.length > 0) {
+                    docCont.innerHTML = globalAnnouncements.inbox.doctors.map(renderAnnouncementCard).join('');
+                } else {
+                    docCont.innerHTML = '<div class="text-center py-6 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-gray-200 dark:border-slate-700"><p class="text-gray-400 text-sm">No new messages from colleagues.</p></div>';
+                }
+
+                // Render Sent
+                const sentCont = document.getElementById('ann-view-sent');
+                if (globalAnnouncements.sent.length > 0) {
+                    sentCont.innerHTML = globalAnnouncements.sent.map(renderAnnouncementCard).join('');
+                } else {
+                    sentCont.innerHTML = '<div class="text-center py-6 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-gray-200 dark:border-slate-700"><p class="text-gray-400 text-sm">You haven\'t posted any announcements yet.</p></div>';
+                }
+            }
+
+            function renderAnnouncementCard(data) {
+                // Status Badge logic
                 let statusBadge = '';
                 if (data.status === 'scheduled') {
                     statusBadge = `<span class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">SCHEDULED</span>`;
@@ -1869,22 +1929,61 @@
                     statusBadge = `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">SENT</span>`;
                 }
 
-                div.innerHTML = `
-                <div class="flex justify-between items-start mb-2 gap-2">
-                    <div>
-                        <h4 class="font-bold text-sm dark:text-white flex items-center gap-2">
-                            ${data.title}
-                            <span class="text-[10px] bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-500 uppercase">${data.target_audience.replace('_', ' ')}</span>
-                        </h4>
-                        <span class="text-[10px] text-gray-400">
-                            ${data.status === 'scheduled' ? 'Scheduled for: ' + new Date(data.scheduled_for).toLocaleString() : 'Sent: ' + new Date(data.created_at).toLocaleDateString()}
-                        </span>
+                // Sender Info (if available and not me)
+                let senderInfo = '';
+                if (data.sender_name) {
+                    const isSystem = data.sender_role === 'admin';
+                    senderInfo = `
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold ${isSystem ? 'text-blue-600' : 'text-gray-700 dark:text-gray-300'}">
+                                <i class="fas ${isSystem ? 'fa-shield-alt' : 'fa-user-md'} mr-1"></i> ${data.sender_name}
+                            </span>
+                             <span class="text-[10px] text-gray-400">• ${new Date(data.created_at).toLocaleString()}</span>
+                        </div>
+                    `;
+                } else {
+                    // Fallback for my own sent messages
+                    senderInfo = `<div class="mb-1"><span class="text-[10px] text-gray-400">${new Date(data.created_at).toLocaleString()}</span></div>`;
+                }
+
+                return `
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+                     <div class="flex justify-between items-start gap-2 mb-1">
+                        <div>
+                             ${senderInfo}
+                             <h4 class="font-bold text-sm dark:text-white flex items-center gap-2 mt-1">
+                                ${data.title}
+                                <span class="text-[10px] bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-500 uppercase">${data.target_audience.replace('_', ' ')}</span>
+                            </h4>
+                        </div>
+                        ${statusBadge}
                     </div>
-                    ${statusBadge}
+                    <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mt-2 pl-1 border-l-2 border-gray-100 dark:border-slate-700">${data.message}</p>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">${data.message}</p>
-             `;
-                list.prepend(div);
+                `;
+            }
+
+            function switchAnnounceTab(tab) {
+                const inboxView = document.getElementById('ann-view-inbox');
+                const sentView = document.getElementById('ann-view-sent');
+                const tabInbox = document.getElementById('tab-ann-inbox');
+                const tabSent = document.getElementById('tab-ann-sent');
+
+                // Base Classes
+                const activeClass = "px-4 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 transition-colors";
+                const inactiveClass = "px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors";
+
+                if (tab === 'inbox') {
+                    inboxView.classList.remove('hidden');
+                    sentView.classList.add('hidden');
+                    tabInbox.className = activeClass;
+                    tabSent.className = inactiveClass;
+                } else {
+                    inboxView.classList.add('hidden');
+                    sentView.classList.remove('hidden');
+                    tabSent.className = activeClass;
+                    tabInbox.className = inactiveClass;
+                }
             }
 
             async function postAnnouncement() {
@@ -1906,8 +2005,9 @@
                         document.getElementById('annMessage').value = '';
                         document.getElementById('annSchedule').value = '';
                         showToast('Success', 'Announcement created', 'green');
-                        // Manually prepend locally to show feedback immediately (or reload list)
-                        prependAnnouncement(data.announcement);
+                        // Load and switch to Sent tab
+                        await loadAnnouncements();
+                        switchAnnounceTab('sent');
                     } else {
                         showToast('error', data.error || 'Failed to post');
                     }
