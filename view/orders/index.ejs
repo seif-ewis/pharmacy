@@ -64,18 +64,19 @@
                                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' %>">
                                                 <%= order.status %>
                                             </span>
-                                            <% let totalReturned=0; if (order.items) { order.items.forEach(i=>
-                                                totalReturned += parseInt(i.returned_quantity || 0));
-                                                }
-                                                if (totalReturned > 0 && order.status !== 'returned') {
-                                                %>
+                                            <% if (order.return_status==='partial' ) { %>
                                                 <span
-                                                    class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                                                    Partially Returned
+                                                    class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                                    Partial Return
                                                 </span>
-                                                <% } %>
-                                                    <span class="text-xl font-extrabold text-dark dark:text-white">$<%=
-                                                            parseFloat(order.total_price).toFixed(2) %></span>
+                                                <% } else if (order.return_status==='full' ) { %>
+                                                    <span
+                                                        class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                        Returned
+                                                    </span>
+                                                    <% } %>
+                                                        <span class="text-xl font-extrabold text-dark dark:text-white">$
+                                                            <%= parseFloat(order.total_price).toFixed(2) %></span>
                                         </div>
                                     </div>
 
@@ -129,7 +130,8 @@
                                                         </div>
                                                         <span
                                                             class="text-sm font-bold text-gray-500 dark:text-gray-400">$
-                                                            <%= parseFloat(item.price).toFixed(2) %></span>
+                                                            <%= parseFloat(item.price).toFixed(2) %>
+                                                        </span>
                                                     </div>
                                                     <% }); %>
                                             </div>

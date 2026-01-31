@@ -549,26 +549,26 @@ export const updateOrderState = async (req, res) => {
         const oldStatus = order.status;
 
         // 2. Validate Status Transitions (Governance)
-        const terminalStates = ['completed', 'delivered', 'canceled', 'returned'];
+        const terminalStates = ['completed', 'delivered', 'canceled']; // Removed 'returned'
 
-        // Prevent re-completing something already completed/delivered/canceled/returned
+        // Prevent re-completing something already completed/delivered/canceled
         if (terminalStates.includes(oldStatus) && (newState === 'completed' || newState === 'delivered')) {
             return res.status(400).json({ success: false, message: `Cannot change order to ${newState} once it is ${oldStatus}` });
         }
 
-        // Prevent returned orders from moving back to any other state
-        if (oldStatus === 'returned') {
-            return res.status(400).json({ success: false, message: "Returned orders cannot change state" });
+        // Prevent returned status from being set manually
+        if (newState === 'returned') {
+            return res.status(400).json({ success: false, message: "Use the Returns module to process returns." });
         }
 
         // Prevent canceled orders from moving back to any other state
-        if (oldStatus === 'canceled' && newState !== 'returned') { // Maybe allow returned if refunding canceled? Usually canceled = no money.
+        if (oldStatus === 'canceled') {
             return res.status(400).json({ success: false, message: "Canceled orders cannot change state" });
         }
 
         // 3. Mandatory Active Shift Guard for Revenue Actions
         let activeShiftId = null;
-        if (['completed', 'delivered', 'returned'].includes(newState)) {
+        if (['completed', 'delivered'].includes(newState)) {
             const shiftRes = await client.query(
                 "SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
                 [doctorId]
@@ -577,7 +577,7 @@ export const updateOrderState = async (req, res) => {
 
             if (!activeShiftId) {
                 await client.query('ROLLBACK');
-                return res.status(400).json({ success: false, message: "Active shift required to complete or return an order" });
+                return res.status(400).json({ success: false, message: "Active shift required to complete this action" });
             }
         }
 
@@ -587,9 +587,6 @@ export const updateOrderState = async (req, res) => {
 
         if ((newState === 'completed' || newState === 'delivered') && !order.completed_shift_id) {
             setClause += ", completed_shift_id = $3, completed_at = NOW()";
-            params.push(activeShiftId);
-        } else if (newState === 'returned' && !order.returned_shift_id) {
-            setClause += ", returned_shift_id = $3, returned_at = NOW()";
             params.push(activeShiftId);
         } else if (newState === 'canceled') {
             setClause += ", canceled_at = NOW()";
@@ -968,7 +965,7 @@ export const sendChatMessage = async (req, res) => {
         // Realtime Emit
         const io = req.app.get('io');
         if (io && patientId) {
-            io.to(`user_${patientId} `).emit('chat:message', {
+            io.to(`user_${patientId}`).emit('chat:message', {
                 senderId: doctorId,
                 message: message,
                 timestamp: new Date(),
@@ -1016,10 +1013,27 @@ export const getOrderItemsForReturn = async (req, res) => {
     try {
         const { orderId } = req.params;
         const result = await db.query(`
-            SELECT oi.id, oi.medicine_id, oi.quantity, oi.price, m.name as medicine_name
+            SELECT 
+                oi.medicine_id as id, 
+                oi.medicine_id, 
+                AVG(oi.price) as price, 
+                m.name as medicine_name,
+                (SUM(oi.quantity) - COALESCE((
+                    SELECT SUM(ri.quantity) 
+                    FROM return_items ri 
+                    JOIN returns r ON ri.return_id = r.id 
+                    WHERE r.order_id = $1 AND r.status != 'rejected' AND ri.medicine_id = oi.medicine_id
+                ), 0)) as quantity
             FROM order_items oi
             JOIN medicines m ON oi.medicine_id = m.id
             WHERE oi.order_id = $1
+            GROUP BY oi.medicine_id, m.name
+            HAVING (SUM(oi.quantity) - COALESCE((
+                SELECT SUM(ri.quantity) 
+                FROM return_items ri 
+                JOIN returns r ON ri.return_id = r.id 
+                WHERE r.order_id = $1 AND r.status != 'rejected' AND ri.medicine_id = oi.medicine_id
+            ), 0)) > 0
             `, [orderId]);
         res.json({ success: true, items: result.rows });
     } catch (err) {
@@ -1090,14 +1104,28 @@ VALUES($1, $2, $3, $4)`,
             }
         }
 
-        // 5. Update Order with Return Attribution (Authority: returned_at)
+        // 5. Check if Partial or Full Return
+        const qtyCheck = await client.query(`
+            SELECT 
+                (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = $1) as total_qty,
+                (SELECT COALESCE(SUM(ri.quantity), 0) FROM return_items ri JOIN returns r ON ri.return_id = r.id WHERE r.order_id = $1 AND r.status = 'approved') as returned_qty
+        `, [orderId]);
+
+        const totalQty = Number(qtyCheck.rows[0].total_qty);
+        const totalReturned = Number(qtyCheck.rows[0].returned_qty);
+
+        const newReturnStatus = (totalReturned < totalQty) ? 'partial' : 'full';
+
+        // 6. Update Order Return Status
+        // CRITICAL: Do NOT update 'returned_at' or 'status' to avoid 'prevent_completed_order_update' trigger failure.
+        // We only set 'return_status' and 'returned_shift_id'.
         await client.query(
-            "UPDATE orders SET returned_at = NOW(), returned_shift_id = $1, status = 'returned' WHERE id = $2",
-            [shiftId, orderId]
+            "UPDATE orders SET returned_shift_id = $1, return_status = $3 WHERE id = $2",
+            [shiftId, orderId, newReturnStatus]
         );
 
-        // 6. Log Status Change (Audit Trail)
-        await logOrderStatusChange(orderId, 'completed', 'returned', doctorId, client);
+        // 7. Log Status Change (Audit Trail) - Log the return event, but main status stays same
+        await logOrderStatusChange(orderId, 'completed', `return_${newReturnStatus}`, doctorId, client);
 
         await client.query('COMMIT');
 
@@ -1661,14 +1689,26 @@ export const processReturnInline = async (req, res) => {
                 );
             }
 
-            // 4. Update Order with Return Attribution (Authority: returned_at)
+            // 4. Calculate Partial vs Full Return
+            const qtyCheck = await client.query(`
+                SELECT 
+                    (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = $1) as total_qty,
+                    (SELECT COALESCE(SUM(ri.quantity), 0) FROM return_items ri JOIN returns r ON ri.return_id = r.id WHERE r.order_id = $1 AND r.status = 'approved') as returned_qty
+            `, [returnReq.order_id]);
+
+            const totalQty = Number(qtyCheck.rows[0].total_qty);
+            const returnedQty = Number(qtyCheck.rows[0].returned_qty);
+            const newReturnStatus = (returnedQty < totalQty) ? 'partial' : 'full';
+
+            // 5. Update Order Return Status
+            // CRITICAL: Do NOT update 'status' or 'returned_at'
             await client.query(
-                "UPDATE orders SET returned_at = NOW(), returned_shift_id = $1, status = 'returned' WHERE id = $2",
-                [activeShiftId, returnReq.order_id]
+                "UPDATE orders SET returned_shift_id = $1, return_status = $3 WHERE id = $2",
+                [activeShiftId, returnReq.order_id, newReturnStatus]
             );
 
-            // 4.1 Log Status Change (Audit Trail)
-            await logOrderStatusChange(returnReq.order_id, 'completed', 'returned', userId, client);
+            // 6. Log Status Change (Audit Trail)
+            await logOrderStatusChange(returnReq.order_id, 'completed', `return_${newReturnStatus}`, userId, client);
         }
 
         // 5. Update Return Status and Shift Attribution

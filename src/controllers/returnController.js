@@ -1,28 +1,42 @@
 import db from "../config/dataBase.js";
 import * as inventoryController from "./inventoryController.js";
+import { logOrderStatusChange } from "../utils/orderStatusLogger.js";
 
 // Page: Request Return (User)
 export const getReturnPage = async (req, res) => {
     try {
         const orderId = req.params.orderId;
         const result = await db.query(
-            `SELECT o.*, 
-                    json_agg(json_build_object('id', m.id, 'name', m.name, 'price', oi.price, 'qty', oi.quantity)) as items
-             FROM orders o
-             JOIN order_items oi ON o.id = oi.order_id
+            `SELECT
+                m.id,
+                m.name,
+                oi.price,
+                SUM(oi.quantity) as qty,
+                (SELECT COALESCE(SUM(ri.quantity), 0)
+                 FROM return_items ri
+                 JOIN returns r ON ri.return_id = r.id
+                 WHERE r.order_id = $1 AND r.status != 'rejected' AND ri.medicine_id = m.id) as returned_qty
+             FROM order_items oi
              JOIN medicines m ON oi.medicine_id = m.id
-             WHERE o.id = $1 AND o.user_id = $2 AND (o.status = 'completed' OR o.status = 'delivered')
-             GROUP BY o.id`,
-            [orderId, req.user.id]
+             WHERE oi.order_id = $1
+             GROUP BY m.id, m.name, oi.price`,
+            [orderId]
         );
 
         if (result.rows.length === 0) {
-            req.flash("error", "Order not found or not eligible for return.");
+            req.flash("error", "Order not found or no items available for return.");
             return res.redirect("/profile");
         }
 
+        const items = result.rows.map(item => ({
+            ...item,
+            qty: parseInt(item.qty) - parseInt(item.returned_qty)
+        })).filter(item => item.qty > 0);
+
         res.render("orders/return_request", {
-            order: result.rows[0],
+            user: req.user,
+            order: { id: orderId, items },
+            pageTitle: "Return Request",
             error: req.flash("error"),
             success: req.flash("success")
         });
@@ -47,14 +61,15 @@ export const submitReturnRequest = async (req, res) => {
         const orderItemsRes = await client.query(`
             SELECT 
                 oi.medicine_id, 
-                oi.quantity as ordered_qty,
-                oi.price as unit_price,
-                COALESCE(SUM(ri.quantity), 0) as returned_qty
+                SUM(oi.quantity) as ordered_qty,
+                AVG(oi.price) as unit_price,
+                (SELECT COALESCE(SUM(ri.quantity), 0) 
+                 FROM return_items ri 
+                 JOIN returns r ON ri.return_id = r.id 
+                 WHERE r.order_id = $1 AND r.status != 'rejected' AND ri.medicine_id = oi.medicine_id) as returned_qty
             FROM order_items oi
-            LEFT JOIN returns r ON r.order_id = oi.order_id AND r.status != 'rejected'
-            LEFT JOIN return_items ri ON ri.return_id = r.id AND ri.medicine_id = oi.medicine_id
             WHERE oi.order_id = $1
-            GROUP BY oi.medicine_id, oi.quantity, oi.price
+            GROUP BY oi.medicine_id
         `, [order_id]);
 
         const orderState = {};
@@ -156,36 +171,37 @@ export const processReturn = async (req, res) => {
                 [admin_notes, activeShiftId, return_id]
             );
 
-            // 3. Check for Full vs Partial Return
-            // We get the order_id first
+            // 3. Get Order ID and Check for Full vs Partial Return
             const orderRes = await client.query("SELECT order_id FROM returns WHERE id = $1", [return_id]);
             const orderId = orderRes.rows[0].order_id;
 
             const qtyCheck = await client.query(`
                 SELECT 
-                    (SELECT SUM(quantity) FROM order_items WHERE order_id = $1) as total_ordered,
-                    (SELECT SUM(ri.quantity) 
+                    (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = $1) as total_ordered,
+                    (SELECT COALESCE(SUM(ri.quantity), 0) 
                      FROM return_items ri 
                      JOIN returns r ON ri.return_id = r.id 
                      WHERE r.order_id = $1 AND r.status = 'approved') as total_returned
             `, [orderId]);
 
-            const { total_ordered, total_returned } = qtyCheck.rows[0];
+            const totalOrdered = parseInt(qtyCheck.rows[0].total_ordered || 0);
+            const totalReturned = parseInt(qtyCheck.rows[0].total_returned || 0);
+            const newReturnStatus = (totalReturned < totalOrdered) ? 'partial' : 'full';
 
-            // If ALL items are returned, set status to 'returned'. 
-            // Otherwise, keep it as is (likely 'delivered' or 'completed').
-            if (parseInt(total_returned || 0) >= parseInt(total_ordered || 0)) {
-                await client.query(
-                    "UPDATE orders SET status = 'returned' WHERE id = $1",
-                    [orderId]
-                );
-            }
+            // 4. Update Order Return Status (Keep main status as completed/delivered)
+            await client.query(
+                "UPDATE orders SET returned_shift_id = $1, return_status = $3 WHERE id = $2",
+                [activeShiftId, orderId, newReturnStatus]
+            );
 
-            // 4. Fetch Return Items
+            // 5. Log Order Status Change (as a return event)
+            await logOrderStatusChange(orderId, 'completed', `return_${newReturnStatus}`, req.user.id, client);
+
+            // 6. Fetch Return Items
             const itemsRes = await client.query("SELECT * FROM return_items WHERE return_id = $1", [return_id]);
             const returnItems = itemsRes.rows;
 
-            // 5. Process Inventory Logic per item
+            // 7. Process Inventory Logic per item
             for (const item of returnItems) {
                 const condition = item_conditions && item_conditions[item.id] ? item_conditions[item.id] : 'good';
 

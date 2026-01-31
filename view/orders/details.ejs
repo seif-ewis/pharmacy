@@ -38,25 +38,38 @@
                                     'bg-yellow-100 text-yellow-800' %>">
                                 <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
                             </span>
-                            <div class="flex flex-wrap items-center gap-2 print:hidden mt-2 sm:mt-0">
-                                <% if (order.status==='pending' ) { %>
-                                    <form action="/orders/<%= order.id %>/cancel" method="POST"
-                                        onsubmit="return confirm('Cancel this order?');" class="flex-1 sm:flex-none">
-                                        <button type="submit"
-                                            class="w-full sm:w-auto px-4 py-2 border border-red-200 text-red-600 rounded-xl text-sm font-bold hover:bg-red-50 text-center whitespace-nowrap">
-                                            Cancel Order
-                                        </button>
-                                    </form>
+
+                            <% if (order.return_status==='partial' ) { %>
+                                <span
+                                    class="px-3 py-1 text-sm font-bold rounded-full w-fit bg-amber-100 text-amber-800">
+                                    Partial Return
+                                </span>
+                                <% } else if (order.return_status==='full' ) { %>
+                                    <span
+                                        class="px-3 py-1 text-sm font-bold rounded-full w-fit bg-red-100 text-red-800">
+                                        Returned
+                                    </span>
                                     <% } %>
-                                        <button onclick="downloadPDF()"
-                                            class="flex-1 sm:flex-none w-full sm:w-auto px-4 py-2 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-900 transition-colors whitespace-nowrap text-center">
-                                            Download PDF
-                                        </button>
-                                        <button onclick="window.print()"
-                                            class="flex-1 sm:flex-none w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all whitespace-nowrap text-center">
-                                            Print Invoice
-                                        </button>
-                            </div>
+                                        <div class="flex flex-wrap items-center gap-2 print:hidden mt-2 sm:mt-0">
+                                            <% if (order.status==='pending' ) { %>
+                                                <form action="/orders/<%= order.id %>/cancel" method="POST"
+                                                    onsubmit="return confirm('Cancel this order?');"
+                                                    class="flex-1 sm:flex-none">
+                                                    <button type="submit"
+                                                        class="w-full sm:w-auto px-4 py-2 border border-red-200 text-red-600 rounded-xl text-sm font-bold hover:bg-red-50 text-center whitespace-nowrap">
+                                                        Cancel Order
+                                                    </button>
+                                                </form>
+                                                <% } %>
+                                                    <button onclick="downloadPDF()"
+                                                        class="flex-1 sm:flex-none w-full sm:w-auto px-4 py-2 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-900 transition-colors whitespace-nowrap text-center">
+                                                        Download PDF
+                                                    </button>
+                                                    <button onclick="window.print()"
+                                                        class="flex-1 sm:flex-none w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all whitespace-nowrap text-center">
+                                                        Print Invoice
+                                                    </button>
+                                        </div>
                         </div>
                     </div>
                     <div class="p-8">
