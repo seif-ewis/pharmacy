@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> | Pharmacy Doctor
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="bg-gray-50 h-full">
+    <div class="min-h-full flex flex-col">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-4">
+                        <a href="/doctor/dashboard"
+                            class="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
+                            <i class="fas fa-arrow-left"></i>
+                            <span class="font-medium">Back to Dashboard</span>
+                        </a>
+                        <h1 class="text-xl font-bold text-gray-900 border-l border-gray-200 pl-4">Returns Management
+                        </h1>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-sm text-right hidden sm:block">
+                            <p class="font-bold text-gray-900">
+                                <%= user.full_name %>
+                            </p>
+                            <p class="text-gray-500">Doctor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                <!-- Stats / Filters (Simplified) -->
+                <div class="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div
+                        class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4 w-full sm:w-auto">
+                        <div
+                            class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                            <%= returns.filter(r=> r.status === 'pending').length %>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Pending Review</p>
+                            <p class="text-sm font-medium">Actions Required</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="Search Order # or Customer..."
+                            class="flex-1 bg-white border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none">
+                    </div>
+                </div>
+
+                <!-- Returns Table -->
+                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Return Details</th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Customer / Order</th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Reason</th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Items</th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="returnsTableBody">
+                                <% if (returns.length===0) { %>
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                            <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
+                                            <p>No return requests found.</p>
+                                        </td>
+                                    </tr>
+                                    <% } else { %>
+                                        <% returns.forEach(r=> { %>
+                                            <tr class="hover:bg-gray-50 transition-colors">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="text-sm font-bold text-gray-900">#<%= r.id.substring(0,
+                                                            8) %></span>
+                                                    <p class="text-xs text-gray-500">
+                                                        <%= r.formattedDate %>
+                                                    </p>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center">
+                                                        <div>
+                                                            <div class="text-sm font-medium text-gray-900">
+                                                                <%= r.user_name %>
+                                                            </div>
+                                                            <div class="text-xs text-gray-500">Order #<%= r.order_uid %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                        <%= (r.reason || '' ).replace('_', ' ' ) %>
+                                                    </span>
+                                                    <% if(r.admin_notes) { %>
+                                                        <p class="text-xs text-gray-400 mt-1 italic">
+                                                            <%= r.admin_notes %>
+                                                        </p>
+                                                        <% } %>
+                                                </td>
+                                                <td class="px-6 py-4 text-center text-sm text-gray-500">
+                                                    <button class="text-blue-600 hover:text-blue-900 font-bold text-xs">
+                                                        View Items
+                                                    </button>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span
+                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full uppercase <%= r.statusClass %>">
+                                                        <%= r.status %>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <% if (r.status==='pending' ) { %>
+                                                        <button onclick="handleAction('<%= r.id %>', 'approve')"
+                                                            class="text-green-600 hover:text-green-900 mr-3 font-bold">Approve</button>
+                                                        <button onclick="handleAction('<%= r.id %>', 'reject')"
+                                                            class="text-red-600 hover:text-red-900 font-bold">Reject</button>
+                                                        <% } else { %>
+                                                            <span class="text-gray-400 text-xs italic"> processed</span>
+                                                            <% } %>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Simple search filter
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const val = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#returnsTableBody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(val) ? '' : 'none';
+            });
+        });
+
+        async function handleAction(id, action) {
+            if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+
+            try {
+                const res = await fetch('/doctor/returns/action-inline', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ return_id: id, action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Network Error');
+            }
+        }
+    </script>
+</body>
+
+</html>

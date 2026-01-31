@@ -932,7 +932,7 @@ export const searchReturnOrder = async (req, res) => {
             ORDER BY o.created_at DESC
             LIMIT 5
             `;
-        const result = await db.query(sql, [`% ${query}% `]);
+        const result = await db.query(sql, [`%${query}%`]);
         res.json({ success: true, orders: result.rows });
     } catch (err) {
         console.error('Search Return Order Error:', err);
@@ -1411,6 +1411,143 @@ export const fulfillProductRequest = async (req, res) => {
     } catch (err) {
         console.error("Fulfill Request Error:", err);
         res.status(500).json({ success: false, message: "Failed to fulfill request" });
+    }
+};
+
+// Process Return Inline (from Dashboard)
+export const processReturnInline = async (req, res) => {
+    const { return_id, action } = req.body;
+    const userId = req.user.id;
+
+    if (!return_id || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ success: false, message: "Invalid request parameters" });
+    }
+
+    const client = await db.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Get Return Details
+        const returnRes = await client.query(`
+            SELECT r.*, o.id as order_id, o.order_uid 
+            FROM returns r
+            JOIN orders o ON r.order_id = o.id
+            WHERE r.id = $1
+        `, [return_id]);
+        if (returnRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: "Return request not found" });
+        }
+        const returnReq = returnRes.rows[0];
+
+        // 2. Validate Status
+        if (returnReq.status !== 'pending') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: "Return request is not pending" });
+        }
+
+        const newStatus = action === 'approve' ? 'approved' : 'rejected';
+        let activeShiftId = null;
+
+        if (newStatus === 'approved') {
+            // 2. Get Active Shift for the Doctor
+            const shiftRes = await client.query(
+                "SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
+                [userId]
+            );
+            activeShiftId = shiftRes.rows.length > 0 ? shiftRes.rows[0].id : null;
+
+            // 3. Process Inventory Logic per item (Restock)
+            const itemsRes = await client.query("SELECT * FROM return_items WHERE return_id = $1", [return_id]);
+            const returnItems = itemsRes.rows;
+
+            for (const item of returnItems) {
+                // For inline approval from dashboard, we assume condition is 'good'
+                const condition = 'good';
+
+                // Update Item Condition in DB
+                await client.query(
+                    "UPDATE return_items SET condition = $1 WHERE id = $2",
+                    [condition, item.id]
+                );
+
+                // Log Inventory Adjustment (Positive change to add back to stock)
+                await inventoryController.logAdjustment(
+                    client,
+                    item.medicine_id,
+                    'return_restock',
+                    item.quantity,
+                    return_id,
+                    userId,
+                    `Inline Return Approved: ${condition}`,
+                    activeShiftId
+                );
+            }
+
+            // 4. Check for Full Return to update Order Status
+            const qtyCheck = await client.query(`
+                SELECT 
+                    (SELECT SUM(quantity) FROM order_items WHERE order_id = $1) as total_ordered,
+                    (SELECT SUM(ri.quantity) 
+                     FROM return_items ri 
+                     JOIN returns r ON ri.return_id = r.id 
+                     WHERE r.order_id = $1 AND r.status = 'approved') as total_returned
+            `, [returnReq.order_id]);
+
+            const { total_ordered, total_returned } = qtyCheck.rows[0];
+
+            if (parseInt(total_returned || 0) >= parseInt(total_ordered || 0)) {
+                await client.query(
+                    "UPDATE orders SET status = 'returned' WHERE id = $1",
+                    [returnReq.order_id]
+                );
+            }
+        }
+
+        // 5. Update Return Status and Shift Attribution
+        await client.query(
+            "UPDATE returns SET status = $1, shift_id = $2, updated_at = NOW() WHERE id = $3",
+            [newStatus, activeShiftId, return_id]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true, message: `Return request ${newStatus} with inventory updated` });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Inline Return Process Error:", err);
+        res.status(500).json({ success: false, message: "Server error during return processing" });
+    } finally {
+        client.release();
+    }
+};
+
+// Get Returns Page (Full List)
+export const getReturnsPage = async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT r.*, u.full_name as user_name, u.email as user_email, o.order_uid
+            FROM returns r 
+            JOIN users u ON r.user_id = u.id 
+            JOIN orders o ON r.order_id = o.id
+            ORDER BY r.created_at DESC
+        `);
+
+        const returns = result.rows.map(r => ({
+            ...r,
+            formattedDate: new Date(r.created_at).toLocaleString(),
+            statusClass: r.status === 'pending' ? 'bg-orange-100 text-orange-600' :
+                r.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+        }));
+
+        res.render('doctor/returns', {
+            user: req.user,
+            returns: returns,
+            title: 'Manage Returns'
+        });
+    } catch (err) {
+        console.error("Get Returns Page Error:", err);
+        res.status(500).send("Server Error");
     }
 };
 

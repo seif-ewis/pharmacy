@@ -144,6 +144,8 @@ router.get("/doctor/returns/search-order", ensureDoctor, doctorController.search
 router.get("/doctor/returns/order-items/:orderId", ensureDoctor, doctorController.getOrderItemsForReturn);
 router.post("/doctor/returns/process", ensureDoctor, doctorController.processReturn);
 router.post("/doctor/returns/action", ensureDoctor, returnController.processReturn); // For approving/rejecting requests
+router.get("/doctor/returns", ensureDoctor, doctorController.getReturnsPage); // Full Returns Page
+router.post("/doctor/returns/action-inline", ensureDoctor, doctorController.processReturnInline); // Inline Dashboard Action
 
 // Doctor Reports Analytics
 router.get("/doctor/reports/analytics", ensureDoctor, analyticsController.getDoctorAnalytics);

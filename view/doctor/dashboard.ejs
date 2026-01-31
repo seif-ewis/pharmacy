@@ -2220,41 +2220,87 @@
                     if (data.success && data.returns.length > 0) {
                         document.getElementById('pending-requests-section').classList.remove('hidden');
 
-                        container.innerHTML = data.returns.map(r => `
-                            <div class="bg-white dark:bg-slate-800 rounded-xl border border-orange-100 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden">
+                        // Show max 2
+                        const limit = 2;
+                        const returnsToShow = data.returns.slice(0, limit);
+                        const hasMore = data.returns.length > limit;
+
+                        container.innerHTML = returnsToShow.map(r => `
+                            <div class="bg-white dark:bg-slate-800 rounded-xl border border-orange-100 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
                                 <div class="absolute top-0 right-0 w-2 h-full bg-orange-500"></div>
-                                <div class="flex justify-between items-start mb-3">
-                                    <div>
-                                        <h4 class="font-bold dark:text-white flex items-center gap-2">
-                                            Return Req #${r.id.substring(0, 6)}
-                                            <span class="bg-orange-100 text-orange-600 text-[10px] uppercase px-2 py-0.5 rounded-full font-bold">Pending</span>
+                                <div>
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-bold dark:text-white text-sm">
+                                            Return #${r.id.substring(0, 6)}
                                         </h4>
-                                        <p class="text-xs text-gray-500 mt-1">Order #${r.order_uid} • ${r.user_name}</p>
+                                        <span class="bg-orange-100 text-orange-600 text-[10px] uppercase px-2 py-0.5 rounded-full font-bold">Pending</span>
                                     </div>
-                                    <button onclick='openProcessRequestModal(${JSON.stringify(r)})' 
-                                        class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-orange-500/20">
-                                        Review
+                                    <p class="text-xs text-gray-500 mb-2">Order #${r.order_uid} • ${r.user_name}</p>
+                                    
+                                    <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-xs mb-3">
+                                         <ul class="space-y-1">
+                                            ${r.items.slice(0, 2).map(i => `
+                                                <li class="flex justify-between">
+                                                    <span class="dark:text-gray-300">• ${i.medicine_name} (x${i.quantity})</span>
+                                                </li>
+                                            `).join('')}
+                                            ${r.items.length > 2 ? `<li class="text-gray-400 italic">+${r.items.length - 2} more...</li>` : ''}
+                                         </ul>
+                                    </div>
+                                    <p class="text-xs text-gray-400 italic truncate" title="${r.reason}">Reason: "${r.reason}"</p>
+                                </div>
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    <button onclick="handleInlineReturnAction('${r.id}', 'approve')" 
+                                        class="bg-green-100 hover:bg-green-200 text-green-700 text-xs font-bold py-2 rounded-lg transition-colors">
+                                        Approve
+                                    </button>
+                                    <button onclick="handleInlineReturnAction('${r.id}', 'reject')" 
+                                        class="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold py-2 rounded-lg transition-colors">
+                                        Reject
                                     </button>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3 text-xs">
-                                     <p class="text-gray-500 mb-2 font-bold uppercase">Items:</p>
-                                     <ul class="space-y-1">
-                                        ${r.items.map(i => `
-                                            <li class="flex justify-between">
-                                                <span class="dark:text-gray-300">• ${i.medicine_name} (x${i.quantity})</span>
-                                            </li>
-                                        `).join('')}
-                                     </ul>
-                                </div>
-                                <p class="text-xs text-gray-400 mt-3 italic">Reason: "${r.reason}"</p>
                             </div>
                         `).join('');
+
+                        if (hasMore) {
+                            container.insertAdjacentHTML('beforeend', `
+                                <div class="col-span-1 xl:col-span-2 flex justify-center mt-2">
+                                    <a href="/doctor/returns" class="text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-2">
+                                        Show More Pending Returns <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            `);
+                        }
                     } else {
                         document.getElementById('pending-requests-section').classList.add('hidden');
                         container.innerHTML = '';
                     }
                 } catch (e) {
                     console.error("Failed to load pending returns", e);
+                }
+            }
+
+            async function handleInlineReturnAction(returnId, action) {
+                if (!confirm(`Are you sure you want to ${action} this return?`)) return;
+
+                // Optimistic UI update or loading state could be added here
+                try {
+                    const res = await fetch('/doctor/returns/action-inline', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ return_id: returnId, action })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', `Return ${action}ed successfully`);
+                        loadPendingReturns(); // Reload to update list
+                        loadRecentReturns();  // Update recent list
+                    } else {
+                        showToast('error', data.message || 'Action failed');
+                    }
+                } catch (e) {
+                    showToast('error', 'Network error');
                 }
             }
 
