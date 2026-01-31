@@ -1228,10 +1228,11 @@ export const searchMedicines = async (req, res) => {
         }
 
         const result = await db.query(`
-            SELECT id, name, price, category, image_url, description 
-            FROM medicines 
-            WHERE name ILIKE $1 
-            ORDER BY name ASC 
+            SELECT m.id, m.name, m.price, m.category, m.image_url, m.description,
+            COALESCE((SELECT SUM(quantity_change) FROM inventory_adjustments WHERE medicine_id = m.id), 0) as current_stock
+            FROM medicines m
+            WHERE m.name ILIKE $1 
+            ORDER BY m.name ASC 
             LIMIT 20
         `, [`%${query}%`]);
 
@@ -1270,8 +1271,17 @@ export const processPrescriptionDecision = async (req, res) => {
             const shiftId = shiftRes.rows[0]?.id || null;
 
             // 2. Create Order
-            // Calculate total
-            const total = medicines.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+            // Calculate total & Validate Inventory
+            let total = 0;
+            for (const item of medicines) {
+                const currentStock = await inventoryController.getStock(client, item.id);
+                if (currentStock < item.quantity) {
+                    const medRes = await client.query("SELECT name FROM medicines WHERE id = $1", [item.id]);
+                    const medName = medRes.rows[0]?.name || "Unknown Medicine";
+                    throw new Error(`Insufficient stock for ${medName}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                }
+                total += (parseFloat(item.price) * item.quantity);
+            }
 
             // Get User ID from prescription
             const presRes = await client.query("SELECT user_id FROM prescriptions WHERE id = $1", [prescriptionId]);
@@ -1281,17 +1291,30 @@ export const processPrescriptionDecision = async (req, res) => {
             const orderRes = await client.query(`
                 INSERT INTO orders (user_id, total_price, status, created_at, shift_id, prescription_id, order_uid)
                 VALUES ($1, $2, 'pending', NOW(), $3, $4, $5)
-                RETURNING id
+                RETURNING id, order_uid
             `, [userId, total, shiftId, prescriptionId, uuidv4()]);
 
             const orderId = orderRes.rows[0].id;
+            const orderUid = orderRes.rows[0].order_uid;
 
-            // 3. Insert Order Items
+            // 3. Insert Order Items & Update Inventory
             for (const item of medicines) {
                 await client.query(`
                     INSERT INTO order_items (order_id, medicine_id, quantity, price)
                     VALUES ($1, $2, $3, $4)
                  `, [orderId, item.id, item.quantity, item.price]);
+
+                // Log Inventory Adjustment (Sale)
+                await inventoryController.logAdjustment(
+                    client,
+                    item.id,
+                    'sale',
+                    -Math.abs(item.quantity),
+                    orderId,
+                    doctorId,
+                    `Prescription Order #${orderUid} created`,
+                    shiftId
+                );
             }
 
             // 4. Update Prescription Status
@@ -1322,6 +1345,85 @@ export const processPrescriptionDecision = async (req, res) => {
         await client.query('ROLLBACK');
         console.error('Process Prescription Error:', err);
         res.status(500).json({ success: false, message: 'Failed to process prescription' });
+    } finally {
+        client.release();
+    }
+};
+
+/**
+ * Create Manual Order (from Chat)
+ */
+export const createManualOrder = async (req, res) => {
+    const { userId, medicines, notes } = req.body;
+    const doctorId = req.user.id;
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Get Active Shift
+        const shiftRes = await client.query(
+            "SELECT id FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
+            [doctorId]
+        );
+        const shiftId = shiftRes.rows[0]?.id || null;
+
+        if (!shiftId) {
+            throw new Error("No active shift found. Please open a shift first.");
+        }
+
+        // 2. Calculate total & Validate Inventory
+        let total = 0;
+        for (const item of medicines) {
+            const currentStock = await inventoryController.getStock(client, item.id);
+            if (currentStock < item.quantity) {
+                const medRes = await client.query("SELECT name FROM medicines WHERE id = $1", [item.id]);
+                const medName = medRes.rows[0]?.name || "Unknown Medicine";
+                throw new Error(`Insufficient stock for ${medName}. Available: ${currentStock}, Requested: ${item.quantity}`);
+            }
+            total += (parseFloat(item.price) * item.quantity);
+        }
+
+        // 3. Create Order
+        const orderRes = await client.query(`
+            INSERT INTO orders (user_id, total_price, status, created_at, shift_id, order_uid, admin_notes)
+            VALUES ($1, $2, 'pending', NOW(), $3, substr(md5(random()::text), 1, 8), $4)
+            RETURNING id, order_uid
+        `, [userId, total, shiftId, notes || 'Created via chat']);
+
+        const orderId = orderRes.rows[0].id;
+        const orderUid = orderRes.rows[0].order_uid;
+
+        // 4. Insert Order Items & Update Inventory
+        for (const item of medicines) {
+            await client.query(`
+                INSERT INTO order_items (order_id, medicine_id, quantity, price)
+                VALUES ($1, $2, $3, $4)
+            `, [orderId, item.id, item.quantity, item.price]);
+
+            // Log Inventory Adjustment (Sale)
+            await inventoryController.logAdjustment(
+                client,
+                item.id,
+                'sale',
+                -Math.abs(item.quantity),
+                orderId,
+                doctorId,
+                `Manual Order #${orderUid} created via chat`,
+                shiftId
+            );
+        }
+
+        // 5. Log Status Change
+        await logOrderStatusChange(orderId, null, 'pending', doctorId, client);
+
+        await client.query('COMMIT');
+        res.json({ success: true, order_id: orderId, order_uid: orderUid });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Create Manual Order Error:', err);
+        res.status(500).json({ success: false, message: err.message || 'Failed to create order' });
     } finally {
         client.release();
     }

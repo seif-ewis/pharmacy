@@ -1360,11 +1360,20 @@
                                 <!-- Header -->
                                 <div id="chatWindowHeader"
                                     class="hidden h-16 border-b border-gray-100 dark:border-slate-700 flex items-center px-6 justify-between shrink-0">
-                                    <div>
-                                        <h3 class="font-bold dark:text-white" id="activePatientName">Patient Name</h3>
-                                        <p class="text-[10px] text-green-500 font-bold uppercase tracking-wider"
-                                            id="activePatientStatus">Online
-                                        </p>
+                                    <div class="flex items-center gap-4">
+                                        <div>
+                                            <h3 class="font-bold dark:text-white" id="activePatientName">Patient Name
+                                            </h3>
+                                            <p class="text-[10px] text-green-500 font-bold uppercase tracking-wider"
+                                                id="activePatientStatus">Online
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="openChatOrderModal()"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
+                                            <i class="fas fa-plus-circle"></i> Add Order
+                                        </button>
                                     </div>
                                 </div>
                                 <!-- Messages -->
@@ -4547,7 +4556,248 @@
                 }
                 document.getElementById('inventory-form')?.reset();
             }
+        </script>
 
+        <!-- CHAT ORDER MODAL -->
+        <div id="chat-order-modal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center hidden p-4 animate-fade-in">
+            <div
+                class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl flex flex-col shadow-2xl border border-gray-100 dark:border-slate-700 max-h-[90vh]">
+                <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg dark:text-white">Create Order for Customer</h3>
+                        <p class="text-xs text-gray-500" id="chat-order-customer-name">Customer: ...</p>
+                    </div>
+                    <button onclick="closeChatOrderModal()"
+                        class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+                    <!-- Search -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Search Medicines</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="chat-med-search"
+                                class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm"
+                                placeholder="Type name to search..." oninput="performChatMedSearch()">
+                            <div id="chat-med-results"
+                                class="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl z-10 hidden max-h-60 overflow-y-auto p-2 custom-scrollbar">
+                                <!-- Results go here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Selected Items</label>
+                        <div id="chat-order-items" class="space-y-2">
+                            <p
+                                class="text-center text-gray-400 text-sm py-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-gray-100 dark:border-slate-700">
+                                No items added yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 font-medium">Subtotal</span>
+                            <span class="font-bold dark:text-white" id="chat-order-subtotal">$0.00</span>
+                        </div>
+                        <div
+                            class="flex justify-between text-lg border-t border-gray-200 dark:border-slate-700 pt-2 mt-2">
+                            <span class="font-black dark:text-white">Total</span>
+                            <span class="font-black text-primary" id="chat-order-total">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-gray-50 dark:bg-slate-900/30 rounded-b-2xl">
+                    <button onclick="closeChatOrderModal()"
+                        class="px-6 py-2 font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-colors">Cancel</button>
+                    <button onclick="submitChatOrder()" id="submit-chat-order-btn" disabled
+                        class="px-8 py-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:translate-y-[-2px] hover:shadow-xl transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none">
+                        Create Order
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ================================================
+            // CHAT ORDER LOGIC
+            // ================================================
+            let chatOrderItems = [];
+
+            function openChatOrderModal() {
+                if (!currentPatientId) return showToast('error', 'No active patient selected');
+
+                document.getElementById('chat-order-customer-name').textContent = `Customer: ${document.getElementById('activePatientName').innerText}`;
+                document.getElementById('chat-order-modal').classList.remove('hidden');
+                chatOrderItems = [];
+                renderChatOrderItems();
+            }
+
+            function closeChatOrderModal() {
+                document.getElementById('chat-order-modal').classList.add('hidden');
+            }
+
+            let chatSearchDebounce;
+            function performChatMedSearch() {
+                const query = document.getElementById('chat-med-search').value.trim();
+                const resultsCont = document.getElementById('chat-med-results');
+
+                if (query.length < 2) {
+                    resultsCont.classList.add('hidden');
+                    return;
+                }
+
+                clearTimeout(chatSearchDebounce);
+                chatSearchDebounce = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/doctor/medicines/search?query=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+
+                        if (data.success && data.medicines.length > 0) {
+                            resultsCont.innerHTML = data.medicines.map(m => {
+                                const isOutOfStock = m.current_stock <= 0;
+                                return `
+                                <div onclick="${isOutOfStock ? '' : `addItemToChatOrder('${m.id}', '${m.name.replace(/'/g, "\\'")}', ${m.price}, ${m.current_stock})`}" 
+                                    class="p-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer rounded-lg flex items-center justify-between border-b border-gray-50 dark:border-slate-700 last:border-0 transition-colors ${isOutOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''}">
+                                    <div>
+                                        <p class="font-bold text-sm dark:text-white">${m.name}</p>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400">$${parseFloat(m.price).toFixed(2)}</span>
+                                            <span class="text-[10px] font-bold ${m.current_stock < 5 ? 'text-red-500' : 'text-green-500'}">
+                                                Stock: ${m.current_stock}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    ${isOutOfStock ?
+                                        '<span class="text-[10px] font-bold text-red-500 bg-red-100 px-2 py-1 rounded">OUT</span>' :
+                                        '<i class="fas fa-plus-circle text-primary"></i>'
+                                    }
+                                </div>
+                            `}).join('');
+                            resultsCont.classList.remove('hidden');
+                        } else {
+                            resultsCont.innerHTML = '<p class="p-4 text-center text-gray-400 text-sm">No medicines found</p>';
+                            resultsCont.classList.remove('hidden');
+                        }
+                    } catch (e) {
+                        console.error('Search failed', e);
+                    }
+                }, 300);
+            }
+
+            function addItemToChatOrder(id, name, price, stock) {
+                const existing = chatOrderItems.find(item => item.id === id);
+                if (existing) {
+                    if (existing.quantity >= stock) {
+                        return showToast('error', `Only ${stock} units available in stock`);
+                    }
+                    existing.quantity++;
+                } else {
+                    chatOrderItems.push({ id, name, price, quantity: 1, stock });
+                }
+
+                document.getElementById('chat-med-search').value = '';
+                document.getElementById('chat-med-results').classList.add('hidden');
+                renderChatOrderItems();
+            }
+
+            function updateChatItemQty(id, delta) {
+                const item = chatOrderItems.find(i => i.id === id);
+                if (item) {
+                    if (delta > 0 && item.quantity >= item.stock) {
+                        return showToast('error', `Only ${item.stock} units available in stock`);
+                    }
+                    item.quantity += delta;
+                    if (item.quantity <= 0) {
+                        chatOrderItems = chatOrderItems.filter(i => i.id !== id);
+                    }
+                    renderChatOrderItems();
+                }
+            }
+
+            function renderChatOrderItems() {
+                const cont = document.getElementById('chat-order-items');
+                if (chatOrderItems.length === 0) {
+                    cont.innerHTML = '<p class="text-center text-gray-400 text-sm py-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-gray-100 dark:border-slate-700">No items added yet</p>';
+                    document.getElementById('chat-order-subtotal').textContent = '$0.00';
+                    document.getElementById('chat-order-total').textContent = '$0.00';
+                    document.getElementById('submit-chat-order-btn').disabled = true;
+                    return;
+                }
+
+                cont.innerHTML = chatOrderItems.map(item => `
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <div class="flex-1">
+                            <p class="font-bold text-sm dark:text-white">${item.name}</p>
+                            <p class="text-xs text-gray-400">$${parseFloat(item.price).toFixed(2)} each</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center bg-gray-50 dark:bg-slate-800 rounded-lg px-2 py-1">
+                                <button onclick="updateChatItemQty('${item.id}', -1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 font-bold">-</button>
+                                <span class="text-sm font-bold w-6 text-center dark:text-white">${item.quantity}</span>
+                                <button onclick="updateChatItemQty('${item.id}', 1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-green-500 font-bold">+</button>
+                            </div>
+                            <span class="font-bold text-sm min-w-[60px] text-right">$${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                const total = chatOrderItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+                document.getElementById('chat-order-subtotal').textContent = `$${total.toFixed(2)}`;
+                document.getElementById('chat-order-total').textContent = `$${total.toFixed(2)}`;
+                document.getElementById('submit-chat-order-btn').disabled = false;
+            }
+
+            async function submitChatOrder() {
+                if (chatOrderItems.length === 0 || !currentPatientId) return;
+
+                const btn = document.getElementById('submit-chat-order-btn');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating...';
+
+                try {
+                    const res = await fetch('/doctor/orders/create-manual', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: currentPatientId,
+                            medicines: chatOrderItems.map(i => ({ id: i.id, quantity: i.quantity, price: i.price })),
+                            notes: `Created via Chat with Dr. <%= user.full_name %>`
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('success', 'Order created successfully');
+                        closeChatOrderModal();
+
+                        // Inform patient in chat
+                        const input = document.getElementById('doctorMsgInput');
+                        if (input) {
+                            input.value = `I have created an order for you (#${data.order_uid}). You can check it in your orders page.`;
+                            sendDoctorMessage();
+                        }
+
+                        if (typeof loadOrders === 'function') loadOrders();
+                    } else {
+                        showToast('error', data.message || 'Failed to create order');
+                    }
+                } catch (e) {
+                    showToast('error', 'Network error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
         </script>
     </body>
 

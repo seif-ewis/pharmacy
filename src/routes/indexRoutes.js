@@ -132,10 +132,12 @@ router.delete("/doctor/inventory/delete/:id", ensureDoctor, doctorController.del
 // Doctor Chat Routes
 router.get("/doctor/chats/active", ensureDoctor, doctorController.getChats);
 router.get("/doctor/chats/:chatId/messages", ensureDoctor, doctorController.getChatMessages);
+router.post("/doctor/chats/send", ensureDoctor, doctorController.sendChatMessage);
+router.post("/doctor/orders/create-manual", ensureDoctor, doctorController.createManualOrder);
+
 // Doctor Announcement Routes
 router.post("/doctor/announcements/create", ensureDoctor, announcementController.createAnnouncement);
 router.get("/doctor/announcements", ensureDoctor, announcementController.getAnnouncements);
-router.post("/doctor/chats/send", ensureDoctor, doctorController.sendChatMessage);
 
 // Doctor Returns Module Routes
 router.get("/doctor/returns/recent", ensureDoctor, doctorController.getRecentReturns);
