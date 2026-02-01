@@ -16,8 +16,12 @@ import * as analyticsController from "../controllers/analyticsController.js";
 import * as categoryController from "../controllers/categoryController.js";
 
 import { ensureAuthenticated, ensureDoctor, ensureAdmin } from "../middleware/auth.js";
+import adminRoutes from "./adminRoutes.js";
 
 const router = express.Router();
+
+// Admin Routes (Modular)
+router.use("/admin", adminRoutes);
 
 router.get("/", homeController.getHomePage);
 router.get("/category/:slug", categoryController.getCategoryPage);
@@ -51,18 +55,13 @@ router.post("/orders/request", ensureAuthenticated, requestController.submitRequ
 router.get("/orders/requests/me", ensureAuthenticated, requestController.getUserRequests);
 router.post("/orders/request/:requestId/confirm", ensureAuthenticated, requestController.confirmReadyRequest);
 
-// Admin Product Request Routes
-router.get("/admin/product-requests", ensureAuthenticated, requestController.getAdminRequests);
-router.post("/admin/requests/:requestId/status", ensureAuthenticated, requestController.updateRequestStatus);
+// Admin Product Request Routes (Moved to adminRoutes.js)
 
 // Return Routes (User)
 router.get("/orders/:orderId/return", ensureAuthenticated, returnController.getReturnPage);
 router.post("/orders/return", ensureAuthenticated, returnController.submitReturnRequest);
 
-// Return Routes (Admin)
-// TODO: Add ensureAdmin middleware later. For now using ensureAuthenticated.
-router.get("/admin/returns", ensureAuthenticated, returnController.getAdminReturns);
-router.post("/admin/returns/process", ensureAuthenticated, returnController.processReturn);
+// Return Routes (Admin) (Moved to adminRoutes.js)
 
 // Profile
 
@@ -102,10 +101,6 @@ router.get("/doctor/shift/:id", ensureDoctor, doctorController.getShiftDetails);
 router.get("/doctor/shift/:id/export-pdf", ensureDoctor, doctorController.exportShiftPdf);
 router.post("/doctor/pharmacy/toggle", ensureDoctor, doctorController.togglePharmacyStatus);
 
-// Admin Settings Routes (Admin Only)
-router.get("/admin/settings", ensureAdmin, adminController.getSettings);
-router.post("/admin/settings/update", ensureAdmin, adminController.updateSettings);
-router.get("/admin/audit", ensureAdmin, adminController.getAuditLogs);
 
 router.get("/doctor/prescriptions/:id/process", ensureDoctor, doctorController.getProcessPrescription);
 router.post("/doctor/prescriptions/process", ensureDoctor, doctorController.submitPrescriptionProcessing);

@@ -1,0 +1,94 @@
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-black dark:text-white mb-2">User Management</h1>
+        <p class="text-gray-500">Search and filter through all registered pharmacy users.</p>
+    </div>
+</div>
+
+<!-- Filters & Search -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="relative">
+        <input type="text" id="user-search" oninput="loadUsers()" placeholder="Search by name or email..."
+            class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 pl-10 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white">
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+    </div>
+    <select id="user-role-filter" onchange="loadUsers()"
+        class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white font-bold">
+        <option value="all">All Roles</option>
+        <option value="patient">Patients</option>
+        <option value="doctor">Doctors</option>
+        <option value="admin">Administrators</option>
+    </select>
+</div>
+
+<!-- Users Table -->
+<div
+    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+    <table class="w-full text-left">
+        <thead class="bg-gray-50 dark:bg-slate-700/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <tr>
+                <th class="px-6 py-4">User Details</th>
+                <th class="px-6 py-4">Role</th>
+                <th class="px-6 py-4">Contact</th>
+                <th class="px-6 py-4 text-center">Orders</th>
+                <th class="px-6 py-4 text-right">Joined</th>
+            </tr>
+        </thead>
+        <tbody id="users-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+            <!-- Loaded via AJAX -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    async function loadUsers() {
+        const search = document.getElementById('user-search').value;
+        const role = document.getElementById('user-role-filter').value;
+        const tbody = document.getElementById('users-tbody');
+
+        try {
+            const res = await fetch(`/admin/users/all?search=${encodeURIComponent(search)}&role=${role}`);
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">No users found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.users.map(u => `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors text-sm">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-500 font-bold uppercase">
+                                    ${u.full_name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p class="font-bold dark:text-white line-clamp-1">${u.full_name}</p>
+                                    <p class="text-xs text-gray-400">${u.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider 
+                                ${u.role === 'admin' ? 'bg-red-100 text-red-600' : u.role === 'doctor' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}">
+                                ${u.role}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                            ${u.phone || 'No phone'}
+                        </td>
+                        <td class="px-6 py-4 text-center font-bold dark:text-gray-300">
+                            ${u.total_orders_placed}
+                        </td>
+                        <td class="px-6 py-4 text-right text-xs text-gray-400">
+                            ${new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            console.error("Failed to load users:", err);
+        }
+    }
+</script>

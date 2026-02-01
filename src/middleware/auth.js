@@ -1,4 +1,5 @@
 import { hasRole, hasAnyRole } from '../utils/roleManager.js';
+import db from '../config/dataBase.js';
 
 export const ensureAuthenticated = (req, res, next) => {
     if (req.isAuthenticated()) {
@@ -28,13 +29,21 @@ export const ensureDoctor = async (req, res, next) => {
         return res.redirect("/");
     }
 
-    // Check new roles system
-    if (req.user.roles && (req.user.roles.includes('pharmacist') || req.user.roles.includes('admin') || req.user.roles.includes('doctor'))) {
-        return next();
-    }
+    try {
+        const result = await db.query("SELECT role FROM users WHERE id = $1", [req.user.id]);
+        const user = result.rows[0];
 
-    req.flash("error", "Access denied. Doctor or Pharmacist role required.");
-    res.redirect("/");
+        // Allow doctors, pharmacists, and admins
+        if (user && (user.role === 'doctor' || user.role === 'pharmacist' || user.role === 'admin')) {
+            return next();
+        }
+
+        req.flash("error", "Access denied. Doctor or Pharmacist role required.");
+        res.redirect("/");
+    } catch (err) {
+        console.error("ensureDoctor check failed:", err);
+        res.status(500).render("500");
+    }
 };
 
 export const ensureAdmin = async (req, res, next) => {
@@ -43,11 +52,19 @@ export const ensureAdmin = async (req, res, next) => {
         return res.redirect("/");
     }
 
-    // Check new roles system
-    if (req.user.roles && req.user.roles.includes('admin')) {
-        return next();
-    }
+    try {
+        // Fresh DB check for role in single-role system
+        const result = await db.query("SELECT role FROM users WHERE id = $1", [req.user.id]);
+        const user = result.rows[0];
 
-    req.flash("error", "Access denied. Administrator privileges required.");
-    res.redirect("/");
+        if (user && user.role === 'admin') {
+            return next();
+        }
+
+        req.flash("error", "Access denied. Administrator privileges required.");
+        res.redirect("/");
+    } catch (err) {
+        console.error("ensureAdmin check failed:", err);
+        res.status(500).render("500");
+    }
 };

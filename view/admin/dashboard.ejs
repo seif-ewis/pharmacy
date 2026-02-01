@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/admin_head') %>
+    <title>
+        <%= typeof pageTitle !=='undefined' ? pageTitle : 'Admin' %> | Admin Panel
+    </title>
+
+    <style>
+        .admin-sidebar-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-right: 4px solid #3b82f6;
+        }
+
+        .module-content.hidden {
+            display: none;
+        }
+
+        .module-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <body class="bg-gray-50 dark:bg-slate-900 min-h-screen custom-scrollbar">
+        <div class="flex">
+            <!-- Sidebar -->
+            <aside
+                class="w-64 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 min-h-screen sticky top-0 shrink-0">
+                <div class="p-6">
+                    <div class="flex items-center gap-3 mb-10">
+                        <div
+                            class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                            <i class="fas fa-user-shield text-xl"></i>
+                        </div>
+                        <span class="font-black text-xl dark:text-white tracking-tighter">Admin <span
+                                class="text-primary">Panel</span></span>
+                    </div>
+
+                    <nav class="space-y-1">
+                        <button onclick="showModule('overview')"
+                            class="admin-sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="overview">
+                            <i class="fas fa-th-large w-5"></i> Overview
+                        </button>
+                        <button onclick="showModule('users')"
+                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="users">
+                            <i class="fas fa-users w-5"></i> All Users
+                        </button>
+                        <button onclick="showModule('doctors')"
+                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="doctors">
+                            <i class="fas fa-user-md w-5"></i> Doctors
+                        </button>
+                        <button onclick="showModule('coupons')"
+                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="coupons">
+                            <i class="fas fa-ticket-alt w-5"></i> Coupons
+                        </button>
+                        <button onclick="showModule('history')"
+                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="history">
+                            <i class="fas fa-history w-5"></i> Global History
+                        </button>
+                        <button onclick="showModule('settings')"
+                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            data-module="settings">
+                            <i class="fas fa-cog w-5"></i> Settings
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="absolute bottom-6 left-6 right-6">
+                    <a href="/"
+                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                        <i class="fas fa-arrow-left"></i> Back to Site
+                    </a>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="flex-1 p-8">
+                <div id="module-overview" class="module-content">
+                    <%- include('partials/overview') %>
+                </div>
+                <div id="module-users" class="module-content hidden">
+                    <%- include('partials/users') %>
+                </div>
+                <div id="module-doctors" class="module-content hidden">
+                    <%- include('partials/doctors') %>
+                </div>
+                <div id="module-coupons" class="module-content hidden">
+                    <%- include('partials/coupons') %>
+                </div>
+                <div id="module-history" class="module-content hidden">
+                    <%- include('partials/history') %>
+                </div>
+                <div id="module-settings" class="module-content hidden">
+                    <%- include('partials/settings') %>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            function showModule(moduleId) {
+                // Hide all modules
+                document.querySelectorAll('.module-content').forEach(el => el.classList.add('hidden'));
+                // Remove active from all buttons
+                document.querySelectorAll('.admin-sidebar-item').forEach(el => el.classList.remove('active'));
+
+                // Show target module
+                const target = document.getElementById(`module-${moduleId}`);
+                if (target) target.classList.remove('hidden');
+
+                // Set active button
+                const btn = document.querySelector(`[data-module="${moduleId}"]`);
+                if (btn) btn.classList.add('active');
+
+                // Trigger load functions
+                switch (moduleId) {
+                    case 'overview': loadStats(); break;
+                    case 'users': loadUsers(); break;
+                    case 'doctors': loadDoctors(); break;
+                    case 'coupons': loadCoupons(); break;
+                    case 'history': loadHistory('orders'); break;
+                    case 'settings': loadSettings(); break;
+                }
+            }
+
+            async function loadStats() {
+                try {
+                    const res = await fetch('/admin/stats');
+                    const data = await res.json();
+                    if (data.success) {
+                        const s = data.stats;
+                        const kpis = document.querySelectorAll('#module-overview h3.text-2xl');
+                        if (kpis.length >= 4) {
+                            kpis[0].innerText = `$${Number(s.net_revenue).toFixed(2)}`;
+                            kpis[1].innerText = s.total_orders;
+                            kpis[2].innerText = s.total_doctors;
+                            kpis[3].innerText = s.total_coupons;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load global stats");
+                }
+            }
+
+            // Load stats on initial page load
+            window.addEventListener('load', () => loadStats());
+
+            // Global Toast Helper
+            function showToast(type, message) {
+                if (window.Toastify) {
+                    Toastify({
+                        text: message,
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        style: {
+                            background: type === 'success' ? "#10b981" : "#ef4444",
+                            borderRadius: "12px",
+                            fontWeight: "bold"
+                        }
+                    }).showToast();
+                } else {
+                    alert(message);
+                }
+            }
+        </script>
+    </body>
+
+</html>

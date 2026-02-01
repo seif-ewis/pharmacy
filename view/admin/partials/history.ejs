@@ -1,0 +1,153 @@
+<div>
+    <h1 class="text-3xl font-black dark:text-white mb-2">Global History</h1>
+    <p class="text-gray-500 mb-8">Comprehensive logs of all system activities.</p>
+
+    <!-- Sub-tabs -->
+    <div class="flex flex-wrap gap-4 mb-6 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl w-max">
+        <button onclick="loadHistory('orders')"
+            class="history-tab px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white dark:bg-slate-700 shadow-sm"
+            data-history="orders">Orders</button>
+        <button onclick="loadHistory('returns')"
+            class="history-tab px-6 py-2 rounded-lg text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all"
+            data-history="returns">Returns</button>
+        <button onclick="loadHistory('shifts')"
+            class="history-tab px-6 py-2 rounded-lg text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all"
+            data-history="shifts">Shifts</button>
+        <button onclick="loadHistory('inventory')"
+            class="history-tab px-6 py-2 rounded-lg text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all"
+            data-history="inventory">Inventory Logs</button>
+    </div>
+
+    <!-- Filters Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="history-filters">
+        <div class="relative">
+            <input type="text" id="history-search" oninput="debounceHistoryLoad()" placeholder="Search history..."
+                class="w-full bg-white dark:bg-slate-800 border-none rounded-xl px-4 py-3 pl-10 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+        <select id="history-status-filter" onchange="loadHistory(currentHistoryType)"
+            class="bg-white dark:bg-slate-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white font-bold">
+            <option value="all">All Statuses</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
+    </div>
+
+    <!-- Table Container -->
+    <div
+        class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead id="history-thead"
+                class="bg-gray-50 dark:bg-slate-700/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            </thead>
+            <tbody id="history-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+                <tr>
+                    <td class="px-6 py-12 text-center text-gray-400">Select a history log to view data.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let currentHistoryType = 'orders';
+    let historyDebounceTimer;
+
+    function debounceHistoryLoad() {
+        clearTimeout(historyDebounceTimer);
+        historyDebounceTimer = setTimeout(() => loadHistory(currentHistoryType), 300);
+    }
+
+    async function loadHistory(type) {
+        currentHistoryType = type;
+
+        // UI: Toggle tabs
+        document.querySelectorAll('.history-tab').forEach(el => {
+            el.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-gray-600', 'active');
+            el.classList.add('text-gray-400');
+        });
+        const activeTab = document.querySelector(`[data-history="${type}"]`);
+        activeTab.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'active');
+        activeTab.classList.remove('text-gray-400');
+
+        // UI: Toggle Filter logic
+        const statusFilter = document.getElementById('history-status-filter');
+        statusFilter.style.display = (type === 'orders') ? 'block' : 'none';
+
+        const search = document.getElementById('history-search').value;
+        const status = statusFilter.value;
+
+        const thead = document.getElementById('history-thead');
+        const tbody = document.getElementById('history-tbody');
+        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-12 text-center text-gray-400"><i class="fas fa-circle-notch fa-spin mr-2"></i> Loading...</td></tr>';
+
+        try {
+            const res = await fetch(`/admin/history/${type}?search=${encodeURIComponent(search)}&status=${status}`);
+            const data = await res.json();
+
+            if (!data.success) throw new Error(data.message);
+
+            if (type === 'orders') {
+                thead.innerHTML = `<tr><th class="px-6 py-4">Order ID</th><th class="px-6 py-4">Customer</th><th class="px-6 py-4">Status</th><th class="px-6 py-4">Total</th><th class="px-6 py-4">Date</th></tr>`;
+                tbody.innerHTML = data.orders.map(o => `
+                    <tr class="text-sm dark:text-gray-300">
+                        <td class="px-6 py-4 font-bold">#${o.order_uid}</td>
+                        <td class="px-6 py-4">${o.customer_name}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase ${o.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}">
+                                ${o.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-700 dark:text-white">$${parseFloat(o.total_price).toFixed(2)}</td>
+                        <td class="px-6 py-4 text-xs text-gray-400">${new Date(o.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } else if (type === 'returns') {
+                thead.innerHTML = `<tr><th class="px-6 py-4">Order Unit</th><th class="px-6 py-4">Customer</th><th class="px-6 py-4">Status</th><th class="px-6 py-4">Refund</th><th class="px-6 py-4">Date</th></tr>`;
+                tbody.innerHTML = data.returns.map(r => `
+                    <tr class="text-sm dark:text-gray-300">
+                        <td class="px-6 py-4 font-bold">#${r.order_uid}</td>
+                        <td class="px-6 py-4">${r.customer_name}</td>
+                        <td class="px-6 py-4 uppercase text-[10px] font-black">${r.status}</td>
+                        <td class="px-6 py-4 font-bold text-red-500">$${parseFloat(r.refund_amount).toFixed(2)}</td>
+                        <td class="px-6 py-4 text-xs text-gray-400">${new Date(r.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } else if (type === 'shifts') {
+                thead.innerHTML = `<tr><th class="px-6 py-4">Opened By</th><th class="px-6 py-4">Closed By</th><th class="px-6 py-4">Net Revenue</th><th class="px-6 py-4">Status</th><th class="px-6 py-4">Open Time</th></tr>`;
+                tbody.innerHTML = data.shifts.map(s => `
+                    <tr class="text-sm dark:text-gray-300">
+                        <td class="px-6 py-4 font-bold">${s.opened_by_name}</td>
+                        <td class="px-6 py-4">${s.closed_by_name || 'Still Open'}</td>
+                        <td class="px-6 py-4 font-bold text-green-600">$${parseFloat(s.net_revenue || 0).toFixed(2)}</td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-[10px] font-black uppercase ${s.status === 'open' ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}">${s.status}</span></td>
+                        <td class="px-6 py-4 text-xs text-gray-400">${new Date(s.opened_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } else if (type === 'inventory') {
+                thead.innerHTML = `<tr><th class="px-6 py-4">Medicine</th><th class="px-6 py-4">Adjustment</th><th class="px-6 py-4">Performer</th><th class="px-6 py-4">Reason</th><th class="px-6 py-4 text-right">Date</th></tr>`;
+                tbody.innerHTML = data.adjustments.map(a => `
+                    <tr class="text-sm dark:text-gray-300">
+                        <td class="px-6 py-4 font-bold">${a.medicine_name}</td>
+                        <td class="px-6 py-4">
+                            <span class="font-black ${a.quantity_change > 0 ? 'text-green-600' : 'text-red-500'}">
+                                ${a.quantity_change > 0 ? '+' : ''}${a.quantity_change}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">${a.performer_name || 'System'}</td>
+                        <td class="px-6 py-4 italic text-xs text-gray-400">${a.reason || 'N/A'}</td>
+                        <td class="px-6 py-4 text-right text-xs text-gray-400">${new Date(a.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+
+            if (tbody.innerHTML === '') {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-12 text-center text-gray-400 font-bold italic">No results found for this search/filter.</td></tr>`;
+            }
+
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-12 text-center text-red-500 font-bold">Error: ${err.message}</td></tr>`;
+        }
+    }
+</script>

@@ -1,0 +1,159 @@
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-black dark:text-white mb-2">Doctor Management</h1>
+        <p class="text-gray-500">Manage pharmacy medical staff and monitor performance.</p>
+    </div>
+    <button onclick="openAddDoctorModal()"
+        class="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/30 transition-all">
+        <i class="fas fa-plus"></i> Add New Doctor
+    </button>
+</div>
+
+<!-- Doctor List -->
+<div
+    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+    <table class="w-full text-left">
+        <thead class="bg-gray-50 dark:bg-slate-700/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <tr>
+                <th class="px-6 py-4">Doctor Name</th>
+                <th class="px-6 py-4">Contact</th>
+                <th class="px-6 py-4 text-center">Orders</th>
+                <th class="px-6 py-4 text-center">Revenue</th>
+                <th class="px-6 py-4 text-right">Join Date</th>
+            </tr>
+        </thead>
+        <tbody id="doctors-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+            <!-- Loaded via AJAX -->
+            <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                    <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                    <p>Loading medical staff...</p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Doctor Modal -->
+<div id="add-doctor-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
+    <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 animate-fadeIn">
+        <form onsubmit="submitAddDoctor(event)" class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black dark:text-white">Add Doctor</h3>
+                <button type="button" onclick="closeAddDoctorModal()" class="text-gray-400 hover:text-gray-600"><i
+                        class="fas fa-times"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Full Name</label>
+                    <input type="text" name="full_name" required
+                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Email Address</label>
+                    <input type="email" name="email" required
+                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Temporary Password</label>
+                    <input type="password" name="password" required
+                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Phone Number</label>
+                    <input type="tel" name="phone"
+                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                </div>
+            </div>
+
+            <button type="submit"
+                class="w-full mt-8 bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all">
+                Create Doctor Account
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    async function loadDoctors() {
+        const tbody = document.getElementById('doctors-tbody');
+        try {
+            const res = await fetch('/admin/doctors');
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.doctors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold">No doctors found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.doctors.map(d => `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                    ${d.full_name.charAt(0)}
+                                </div>
+                                <span class="font-bold dark:text-white">${d.full_name}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm dark:text-gray-300">${d.email}</p>
+                            <p class="text-xs text-gray-400">${d.phone || 'No phone'}</p>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">
+                                ${d.orders_count} Orders
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center font-bold text-green-600">
+                            $${parseFloat(d.total_revenue).toFixed(2)}
+                        </td>
+                        <td class="px-6 py-4 text-right text-xs text-gray-400">
+                            ${new Date(d.created_at).toLocaleDateString()}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-400 font-bold italic">Network error fetching staff.</td></tr>';
+        }
+    }
+
+    function openAddDoctorModal() {
+        document.getElementById('add-doctor-modal').classList.remove('hidden');
+    }
+
+    function closeAddDoctorModal() {
+        document.getElementById('add-doctor-modal').classList.add('hidden');
+    }
+
+    async function submitAddDoctor(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const jsonData = Object.fromEntries(formData.entries());
+
+        try {
+            const res = await fetch('/admin/doctors/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(jsonData)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast('success', "Doctor account created successfully!");
+                closeAddDoctorModal();
+                loadDoctors();
+                e.target.reset();
+            } else {
+                showToast('error', data.message);
+            }
+        } catch (err) {
+            showToast('error', "Failed to connect to server.");
+        }
+    }
+</script>
