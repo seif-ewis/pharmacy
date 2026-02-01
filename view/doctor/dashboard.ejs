@@ -293,10 +293,18 @@
                                                         class="text-xs font-bold text-gray-400 uppercase">Revenue</span>
                                                 </div>
                                                 <h3 id="counter-revenue" class="text-3xl font-black dark:text-white">$
-                                                    <%= activeShift ? parseFloat(activeShift.gross_revenue ||
+                                                    <%= activeShift ? parseFloat(activeShift.net_revenue ||
                                                         0).toFixed(2) : '0.00' %>
                                                 </h3>
-                                                <p class="text-[10px] text-gray-400 mt-1">Current Shift</p>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <span class="text-[10px] text-gray-400">Net</span>
+                                                    <span id="counter-gross-revenue"
+                                                        class="text-[9px] text-green-500 font-bold">(G: $<%= activeShift
+                                                            ? activeShift.gross_revenue : '0' %>)</span>
+                                                    <span id="counter-refunds"
+                                                        class="text-[9px] text-red-500 font-bold">(R: $<%= activeShift ?
+                                                            activeShift.total_refunds : '0' %>)</span>
+                                                </div>
                                             </div>
 
                                             <!-- Orders -->
@@ -675,83 +683,111 @@
                             <p class="text-sm text-gray-500">Real-time order processing and management</p>
                         </div>
 
-                        <!-- Status Tabs -->
-                        <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-                            <!-- Search -->
-                            <div class="relative flex-1 w-full md:max-w-md">
-                                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" id="order-search-input" oninput="applyOrderFilters()"
-                                    class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-sm"
-                                    placeholder="Search by Order ID or Customer Name...">
+                        <% if (!activeShift) { %>
+                            <!-- Missing Shift Warning -->
+                            <div
+                                class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 mb-6 rounded-r-xl animate-pulse">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-exclamation-triangle text-amber-500 text-xl"></i>
+                                    <div>
+                                        <h4 class="font-bold text-amber-900 dark:text-amber-200">No Active Shift</h4>
+                                        <p class="text-sm text-amber-800 dark:text-amber-300">
+                                            You must <strong>Start a Shift</strong> to "Complete" or "Deliver" orders.
+                                            Orders can still be "Processed", but revenue attribution requires an open
+                                            shift.
+                                        </p>
+                                    </div>
+                                    <button onclick="showModule('shifts')"
+                                        class="ml-auto bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                                        Open Shifts
+                                    </button>
+                                </div>
                             </div>
+                            <% } %>
 
-                            <!-- Filters -->
-                            <div class="flex items-center gap-2 w-full md:w-auto">
-                                <select id="order-sort-input" onchange="applyOrderFilters()"
-                                    class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                </select>
+                                <!-- Status Tabs -->
+                                <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                                    <!-- Search -->
+                                    <div class="relative flex-1 w-full md:max-w-md">
+                                        <i
+                                            class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                        <input type="text" id="order-search-input" oninput="applyOrderFilters()"
+                                            class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-sm"
+                                            placeholder="Search by Order ID or Customer Name...">
+                                    </div>
 
-                                <select id="order-date-input" onchange="applyOrderFilters()"
-                                    class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
-                                    <option value="today">Today</option>
-                                    <option value="yesterday">Yesterday</option>
-                                    <option value="week">Last 7 Days</option>
-                                    <option value="all" selected>All Time</option>
-                                </select>
-                            </div>
-                        </div>
+                                    <!-- Filters -->
+                                    <div class="flex items-center gap-2 w-full md:w-auto">
+                                        <select id="order-sort-input" onchange="applyOrderFilters()"
+                                            class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
+                                            <option value="newest">Newest First</option>
+                                            <option value="oldest">Oldest First</option>
+                                        </select>
 
-                        <div
-                            class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6 p-2 overflow-x-auto">
-                            <div class="flex gap-2 min-w-max">
-                                <button onclick="filterOrdersByStatus('pending')"
-                                    class="order-status-tab active px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                                    data-status="pending">
-                                    <i class="fas fa-clock mr-2"></i>Pending
-                                    <span class="ml-2 px-2 py-0.5 bg-amber-500 text-white rounded-full text-[10px]"
-                                        id="count-pending">0</span>
-                                </button>
-                                <button onclick="filterOrdersByStatus('scheduled')"
-                                    class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                                    data-status="scheduled">
-                                    <i class="fas fa-calendar mr-2"></i>Scheduled
-                                    <span class="ml-2 px-2 py-0.5 bg-purple-500 text-white rounded-full text-[10px]"
-                                        id="count-scheduled">0</span>
-                                </button>
-                                <button onclick="filterOrdersByStatus('processing')"
-                                    class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                                    data-status="processing">
-                                    <i class="fas fa-spinner mr-2"></i>Processing
-                                    <span class="ml-2 px-2 py-0.5 bg-blue-500 text-white rounded-full text-[10px]"
-                                        id="count-processing">0</span>
-                                </button>
-                                <button onclick="filterOrdersByStatus('completed')"
-                                    class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                                    data-status="completed">
-                                    <i class="fas fa-check-circle mr-2"></i>Completed
-                                    <span class="ml-2 px-2 py-0.5 bg-green-500 text-white rounded-full text-[10px]"
-                                        id="count-completed">0</span>
-                                </button>
-                                <button onclick="filterOrdersByStatus('canceled')"
-                                    class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                                    data-status="canceled">
-                                    <i class="fas fa-times-circle mr-2"></i>Cancelled
-                                    <span class="ml-2 px-2 py-0.5 bg-red-500 text-white rounded-full text-[10px]"
-                                        id="count-canceled">0</span>
-                                </button>
-                            </div>
-                        </div>
+                                        <select id="order-date-input" onchange="applyOrderFilters()"
+                                            class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-sm text-sm">
+                                            <option value="today">Today</option>
+                                            <option value="yesterday">Yesterday</option>
+                                            <option value="week">Last 7 Days</option>
+                                            <option value="all" selected>All Time</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-                        <!-- Orders Container -->
-                        <div id="orders-container" class="space-y-4">
-                            <!-- Orders will be loaded here dynamically -->
-                            <div class="text-center py-12 text-gray-400">
-                                <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
-                                <p>Loading orders...</p>
-                            </div>
-                        </div>
+                                <div
+                                    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6 p-2 overflow-x-auto">
+                                    <div class="flex gap-2 min-w-max">
+                                        <button onclick="filterOrdersByStatus('pending')"
+                                            class="order-status-tab active px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                                            data-status="pending">
+                                            <i class="fas fa-clock mr-2"></i>Pending
+                                            <span
+                                                class="ml-2 px-2 py-0.5 bg-amber-500 text-white rounded-full text-[10px]"
+                                                id="count-pending">0</span>
+                                        </button>
+                                        <button onclick="filterOrdersByStatus('scheduled')"
+                                            class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                                            data-status="scheduled">
+                                            <i class="fas fa-calendar mr-2"></i>Scheduled
+                                            <span
+                                                class="ml-2 px-2 py-0.5 bg-purple-500 text-white rounded-full text-[10px]"
+                                                id="count-scheduled">0</span>
+                                        </button>
+                                        <button onclick="filterOrdersByStatus('processing')"
+                                            class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                                            data-status="processing">
+                                            <i class="fas fa-spinner mr-2"></i>Processing
+                                            <span
+                                                class="ml-2 px-2 py-0.5 bg-blue-500 text-white rounded-full text-[10px]"
+                                                id="count-processing">0</span>
+                                        </button>
+                                        <button onclick="filterOrdersByStatus('completed')"
+                                            class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                                            data-status="completed">
+                                            <i class="fas fa-check-circle mr-2"></i>Completed
+                                            <span
+                                                class="ml-2 px-2 py-0.5 bg-green-500 text-white rounded-full text-[10px]"
+                                                id="count-completed">0</span>
+                                        </button>
+                                        <button onclick="filterOrdersByStatus('canceled')"
+                                            class="order-status-tab px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                                            data-status="canceled">
+                                            <i class="fas fa-times-circle mr-2"></i>Cancelled
+                                            <span
+                                                class="ml-2 px-2 py-0.5 bg-red-500 text-white rounded-full text-[10px]"
+                                                id="count-canceled">0</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Orders Container -->
+                                <div id="orders-container" class="space-y-4">
+                                    <!-- Orders will be loaded here dynamically -->
+                                    <div class="text-center py-12 text-gray-400">
+                                        <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
+                                        <p>Loading orders...</p>
+                                    </div>
+                                </div>
                     </div>
 
                     <!-- MODULE: PRESCRIPTIONS -->
@@ -3643,15 +3679,17 @@
                         body: JSON.stringify({ orderId, newState: newStatus })
                     });
 
-                    if (res.ok) {
+                    const data = await res.json();
+
+                    if (res.ok && data.success) {
                         showToast('success', `Order ${newStatus}!`);
                         loadOrders(); // Reload to update
                     } else {
-                        showToast('error', 'Failed to update order');
+                        showToast('error', data.message || 'Failed to update order');
                     }
                 } catch (err) {
                     console.error(err);
-                    showToast('error', 'Failed to update order');
+                    showToast('error', 'Network error or server failed');
                 }
             }
 
@@ -4906,6 +4944,7 @@
                 }
             }
         </script>
+        <script src="/doctor/dashboard_stats_script.js"></script>
     </body>
 
 </html>

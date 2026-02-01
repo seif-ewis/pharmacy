@@ -37,12 +37,10 @@ export const getDashboard = async (req, res) => {
         if (activeShift) {
             const shiftMetricsRes = await db.query(`
                 SELECT 
-                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) as gross_revenue,
-                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) as total_refunds,
-                    COUNT(id) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as total_orders,
-                    COUNT(id) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) as total_returns
-                FROM orders
-                WHERE completed_shift_id = $1 OR returned_shift_id = $1
+                    (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as gross_revenue,
+                    (SELECT COALESCE(SUM(refund_amount), 0) FROM returns WHERE shift_id = $1 AND status = 'approved') as total_refunds,
+                    (SELECT COUNT(*) FROM orders WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as total_orders,
+                    (SELECT COUNT(*) FROM returns WHERE shift_id = $1 AND status = 'approved') as total_returns
             `, [activeShift.id]);
 
             const metrics = shiftMetricsRes.rows[0];
@@ -194,12 +192,10 @@ export const getDashboardStats = async (req, res) => {
         if (activeShift) {
             const shiftMetricsRes = await db.query(`
                 SELECT 
-                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) as gross,
-                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) as refunds,
-                    COUNT(id) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as orders_count,
-                    COUNT(id) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) as returns_count
-                FROM orders
-                WHERE completed_shift_id = $1 OR returned_shift_id = $1
+                    (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as gross,
+                    (SELECT COALESCE(SUM(refund_amount), 0) FROM returns WHERE shift_id = $1 AND status = 'approved') as refunds,
+                    (SELECT COUNT(*) FROM orders WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as orders_count,
+                    (SELECT COUNT(*) FROM returns WHERE shift_id = $1 AND status = 'approved') as returns_count
             `, [activeShift.id]);
 
             const metrics = shiftMetricsRes.rows[0];
@@ -329,20 +325,20 @@ export const endShift = async (req, res) => {
         const { shiftId } = req.body;
         const doctorId = req.user.id;
 
-        // Calculate shift metrics
+        // Calculate shift metrics (Completed Sales)
         const metricsRes = await db.query(`
             SELECT 
-                COALESCE(COUNT(DISTINCT o.id), 0) as total_orders,
-                COALESCE(SUM(o.total_price), 0) as gross_revenue
-            FROM orders o
-            WHERE o.shift_id = $1
+                COALESCE(COUNT(DISTINCT id), 0) as total_orders,
+                COALESCE(SUM(total_price), 0) as gross_revenue
+            FROM orders
+            WHERE completed_shift_id = $1 AND completed_at IS NOT NULL
         `, [shiftId]);
 
         const metrics = metricsRes.rows[0];
 
-        // Calculate Returns for this shift
+        // Calculate Returns for this shift (Refunds processed NOW)
         const returnsRes = await db.query(
-            "SELECT COALESCE(SUM(refund_amount), 0) as total_refunds, COUNT(*) as count FROM returns WHERE shift_id = $1",
+            "SELECT COALESCE(SUM(refund_amount), 0) as total_refunds, COUNT(*) as count FROM returns WHERE shift_id = $1 AND status = 'approved'",
             [shiftId]
         );
         const totalRefunds = parseFloat(returnsRes.rows[0].total_refunds || 0);
@@ -1175,9 +1171,9 @@ export const exportShiftPdf = async (req, res) => {
         const userRes = await db.query("SELECT * FROM users WHERE id = $1", [shift.opened_by]);
         const doctor = userRes.rows[0] || { full_name: 'Unknown' };
 
-        // Fetch shift orders
+        // Fetch shift orders (Completed Sales in this shift)
         const ordersRes = await db.query(
-            "SELECT o.*, u.full_name as user_name FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.shift_id = $1 ORDER BY o.created_at DESC",
+            "SELECT o.*, u.full_name as user_name FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.completed_shift_id = $1 AND o.completed_at IS NOT NULL ORDER BY o.completed_at DESC",
             [id]
         );
         const orders = ordersRes.rows;
