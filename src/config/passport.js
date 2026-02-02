@@ -27,6 +27,9 @@ passport.use(
                     } else {
                         if (result) {
                             //Passed password check
+                            if (user.email_verified === false) {
+                                return cb(null, false, { message: "unverified", email: user.email });
+                            }
                             return cb(null, user);
                         } else {
                             //Did not pass password check

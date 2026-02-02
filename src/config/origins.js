@@ -1,2 +1,2 @@
-const allowedOrigins = ["http://localhost:3001", "https://0bd421085b27.ngrok-free.app"]
+const allowedOrigins = ["http://localhost:3001", "https://3f10a568a26a.ngrok-free.app"]
 export default allowedOrigins;

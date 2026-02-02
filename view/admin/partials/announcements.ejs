@@ -1,0 +1,279 @@
+<div id="module-announcements" class="animate-fade-in p-2">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-3xl font-black dark:text-white tracking-tighter">Announcements</h2>
+            <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mt-1 italic">Communication Hub</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- POST FORM -->
+        <div class="lg:col-span-1">
+            <div
+                class="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-gray-100 dark:border-slate-800 shadow-sm sticky top-6">
+                <h3 class="font-black dark:text-white mb-6 uppercase text-xs tracking-widest text-primary">Post New
+                    Broadcast</h3>
+                <form onsubmit="event.preventDefault(); postAnnouncement();" class="space-y-6">
+                    <!-- Title -->
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Subject</label>
+                        <input type="text" id="annTitle"
+                            class="w-full bg-gray-50 dark:bg-slate-800/50 border-none rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-inner"
+                            placeholder="e.g., Inventory Update" required>
+                    </div>
+
+                    <!-- Message -->
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Message
+                            Content</label>
+                        <textarea id="annMessage" rows="5"
+                            class="w-full bg-gray-50 dark:bg-slate-800/50 border-none rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-inner"
+                            placeholder="Type your message here..." required></textarea>
+                    </div>
+
+                    <!-- Target Audience -->
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Target
+                            Audience</label>
+                        <select id="annTarget"
+                            class="w-full bg-gray-50 dark:bg-slate-800/50 border-none rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-inner appearance-none cursor-pointer">
+                            <option value="all">Everyone (Global)</option>
+                            <option value="customers">Customers Only</option>
+                            <option value="doctors">Doctors (Staff)</option>
+                            <option value="admins">Admins Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Schedule (Optional) -->
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Schedule
+                            Send (Optional)</label>
+                        <input type="datetime-local" id="annSchedule"
+                            class="w-full bg-gray-50 dark:bg-slate-800/50 border-none rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-inner">
+                        <p class="text-[9px] text-gray-400 mt-2 ml-1 italic font-medium">Leave blank for immediate
+                            broadcast.</p>
+                    </div>
+
+                    <button type="submit" id="post-ann-btn"
+                        class="w-full bg-primary text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest hover:bg-blue-800 shadow-xl shadow-blue-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3">
+                        <i class="fas fa-paper-plane"></i> Post Announcement
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- HISTORY / INBOX -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Tabs Navigation -->
+            <div class="flex gap-2 bg-gray-100/50 dark:bg-slate-900/50 p-1.5 rounded-2xl w-fit">
+                <button onclick="switchAnnounceTab('inbox')" id="tab-ann-inbox"
+                    class="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all bg-white dark:bg-slate-800 text-primary shadow-sm">
+                    <i class="fas fa-inbox mr-2"></i>Received
+                </button>
+                <button onclick="switchAnnounceTab('sent')" id="tab-ann-sent"
+                    class="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-history mr-2"></i>My Broadcasts
+                </button>
+            </div>
+
+            <!-- Inbox View -->
+            <div id="ann-view-inbox" class="space-y-6 animate-fade-in">
+                <!-- Admin Section -->
+                <div id="ann-inbox-admin-container" class="hidden">
+                    <h4 class="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em] ml-2">Internal Admin
+                        Alerts</h4>
+                    <div id="ann-inbox-admin" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    </div>
+                </div>
+
+                <!-- Staff Section -->
+                <div>
+                    <h4 class="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em] ml-2">Staff & Doctor
+                        Updates</h4>
+                    <div id="ann-inbox-staff" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div
+                            class="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800">
+                            <i class="fas fa-circle-notch fa-spin text-primary/20 text-3xl mb-4"></i>
+                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Syncing Feed...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sent View -->
+            <div id="ann-view-sent"
+                class="hidden space-y-4 animate-fade-in max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+                <p class="text-center text-gray-400 text-sm py-12">Checking history...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        let announcementsData = null;
+
+        window.initializeAnnouncements = async function () {
+            console.log('Initializing Announcements Module...');
+            await loadAnnouncements();
+        };
+
+        async function loadAnnouncements() {
+            try {
+                const res = await fetch('/admin/announcements');
+                const data = await res.json();
+                if (data.success) {
+                    announcementsData = data;
+                    renderAnnouncementTabs();
+                }
+            } catch (e) {
+                console.error('Error loading announcements', e);
+                showToast('error', 'Failed to sync announcements');
+            }
+        }
+
+        function renderAnnouncementTabs() {
+            if (!announcementsData) return;
+
+            // Render Inbox - Admin (excluding self if admin?)
+            const adminCont = document.getElementById('ann-inbox-admin');
+            const adminWrapper = document.getElementById('ann-inbox-admin-container');
+            const otherAdmins = announcementsData.inbox.admin; // Controller filters this
+
+            if (otherAdmins.length > 0) {
+                adminWrapper.classList.remove('hidden');
+                adminCont.innerHTML = otherAdmins.map(renderAnnouncementCard).join('');
+            } else {
+                adminWrapper.classList.add('hidden');
+                adminCont.innerHTML = '';
+            }
+
+            // Render Inbox - Staff (Doctors)
+            const staffCont = document.getElementById('ann-inbox-staff');
+            if (announcementsData.inbox.doctors.length > 0) {
+                staffCont.innerHTML = announcementsData.inbox.doctors.map(renderAnnouncementCard).join('');
+            } else {
+                staffCont.innerHTML = `<div class="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Clear Skies. No staff messages.</p>
+                </div>`;
+            }
+
+            // Render Sent
+            const sentCont = document.getElementById('ann-view-sent');
+            if (announcementsData.sent.length > 0) {
+                sentCont.innerHTML = announcementsData.sent.map(renderAnnouncementCard).join('');
+            } else {
+                sentCont.innerHTML = `<div class="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-widest">You haven't broadcasted yet.</p>
+                </div>`;
+            }
+        }
+
+        function renderAnnouncementCard(data) {
+            const isScheduled = data.status === 'scheduled';
+            const statusBadge = isScheduled
+                ? `<span class="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded-lg ml-auto uppercase tracking-tighter">Scheduled</span>`
+                : `<span class="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-1 rounded-lg ml-auto uppercase tracking-tighter">Sent</span>`;
+
+            const isSystem = data.sender_roles && data.sender_roles.includes('admin');
+            const senderName = data.sender_name || 'You';
+            const timeStr = new Date(data.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+            return `
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:translate-y-[-2px] relative overflow-hidden group">
+                 <div class="absolute top-0 left-0 w-1.5 h-full ${isSystem ? 'bg-primary' : 'bg-emerald-500'} opacity-50"></div>
+                 <div class="flex justify-between items-start gap-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl ${isSystem ? 'bg-primary/10 text-primary' : 'bg-emerald-100 text-emerald-600'} flex items-center justify-center text-sm font-black shadow-inner">
+                            ${senderName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h4 class="font-black text-gray-800 dark:text-white leading-tight">${data.title}</h4>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[9px] font-black uppercase tracking-widest ${isSystem ? 'text-primary' : 'text-emerald-500'}">
+                                    ${senderName}
+                                </span>
+                                <span class="text-[9px] text-gray-400 font-bold">• ${timeStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="bg-gray-50/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-50 dark:border-slate-800/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-semibold">
+                        ${data.message}
+                    </p>
+                </div>
+                <div class="mt-4 flex items-center gap-2">
+                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                        Target: ${data.target_audience.replace('_', ' ')}
+                    </span>
+                </div>
+            </div>
+            `;
+        }
+
+        window.switchAnnounceTab = function (tab) {
+            const inboxView = document.getElementById('ann-view-inbox');
+            const sentView = document.getElementById('ann-view-sent');
+            const tabInbox = document.getElementById('tab-ann-inbox');
+            const tabSent = document.getElementById('tab-ann-sent');
+
+            const activeClasses = "bg-white dark:bg-slate-800 text-primary shadow-sm";
+            const inactiveClasses = "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300";
+
+            if (tab === 'inbox') {
+                inboxView.classList.remove('hidden');
+                sentView.classList.add('hidden');
+                tabInbox.className = `px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeClasses}`;
+                tabSent.className = `px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${inactiveClasses}`;
+            } else {
+                inboxView.classList.add('hidden');
+                sentView.classList.remove('hidden');
+                tabSent.className = `px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeClasses}`;
+                tabInbox.className = `px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${inactiveClasses}`;
+            }
+        };
+
+        window.postAnnouncement = async function () {
+            const title = document.getElementById('annTitle').value;
+            const message = document.getElementById('annMessage').value;
+            const target = document.getElementById('annTarget').value;
+            const scheduledFor = document.getElementById('annSchedule').value;
+
+            const btn = document.getElementById('post-ann-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> broadcasting...';
+
+            try {
+                const res = await fetch('/admin/announcements/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message, target, scheduledFor })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('annTitle').value = '';
+                    document.getElementById('annMessage').value = '';
+                    document.getElementById('annSchedule').value = '';
+                    showToast('success', 'Broadcast Successful');
+                    await loadAnnouncements();
+                    switchAnnounceTab('sent');
+                } else {
+                    showToast('error', data.error || 'Broadcast Failed');
+                }
+            } catch (e) {
+                showToast('error', 'Network Error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+    })();
+</script>

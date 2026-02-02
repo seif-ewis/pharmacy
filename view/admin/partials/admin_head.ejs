@@ -25,6 +25,27 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        socket.emit('join', 'admin');
+
+        // Listen for global announcements
+        socket.on('announcement', (data) => {
+            if (window.Toastify) {
+                Toastify({
+                    text: `📢 ${data.title}: ${data.message.substring(0, 50)}...`,
+                    duration: 10000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "linear-gradient(to right, #1E3A8A, #3B82F6)",
+                    onClick: () => { window.location.hash = 'announcements'; window.location.reload(); }
+                }).showToast();
+            }
+        });
+    </script>
+
     <!-- Tailwind Config -->
     <script>
         tailwind.config = {

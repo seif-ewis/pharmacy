@@ -9,6 +9,7 @@ import * as adminModuleController from "../controllers/admin/adminModuleControll
 import * as adminInventoryController from "../controllers/admin/adminInventoryController.js";
 import * as adminPrescriptionsController from "../controllers/admin/adminPrescriptionsController.js";
 import * as adminAuditController from "../controllers/admin/adminAuditController.js";
+import * as announcementController from "../controllers/announcementController.js";
 
 const router = express.Router();
 
@@ -60,5 +61,9 @@ router.delete("/coupons/:id", adminCouponsController.deleteCoupon);
 router.get("/settings", adminSettingsController.getSettings);
 router.post("/settings/update", adminSettingsController.updateSettings);
 router.post("/settings/toggle-status", adminSettingsController.toggleStatus);
+
+// Announcements
+router.get("/announcements", announcementController.getAnnouncements);
+router.post("/announcements/create", announcementController.createAnnouncement);
 
 export default router;

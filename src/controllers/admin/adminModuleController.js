@@ -13,7 +13,8 @@ const MODULE_PERMISSIONS = {
     'ledger': ['admin'],
     'coupons': ['admin'],
     'settings': ['admin'],
-    'audit': ['admin']
+    'audit': ['admin'],
+    'announcements': ['admin']
 };
 
 export const getModulePartial = async (req, res) => {
