@@ -131,8 +131,7 @@ export const calculateOrder = async (req, res) => {
         const settings = settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 };
 
         const deliveryFee = parseFloat(settings.delivery_fee);
-        // Force Tax to 0 as per user request
-        const taxRate = 0; // parseFloat(settings.tax_rate);
+        const taxRate = parseFloat(settings.tax_rate);
         let discountAmount = 0;
         let couponId = null;
         let couponLabel = null;
@@ -204,6 +203,7 @@ export const calculateOrder = async (req, res) => {
             tax: tax.toFixed(2),
             delivery: deliveryFee.toFixed(2),
             total: finalTotal.toFixed(2),
+            taxRate: taxRate,
             couponApplied: couponId ? true : false,
             couponLabel: couponLabel
         });

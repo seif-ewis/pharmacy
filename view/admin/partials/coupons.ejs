@@ -78,11 +78,23 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Min
-                        Order Amount (EGP)</label>
-                    <input type="number" name="min_order_amount" value="0"
-                        class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Global
+                            Limit</label>
+                        <input type="number" name="usage_limit_global"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20"
+                            placeholder="e.g. 100">
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Per
+                            User Limit</label>
+                        <input type="number" name="usage_limit_per_user"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20"
+                            placeholder="e.g. 1" value="1">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 items-center p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl">
@@ -150,7 +162,7 @@
                             </div>
                             <div class="flex justify-between text-xs font-bold text-gray-500">
                                 <span>Usage Count</span>
-                                <span class="dark:text-white font-black">${c.usage_count} Redemptions</span>
+                                <span class="dark:text-white font-black">${c.usage_count} / ${c.usage_limit_global || '∞'}</span>
                             </div>
                         </div>
 

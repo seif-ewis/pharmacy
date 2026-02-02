@@ -22,7 +22,7 @@ export const getUsers = async (req, res) => {
         query += ` AND role = $${params.length}`;
     }
 
-    query += ` ORDER BY created_at DESC LIMIT 100`;
+    query += ` ORDER BY created_at DESC LIMIT 10`;
 
     try {
         const result = await db.query(query, params);
@@ -38,8 +38,8 @@ export const getDoctors = async (req, res) => {
     try {
         const result = await db.query(`
             SELECT u.id, u.full_name, u.email, u.phone, u.created_at,
-            (SELECT COUNT(*)::INTEGER FROM orders WHERE processed_by = u.id AND status IN ('completed', 'delivered') AND date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE)) as month_orders,
-            (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE processed_by = u.id AND status IN ('completed', 'delivered') AND date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE)) as month_revenue,
+            (SELECT COUNT(*)::INTEGER FROM orders o WHERE (o.processed_by = u.id OR o.shift_id IN (SELECT id FROM shifts WHERE opened_by = u.id)) AND o.status IN ('completed', 'delivered') AND date_trunc('month', o.created_at) = date_trunc('month', CURRENT_DATE)) as month_orders,
+            (SELECT COALESCE(SUM(o.total_price), 0) FROM orders o WHERE (o.processed_by = u.id OR o.shift_id IN (SELECT id FROM shifts WHERE opened_by = u.id)) AND o.status IN ('completed', 'delivered') AND date_trunc('month', o.created_at) = date_trunc('month', CURRENT_DATE)) as month_revenue,
             (SELECT opened_at FROM shifts WHERE opened_by = u.id ORDER BY opened_at DESC LIMIT 1) as last_shift_at,
             (SELECT net_revenue FROM shifts WHERE opened_by = u.id AND status = 'closed' ORDER BY closed_at DESC LIMIT 1) as last_shift_revenue,
             (SELECT status FROM shifts WHERE opened_by = u.id AND status = 'open' LIMIT 1) as current_shift_status

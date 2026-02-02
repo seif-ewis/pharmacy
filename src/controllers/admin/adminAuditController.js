@@ -3,7 +3,7 @@ import db from "../../config/dataBase.js";
 // GET: System Audit Logs (Append-Only)
 export const getAuditLogs = async (req, res) => {
     try {
-        const { search, entity, startDate, endDate, page = 1, limit = 20 } = req.query;
+        const { search, entity, startDate, endDate, page = 1, limit = 10 } = req.query;
         const offset = (page - 1) * limit;
 
         let query = `
@@ -50,6 +50,24 @@ export const getAuditLogs = async (req, res) => {
         });
     } catch (err) {
         console.error("Get Audit Logs Error:", err);
+        res.status(500).json({ success: false });
+    }
+};
+// GET: Single Audit Entry Details
+export const getAuditDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await db.query(`
+            SELECT al.*, u.full_name as actor_name
+            FROM audit_logs al
+            LEFT JOIN users u ON al.user_id = u.id
+            WHERE al.id = $1
+        `, [id]);
+
+        if (result.rows.length === 0) return res.status(404).json({ success: false });
+        res.json({ success: true, log: result.rows[0] });
+    } catch (err) {
+        console.error("Get Audit Details Error:", err);
         res.status(500).json({ success: false });
     }
 };

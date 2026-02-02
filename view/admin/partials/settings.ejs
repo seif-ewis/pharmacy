@@ -100,7 +100,8 @@
                         Timeline</p>
                 </div>
 
-                <div id="status-logs-timeline" class="space-y-6">
+                <div id="status-logs-timeline"
+                    class="space-y-6 max-h-[500px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-slate-700">
                     <!-- Logs via AJAX -->
                     <div class="p-8 text-center text-gray-300 font-bold italic text-xs">Syncing logs...</div>
                 </div>
@@ -156,7 +157,7 @@
                 if (data.logs.length === 0) {
                     logContainer.innerHTML = '<p class="text-center text-gray-400 text-xs italic">No history found.</p>';
                 } else {
-                    logContainer.innerHTML = data.logs.map(l => `
+                    logContainer.innerHTML = data.logs.slice(0, 10).map(l => `
                         <div class="flex gap-4 group">
                             <div class="flex flex-col items-center">
                                 <div class="w-2 h-2 rounded-full ${l.is_open ? 'bg-green-500' : 'bg-red-500'} group-hover:scale-150 transition-all"></div>

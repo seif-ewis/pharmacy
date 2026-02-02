@@ -3,7 +3,7 @@ import db from "../../config/dataBase.js";
 // GET: All prescriptions with status filter
 export const getPrescriptions = async (req, res) => {
     try {
-        const { status = 'pending', page = 1, limit = 15 } = req.query;
+        const { status = 'pending', page = 1, limit = 10 } = req.query;
         const offset = (page - 1) * limit;
 
         const result = await db.query(`
@@ -45,7 +45,12 @@ export const getPrescriptionDetails = async (req, res) => {
         if (prescRes.rows.length === 0) return res.status(404).json({ success: false });
 
         const aiRes = await db.query("SELECT * FROM prescription_ai_results WHERE prescription_id = $1", [id]);
-        const finalRes = await db.query("SELECT * FROM prescription_final WHERE prescription_id = $1", [id]);
+        const finalRes = await db.query(`
+            SELECT f.*, u.full_name as approved_by_name
+            FROM prescription_final f
+            JOIN users u ON f.approved_by = u.id
+            WHERE f.prescription_id = $1
+        `, [id]);
 
         res.json({
             success: true,

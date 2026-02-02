@@ -38,13 +38,29 @@
     </div>
 
     <!-- TABS -->
-    <div class="flex gap-4 mb-6 ml-4">
-        <button onclick="switchInventoryTab('stock')" id="tab-btn-stock"
-            class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-primary text-primary">Live
-            Stock</button>
-        <button onclick="switchInventoryTab('logs')" id="tab-btn-logs"
-            class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all">Change
-            Logs</button>
+    <div class="flex flex-wrap items-center justify-between mb-6">
+        <div class="flex gap-4 ml-4">
+            <button onclick="switchInventoryTab('stock')" id="tab-btn-stock"
+                class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-primary text-primary">Live
+                Stock</button>
+            <button onclick="switchInventoryTab('logs')" id="tab-btn-logs"
+                class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all">Change
+                Logs</button>
+        </div>
+        <!-- LOGS FILTER (Visible only in logs tab) -->
+        <div id="logs-filter-container" class="hidden flex gap-4 pr-4">
+            <select id="inventory-type-filter" onchange="loadInventoryLogs()"
+                class="px-4 py-2 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 dark:text-white">
+                <option value="all">All Types</option>
+                <option value="sale">Sales Only</option>
+                <option value="restock">Restocks</option>
+                <option value="correction">Corrections</option>
+            </select>
+            <select id="inventory-performer-filter" onchange="loadInventoryLogs()"
+                class="px-4 py-2 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 dark:text-white">
+                <option value="all">All Doctors</option>
+            </select>
+        </div>
     </div>
 
     <!-- STOCK TABLE -->
@@ -93,6 +109,7 @@
 
     function initializeInventory() {
         loadInventory();
+        populatePerformerFilter();
         document.getElementById('inventory-search').addEventListener('input', () => {
             clearTimeout(inventoryDebounce);
             inventoryDebounce = setTimeout(loadInventory, 500);
@@ -141,21 +158,25 @@
 
     async function loadInventoryLogs() {
         const tbody = document.getElementById('inventory-logs-tbody');
+        const performer = document.getElementById('inventory-performer-filter').value;
+        const type = document.getElementById('inventory-type-filter').value;
         try {
-            const res = await fetch('/admin/inventory/logs');
+            const res = await fetch(`/admin/history/inventory?performedBy=${performer}&type=${type}`);
             const data = await res.json();
             if (data.success) {
-                tbody.innerHTML = data.logs.map(log => `
-                    <tr class="hover:bg-gray-50/50 transition-all text-sm">
+                tbody.innerHTML = data.adjustments.map(log => `
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
                         <td class="px-6 py-5 font-black dark:text-white">${log.medicine_name}</td>
                         <td class="px-6 py-5">
                             <span class="font-black ${log.quantity_change > 0 ? 'text-green-500' : 'text-red-500'}">
                                 ${log.quantity_change > 0 ? '+' : ''}${log.quantity_change}
                             </span>
                         </td>
-                        <td class="px-6 py-5 italic text-gray-500 text-xs">${log.reason}</td>
-                        <td class="px-6 py-5 font-bold text-xs">${log.actor_name || 'System'}</td>
-                        <td class="px-6 py-5 text-gray-400 text-xs">${new Date(log.created_at).toLocaleString()}</td>
+                        <td class="px-6 py-5 italic text-gray-500 text-xs font-medium">"${log.reason}"</td>
+                        <td class="px-6 py-5 font-black dark:text-gray-300">${log.performer_name}</td>
+                        <td class="px-6 py-5 text-gray-400 text-[10px] font-bold uppercase">
+                            ${new Date(log.created_at).toLocaleString()}
+                        </td>
                     </tr>
                 `).join('');
             }
@@ -173,6 +194,7 @@
         if (tab === 'stock') {
             stockView.classList.remove('hidden');
             logsView.classList.add('hidden');
+            document.getElementById('logs-filter-container').classList.add('hidden');
             stockBtn.classList.replace('border-transparent', 'border-primary');
             stockBtn.classList.replace('text-gray-400', 'text-primary');
             logsBtn.classList.replace('border-primary', 'border-transparent');
@@ -181,6 +203,7 @@
         } else {
             stockView.classList.add('hidden');
             logsView.classList.remove('hidden');
+            document.getElementById('logs-filter-container').classList.remove('hidden');
             logsBtn.classList.replace('border-transparent', 'border-primary');
             logsBtn.classList.replace('text-gray-400', 'text-primary');
             stockBtn.classList.replace('border-primary', 'border-transparent');
@@ -237,6 +260,20 @@
             case 'LOW': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse';
             case 'OUT': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
             default: return 'bg-gray-100 text-gray-500';
+        }
+    }
+
+    async function populatePerformerFilter() {
+        const filter = document.getElementById('inventory-performer-filter');
+        try {
+            const res = await fetch('/admin/doctors');
+            const data = await res.json();
+            if (data.success) {
+                filter.innerHTML = '<option value="all">All Doctors</option>' +
+                    data.doctors.map(d => `<option value="${d.id}">${d.full_name}</option>`).join('');
+            }
+        } catch (err) {
+            console.error("Failed to load doctor filter");
         }
     }
 

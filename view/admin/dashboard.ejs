@@ -65,7 +65,7 @@
                     class="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black shadow-lg border-2 border-white dark:border-slate-700">
                     <%= user.full_name.charAt(0) %>
                 </div>
-                <a href="/logout"
+                <a href="/auth/logout"
                     class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
@@ -147,6 +147,12 @@
                             data-module="analytics">
                             <i class="fas fa-chart-line w-5 text-center group-hover:scale-110 transition-transform"></i>
                             Analytics
+                        </button>
+                        <button onclick="showModule('ledger')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="ledger">
+                            <i class="fas fa-receipt w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Performance Ledger
                         </button>
                         <button onclick="showModule('coupons')"
                             class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"

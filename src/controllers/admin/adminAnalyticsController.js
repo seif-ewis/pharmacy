@@ -12,24 +12,38 @@ export const getGlobalStats = async (req, res) => {
             return res.json({ success: true, stats: kpiCache, cached: true });
         }
 
-        // Total Net Revenue (Completed Orders - Approved Returns)
-        const revRes = await db.query(`
+        // Stats for Today (Revenue and Orders)
+        const dailyRes = await db.query(`
             SELECT 
-                (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed') as gross_rev,
-                (SELECT COALESCE(SUM(refund_amount), 0) FROM returns WHERE status = 'approved') as total_refunds
+                (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed' AND created_at >= CURRENT_DATE) as today_gross,
+                (SELECT COALESCE(SUM(refund_amount), 0) FROM returns WHERE status = 'approved' AND created_at >= CURRENT_DATE) as today_refunds,
+                (SELECT COUNT(*) FROM orders WHERE status = 'completed' AND created_at >= CURRENT_DATE) as today_orders
         `);
-        const { gross_rev, total_refunds } = revRes.rows[0];
-        const net_rev = parseFloat(gross_rev) - parseFloat(total_refunds);
+        const { today_gross, today_refunds, today_orders } = dailyRes.rows[0];
+        const today_net = parseFloat(today_gross) - parseFloat(today_refunds);
 
-        const total_orders = (await db.query("SELECT COUNT(*) FROM orders")).rows[0].count;
         const total_doctors = (await db.query("SELECT COUNT(*) FROM users WHERE role = 'doctor'")).rows[0].count;
         const total_coupons = (await db.query("SELECT COUNT(*) FROM promotions WHERE is_active = true")).rows[0].count;
 
+        // Monthly Breakdown
+        const monthlyHistory = await db.query(`
+            SELECT 
+                to_char(created_at, 'Month YYYY') as month_label,
+                COUNT(*) as total_orders,
+                SUM(total_price) as total_revenue
+            FROM orders
+            WHERE status = 'completed'
+            GROUP BY date_trunc('month', created_at), month_label
+            ORDER BY date_trunc('month', created_at) DESC
+            LIMIT 6
+        `);
+
         kpiCache = {
-            net_revenue: net_rev.toFixed(2),
-            total_orders,
+            today_revenue: today_net.toFixed(2),
+            today_orders: today_orders,
             total_doctors,
-            total_coupons
+            total_coupons,
+            monthly_history: monthlyHistory.rows
         };
         lastCacheUpdate = now;
 
@@ -54,9 +68,25 @@ export const getDashboardSummary = async (req, res) => {
                     'id', s.id,
                     'doctor_name', u.full_name,
                     'opened_at', s.opened_at,
-                    'net_revenue', s.net_revenue,
-                    'total_orders', s.total_orders,
-                    'total_returns', s.total_returns
+                    'net_revenue', (
+                        SELECT COALESCE(SUM(o.total_price), 0) 
+                        FROM orders o 
+                        WHERE o.shift_id = s.id AND o.status = 'completed'
+                    ) - (
+                        SELECT COALESCE(SUM(r.refund_amount), 0) 
+                        FROM returns r 
+                        WHERE r.shift_id = s.id AND r.status = 'approved'
+                    ),
+                    'total_orders', (
+                        SELECT COUNT(*) 
+                        FROM orders o 
+                        WHERE o.shift_id = s.id AND o.status = 'completed'
+                    ),
+                    'total_returns', (
+                        SELECT COUNT(*) 
+                        FROM returns r 
+                        WHERE r.shift_id = s.id AND r.status = 'approved'
+                    )
                 ) FROM shifts s
                   JOIN users u ON s.opened_by = u.id
                   WHERE s.status = 'open'
@@ -92,21 +122,40 @@ export const getDetailedAnalytics = async (req, res) => {
             GROUP BY 1 ORDER BY 1 ASC
         `, [startDate, endDate]);
 
-        // 2. Orders vs Returns
+        // 2. Success vs Variance (Completed vs Cancelled vs Returns)
         const orderMetric = await db.query(`
-            SELECT status, COUNT(*) as count
-            FROM orders
-            WHERE created_at BETWEEN $1 AND $2
+            SELECT 
+                o.status, 
+                COUNT(*) as count,
+                COALESCE(SUM(o.total_price), 0) as value
+            FROM orders o
+            WHERE o.created_at BETWEEN $1 AND $2
+            GROUP BY 1
+            UNION ALL
+            SELECT 
+                'returned' as status,
+                COUNT(*) as count,
+                COALESCE(SUM(r.refund_amount), 0) as value
+            FROM returns r
+            WHERE r.created_at BETWEEN $1 AND $2
             GROUP BY 1
         `, [startDate, endDate]);
 
-        // 3. Doctor Performance
+        // 3. Medical Performance Matrix (Doctor Efficiency)
         const doctorPerformance = await db.query(`
-            SELECT u.full_name, COUNT(o.id) as orders, SUM(o.total_price) as revenue
+            SELECT 
+                u.full_name, 
+                COUNT(o.id) as total_orders, 
+                COALESCE(SUM(o.total_price), 0) as total_revenue,
+                COALESCE(AVG(o.total_price), 0) as avg_order_value,
+                (SELECT COUNT(*) FROM prescription_final pf WHERE pf.approved_by = u.id AND pf.approved_at BETWEEN $1 AND $2) as prescriptions_processed
             FROM users u
-            JOIN orders o ON o.processed_by = u.id
-            WHERE u.role = 'doctor' AND o.created_at BETWEEN $1 AND $2
-            GROUP BY 1 ORDER BY revenue DESC
+            LEFT JOIN orders o ON (o.processed_by = u.id OR o.shift_id IN (SELECT id FROM shifts WHERE opened_by = u.id)) 
+                 AND o.status IN ('completed', 'delivered') 
+                 AND o.created_at BETWEEN $1 AND $2
+            WHERE u.role = 'doctor'
+            GROUP BY u.id, u.full_name 
+            ORDER BY total_revenue DESC
         `, [startDate, endDate]);
 
         res.json({
@@ -118,5 +167,54 @@ export const getDetailedAnalytics = async (req, res) => {
     } catch (err) {
         console.error("Detailed analytics error:", err);
         res.status(500).json({ success: false });
+    }
+};
+// GET: Performance Ledger data (Aggregated by grain)
+export const getPerformanceLedger = async (req, res) => {
+    try {
+        const grain = req.query.grain || 'day'; // Default to daily
+        const dateFormat = grain === 'month' ? 'Month YYYY' : 'DD Mon YYYY';
+        const dateTrunc = grain === 'month' ? 'month' : 'day';
+
+        const history = await db.query(`
+            WITH OrderStats AS (
+                SELECT 
+                    date_trunc($2, created_at) as grn,
+                    COUNT(*) as total_orders,
+                    SUM(total_price) as gross_revenue
+                FROM orders
+                WHERE status IN ('completed', 'delivered')
+                GROUP BY 1
+            ),
+            ReturnStats AS (
+                SELECT 
+                    date_trunc($2, created_at) as grn,
+                    COUNT(*) as total_returns,
+                    SUM(refund_amount) as total_refunds
+                FROM returns
+                WHERE status = 'approved'
+                GROUP BY 1
+            )
+            SELECT 
+                to_char(COALESCE(o.grn, r.grn), $1) as label,
+                COALESCE(o.total_orders, 0)::int as total_orders,
+                COALESCE(o.gross_revenue, 0) as gross_revenue,
+                COALESCE(r.total_returns, 0)::int as total_returns,
+                COALESCE(r.total_refunds, 0) as total_refunds,
+                (COALESCE(o.gross_revenue, 0) - COALESCE(r.total_refunds, 0)) as net_revenue
+            FROM OrderStats o
+            FULL OUTER JOIN ReturnStats r ON o.grn = r.grn
+            ORDER BY COALESCE(o.grn, r.grn) DESC
+            LIMIT 30
+        `, [dateFormat, dateTrunc]);
+
+        res.json({
+            success: true,
+            history: history.rows,
+            grain
+        });
+    } catch (err) {
+        console.error("Get Performance Ledger Error:", err);
+        res.status(500).json({ success: false, message: "Failed to fetch ledger data" });
     }
 };

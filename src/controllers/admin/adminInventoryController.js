@@ -3,7 +3,7 @@ import db from "../../config/dataBase.js";
 // GET: Inventory Items with Status
 export const getInventory = async (req, res) => {
     try {
-        const { search, status, page = 1, limit = 20 } = req.query;
+        const { search, status, page = 1, limit = 10 } = req.query;
         const offset = (page - 1) * limit;
 
         let query = `
@@ -52,7 +52,7 @@ export const getInventory = async (req, res) => {
 // GET: Inventory Logs (Append-Only)
 export const getInventoryLogs = async (req, res) => {
     try {
-        const { page = 1, limit = 20 } = req.query;
+        const { page = 1, limit = 10 } = req.query;
         const offset = (page - 1) * limit;
 
         const result = await db.query(`

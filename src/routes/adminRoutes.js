@@ -21,6 +21,7 @@ router.get("/module/:name", adminModuleController.getModulePartial);
 router.get("/stats", adminAnalyticsController.getGlobalStats);
 router.get("/summary", adminAnalyticsController.getDashboardSummary);
 router.get("/analytics/detailed", adminAnalyticsController.getDetailedAnalytics);
+router.get("/performance-ledger", adminAnalyticsController.getPerformanceLedger);
 
 // Users (Patients) Management
 router.get("/users/all", adminUsersController.getUsers);
@@ -44,7 +45,10 @@ router.get("/history/shifts", adminHistoryController.getShiftsHistory);
 router.get("/history/shifts/:id", adminHistoryController.getShiftDetails);
 router.get("/history/returns", adminHistoryController.getReturnsHistory);
 router.get("/history/inventory", adminHistoryController.getInventoryHistory);
+router.get("/history/doctor-shifts/:id", adminHistoryController.getDoctorShifts);
+router.get("/history/user-orders/:id", adminHistoryController.getUserOrders);
 router.get("/audit/logs", adminAuditController.getAuditLogs);
+router.get("/audit/details/:id", adminAuditController.getAuditDetails);
 
 // Promotions & Coupons
 router.get("/coupons", adminCouponsController.getCoupons);

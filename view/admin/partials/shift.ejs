@@ -30,6 +30,8 @@
                     <tr>
                         <th class="px-6 py-5">Shift ID</th>
                         <th class="px-6 py-5">Doctor / Pharmacist</th>
+                        <th class="px-6 py-5">Shift Start</th>
+                        <th class="px-6 py-5">Shift End</th>
                         <th class="px-6 py-5">Duration</th>
                         <th class="px-6 py-5 text-center">Completed Orders</th>
                         <th class="px-6 py-5">Net Revenue</th>
@@ -42,167 +44,204 @@
                     </tr>
                 </tbody>
             </table>
+            <!-- Pagination Controls -->
+            <div id="shift-pagination"
+                class="px-6 py-4 bg-gray-50/30 dark:bg-slate-700/10 border-t border-gray-50 dark:border-slate-700 flex justify-between items-center">
+                <span id="shift-pagination-info"
+                    class="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Page 1 of ...</span>
+                <div class="flex gap-2">
+                    <button id="shift-prev-btn" onclick="changeShiftPage(-1)"
+                        class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="shift-next-btn" onclick="changeShiftPage(1)"
+                        class="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    function initializeShift() {
-        loadShiftInfo();
-    }
+    {
+        function initializeShift() {
+            loadShiftInfo();
+        }
 
-    async function loadShiftInfo() {
-        const currentContainer = document.getElementById('current-shift-container');
-        const historyTbody = document.getElementById('shift-history-tbody');
+        async function loadShiftInfo(page = 1) {
+            const currentContainer = document.getElementById('current-shift-container');
+            const historyTbody = document.getElementById('shift-history-tbody');
 
-        try {
-            const summaryRes = await fetch('/admin/summary');
-            const summary = await summaryRes.json();
+            try {
+                const summaryRes = await fetch('/admin/summary');
+                const summary = await summaryRes.json();
 
-            if (summary.success && summary.active_shift) {
-                const s = summary.active_shift;
-                currentContainer.innerHTML = `
-                    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden">
-                        <div class="bg-primary p-1 flex justify-center">
-                            <span class="text-[9px] font-black text-white/50 uppercase tracking-[0.5em]">Active Status</span>
-                        </div>
-                        <div class="p-8 grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
-                            <div class="lg:col-span-1 border-r border-gray-100 dark:border-slate-700 pr-8">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Doctor In Charge</p>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl shadow-inner">
-                                        <i class="fas fa-user-md"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-black text-xl dark:text-white">${s.doctor_name}</h3>
-                                        <p class="text-xs font-bold text-gray-400">ID: ${s.id.substring(0, 8)}</p>
+                if (summary.success && summary.active_shift) {
+                    const s = summary.active_shift;
+                    currentContainer.innerHTML = `
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden">
+                            <div class="bg-primary p-1 flex justify-center">
+                                <span class="text-[9px] font-black text-white/50 uppercase tracking-[0.5em]">Active Status</span>
+                            </div>
+                            <div class="p-8 grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
+                                <div class="lg:col-span-1 border-r border-gray-100 dark:border-slate-700 pr-8">
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Doctor In Charge</p>
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl shadow-inner">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-black text-xl dark:text-white">${s.doctor_name}</h3>
+                                            <p class="text-xs font-bold text-gray-400">ID: ${s.id.substring(0, 8)}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Shift Start</span>
-                                <span class="text-lg font-black dark:text-white">${new Date(s.opened_at).toLocaleTimeString()}</span>
-                                <span class="text-[10px] text-gray-400 font-bold uppercase">${new Date(s.opened_at).toLocaleDateString()}</span>
-                            </div>
+                                
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Shift Start</span>
+                                    <span class="text-lg font-black dark:text-white">${new Date(s.opened_at).toLocaleTimeString()}</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase">${new Date(s.opened_at).toLocaleDateString()}</span>
+                                </div>
 
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Activity</span>
-                                <span class="text-lg font-black dark:text-white">${s.total_orders || 0} Orders</span>
-                                <span class="text-[10px] text-red-500 font-bold uppercase">${s.total_returns || 0} Returns</span>
-                            </div>
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Activity</span>
+                                    <span class="text-lg font-black dark:text-white">${s.total_orders || 0} Orders</span>
+                                    <span class="text-[10px] text-red-500 font-bold uppercase">${s.total_returns || 0} Returns</span>
+                                </div>
 
-                            <div class="bg-slate-900 dark:bg-black p-6 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-col items-end justify-center">
-                                <span class="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Net Revenue</span>
-                                <span class="text-2xl font-black text-white">+${Number(s.net_revenue || 0).toLocaleString()} EGP</span>
+                                <div class="bg-slate-900 dark:bg-black p-6 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-col items-end justify-center">
+                                    <span class="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Net Revenue</span>
+                                    <span class="text-2xl font-black text-white">+${Number(s.net_revenue || 0).toLocaleString()} EGP</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            } else {
-                currentContainer.innerHTML = `
-                    <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-12 rounded-3xl text-center">
-                        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl text-amber-600">
-                            <i class="fas fa-ghost"></i>
+                    `;
+                } else {
+                    currentContainer.innerHTML = `
+                        <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-12 rounded-3xl text-center">
+                            <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl text-amber-600">
+                                <i class="fas fa-ghost"></i>
+                            </div>
+                            <h2 class="text-xl font-black text-amber-900 dark:text-amber-400 mb-2 uppercase tracking-tighter">No Active Shift</h2>
+                            <p class="text-xs text-amber-700 dark:text-amber-500 max-w-sm mx-auto font-bold italic">The store status is currently disconnected from any pharmacist/doctor session. Please open a shift to track revenue.</p>
                         </div>
-                        <h2 class="text-xl font-black text-amber-900 dark:text-amber-400 mb-2 uppercase tracking-tighter">No Active Shift</h2>
-                        <p class="text-xs text-amber-700 dark:text-amber-500 max-w-sm mx-auto font-bold italic">The store status is currently disconnected from any pharmacist/doctor session. Please open a shift to track revenue.</p>
-                    </div>
-                `;
-            }
-
-            const historyRes = await fetch('/admin/history/shifts?limit=20');
-            const history = await historyRes.json();
-
-            if (history.success) {
-                if (history.shifts.length === 0) {
-                    historyTbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 font-bold">No historical shifts found.</td></tr>';
-                    return;
+                    `;
                 }
 
-                historyTbody.innerHTML = history.shifts.map(sh => `
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
-                        <td class="px-6 py-5 font-black text-primary">#${sh.id.substring(0, 8)}</td>
-                        <td class="px-6 py-5">
-                            <span class="font-bold dark:text-white block">${sh.opened_by_name}</span>
-                            <span class="text-[10px] text-gray-400 uppercase tracking-tighter">Closed by: ${sh.closed_by_name || '--'}</span>
-                        </td>
-                        <td class="px-6 py-5">
-                            <span class="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-[10px] font-black text-gray-500 uppercase">${calculateDuration(sh.opened_at, sh.closed_at)}</span>
-                            <p class="text-[10px] text-gray-400 mt-1">${new Date(sh.opened_at).toLocaleDateString()}</p>
-                        </td>
-                        <td class="px-6 py-5 font-black dark:text-gray-300 text-center">${sh.total_orders || 0}</td>
-                        <td class="px-6 py-5 font-black dark:text-white">${Number(sh.net_revenue || 0).toLocaleString()} EGP</td>
-                        <td class="px-6 py-5 text-right">
-                             <button onclick="viewShiftDetails('${sh.id}')" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                const historyRes = await fetch(`/admin/history/shifts?page=${page}&limit=5`);
+                const history = await historyRes.json();
+
+                if (history.success) {
+                    if (history.shifts.length === 0) {
+                        historyTbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 font-bold">No historical shifts found.</td></tr>';
+                        return;
+                    }
+
+                    historyTbody.innerHTML = history.shifts.map(sh => `
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
+                            <td class="px-6 py-5 font-black text-primary">#${sh.id.substring(0, 8)}</td>
+                            <td class="px-6 py-5">
+                                <span class="font-bold dark:text-white block">${sh.opened_by_name}</span>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-tighter">Closed by: ${sh.closed_by_name || '--'}</span>
+                            </td>
+                            <td class="px-6 py-5">
+                                <span class="font-bold dark:text-gray-300 block">${new Date(sh.opened_at).toLocaleTimeString()}</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-black">${new Date(sh.opened_at).toLocaleDateString()}</span>
+                            </td>
+                            <td class="px-6 py-5">
+                                <span class="font-bold dark:text-gray-300 block">${sh.closed_at ? new Date(sh.closed_at).toLocaleTimeString() : 'ACTIVE'}</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-black">${sh.closed_at ? new Date(sh.closed_at).toLocaleDateString() : '--'}</span>
+                            </td>
+                            <td class="px-6 py-5">
+                                <span class="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-[10px] font-black text-gray-500 uppercase">${calculateDuration(sh.opened_at, sh.closed_at)}</span>
+                            </td>
+                            <td class="px-6 py-5 font-black dark:text-gray-300 text-center">${sh.total_orders || 0}</td>
+                            <td class="px-6 py-5 font-black dark:text-white">${Number(sh.net_revenue || 0).toLocaleString()} EGP</td>
+                            <td class="px-6 py-5 text-right">
+                                 <button onclick="viewShiftDetails('${sh.id}')" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                                     <i class="fas fa-eye"></i>
+                                 </button>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    // Update Pagination Controls
+                    document.getElementById('shift-pagination-info').innerText = `Page ${history.currentPage} of ${history.totalPages}`;
+                    document.getElementById('shift-prev-btn').disabled = history.currentPage === 1;
+                    document.getElementById('shift-next-btn').disabled = history.currentPage === history.totalPages;
+                }
+
+            } catch (err) {
+                console.error("Shift Load Error", err);
             }
-
-        } catch (err) {
-            console.error("Shift Load Error", err);
         }
-    }
 
-    function calculateDuration(start, end) {
-        if (!end) return 'Active';
-        const diff = new Date(end) - new Date(start);
-        const hours = Math.floor(diff / 3600000);
-        const mins = Math.floor((diff % 3600000) / 60000);
-        return `${hours}h ${mins}m`;
-    }
+        let currentShiftPage = 1;
 
-    async function viewShiftDetails(id) {
-        try {
-            const res = await fetch(`/admin/history/shifts/${id}`);
-            const data = await res.json();
-            if (data.success) {
-                const s = data.shift;
-                const content = `
-                    <div class="space-y-8">
-                        <div class="p-6 bg-slate-900 rounded-2xl text-white">
-                            <p class="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Historical Summary</p>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-xs font-bold text-gray-400 uppercase">Gross Revenue</span>
-                                    <span class="font-black">${Number(s.gross_revenue).toLocaleString()} EGP</span>
+        async function changeShiftPage(delta) {
+            currentShiftPage += delta;
+            await loadShiftInfo(currentShiftPage);
+        }
+
+        function calculateDuration(start, end) {
+            if (!end) return 'Active';
+            const diff = new Date(end) - new Date(start);
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `${hours}h ${mins}m`;
+        }
+
+        async function viewShiftDetails(id) {
+            try {
+                const res = await fetch(`/admin/history/shifts/${id}`);
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.shift;
+                    const content = `
+                        <div class="space-y-8">
+                            <div class="p-6 bg-slate-900 rounded-2xl text-white">
+                                <p class="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Historical Summary</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Gross Revenue</span>
+                                        <span class="font-black">${Number(s.gross_revenue).toLocaleString()} EGP</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Total Returns</span>
+                                        <span class="font-black text-red-400">-${Number((s.gross_revenue - s.net_revenue) || 0).toLocaleString()} EGP</span>
+                                    </div>
+                                    <hr class="border-white/10">
+                                    <div class="flex justify-between pt-2">
+                                        <span class="text-xs font-black uppercase">Net Total</span>
+                                        <span class="text-xl font-black text-green-400">${Number(s.net_revenue).toLocaleString()} EGP</span>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-xs font-bold text-gray-400 uppercase">Total Returns</span>
-                                    <span class="font-black text-red-400">-${Number((s.gross_revenue - s.net_revenue) || 0).toLocaleString()} EGP</span>
-                                </div>
-                                <hr class="border-white/10">
-                                <div class="flex justify-between pt-2">
-                                    <span class="text-xs font-black uppercase">Net Total</span>
-                                    <span class="text-xl font-black text-green-400">${Number(s.net_revenue).toLocaleString()} EGP</span>
+                            </div>
+
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Breakdown</p>
+                                <div class="space-y-2">
+                                    <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                                        <span class="text-sm font-bold dark:text-white">Orders Processed</span>
+                                        <span class="font-black dark:text-white">${s.total_orders || 0}</span>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                                        <span class="text-sm font-bold dark:text-white">Prescriptions Verified</span>
+                                        <span class="font-black dark:text-white">${s.total_prescriptions || 0}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Breakdown</p>
-                            <div class="space-y-2">
-                                <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                                    <span class="text-sm font-bold dark:text-white">Orders Processed</span>
-                                    <span class="font-black dark:text-white">${s.total_orders || 0}</span>
-                                </div>
-                                <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                                    <span class="text-sm font-bold dark:text-white">Prescriptions Verified</span>
-                                    <span class="font-black dark:text-white">${s.total_prescriptions || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                openDrawer(`Shift Log #${id.substring(0, 8)}`, content);
+                    `;
+                    openDrawer(`Shift Log #${id.substring(0, 8)}`, content);
+                }
+            } catch (err) {
+                showToast('error', 'Failed to fetch shift details');
             }
-        } catch (err) {
-            showToast('error', 'Failed to fetch shift details');
         }
-    }
 
-    initializeShift();
+        initializeShift();
+    }
 </script>

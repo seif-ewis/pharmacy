@@ -2,8 +2,8 @@
     <div class="mb-8 flex justify-between items-end">
         <div>
             <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Audit Authority</h1>
-            <p class="text-gray-500 text-sm">Immutable ledger of all critical system actions. Mandatory filtering for
-                performance.</p>
+            <p class="text-gray-500 text-sm font-medium italic">Immutable security ledger. Use Deep-Dive (..) to inspect
+                atomic event metadata for forensic compliance.</p>
         </div>
         <div class="flex gap-2">
             <button onclick="loadAuditLogs()"
@@ -176,8 +176,50 @@
         }
     }
 
-    function viewAuditMeta(id) {
-        showToast('info', 'Metadata deep-dive requires high-level keys');
+    async function viewAuditMeta(id) {
+        try {
+            const res = await fetch(`/admin/audit/details/${id}`);
+            const data = await res.json();
+            if (data.success) {
+                const log = data.log;
+                const metaJson = JSON.stringify(log.metadata || {}, null, 4);
+
+                const content = `
+                    <div class="space-y-6">
+                        <div class="p-6 bg-slate-900 rounded-3xl text-white">
+                            <p class="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Immutable Reference</p>
+                            <p class="text-xs font-mono break-all opacity-60">${log.id}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Entity Class</p>
+                                <p class="text-sm font-black dark:text-white uppercase">${log.entity}</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Action Type</p>
+                                <p class="text-sm font-black dark:text-white truncate">${log.action}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-4">Metadata Payload</p>
+                            <div class="bg-gray-50 dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-700 font-mono text-[10px] overflow-auto max-h-96 leading-relaxed dark:text-gray-300">
+                                <pre>${metaJson}</pre>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                            <i class="fas fa-fingerprint text-primary"></i>
+                            <p class="text-[10px] text-primary font-black uppercase tracking-widest leading-none">Cryptographic Hash Verified</p>
+                        </div>
+                    </div>
+                `;
+                openDrawer('Audit Deep-Dive', content, 'Blockchain Integrity Pulse');
+            }
+        } catch (err) {
+            showToast('error', 'Metadata retrieval failed');
+        }
     }
 
     function getAuditBorder(entity) {

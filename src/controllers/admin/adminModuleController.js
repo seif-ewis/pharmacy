@@ -10,6 +10,7 @@ const MODULE_PERMISSIONS = {
     'prescriptions': ['admin', 'doctor'],
     'users': ['admin'],
     'analytics': ['admin'],
+    'ledger': ['admin'],
     'coupons': ['admin'],
     'settings': ['admin'],
     'audit': ['admin']

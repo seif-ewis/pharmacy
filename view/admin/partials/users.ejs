@@ -112,7 +112,38 @@
     }
 
     async function viewUserDetails(id) {
-        showToast('info', 'Deep user profile coming in settings update');
+        try {
+            const res = await fetch(`/admin/history/user-orders/${id}`);
+            const data = await res.json();
+
+            if (data.success) {
+                const historyHtml = `
+                    <div class="space-y-4">
+                        ${data.orders.length === 0 ? '<p class="text-center py-8 text-gray-400 italic font-bold">No order history available.</p>' :
+                        data.orders.map(o => `
+                            <div class="p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-primary">#${o.order_uid}</span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">${new Date(o.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <p class="text-sm font-black dark:text-white">${Number(o.total_price).toLocaleString()} EGP</p>
+                                        <p class="text-[9px] text-gray-400 font-bold uppercase">Doctor: ${o.doctor_name || 'Pharmacy Staff'}</p>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${o.refund_amount > 0 ? 'bg-amber-100 text-amber-700' : (o.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}">
+                                        ${o.refund_amount > 0 ? 'Partial Return' : o.status}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                openDrawer(`Patient Order History`, historyHtml, 'Clinical Data Integrity');
+            }
+        } catch (err) {
+            showToast('error', 'History retrieval failed');
+        }
     }
 
     initializeUsers();
