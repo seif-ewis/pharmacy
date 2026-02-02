@@ -209,10 +209,17 @@
             // 2. Load Shift & Alert Context
             const summaryRes = await fetch('/admin/summary');
             const data = await summaryRes.json();
+            if (!data.success) return;
 
-            // Pending Stats (Replace with real API if wanted later)
-            document.getElementById('stat-pending-presc').innerText = '--';
-            document.getElementById('stat-low-stock').innerText = '--';
+            // Pending Stats
+            document.getElementById('stat-pending-presc').innerText = data.pending_prescriptions || 0;
+            document.getElementById('stat-low-stock').innerText = data.low_stock_count || 0;
+            if (data.low_stock_count > 0) {
+                document.getElementById('stat-low-stock').classList.add('text-amber-500');
+                document.getElementById('stat-low-stock').classList.remove('text-green-500'); // Ensure green is removed if it was there
+            } else {
+                document.getElementById('stat-low-stock').classList.replace('text-amber-500', 'text-green-500');
+            }
 
             const activePanel = document.getElementById('shift-content-active');
             const emptyPanel = document.getElementById('shift-content-empty');

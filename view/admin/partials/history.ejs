@@ -54,6 +54,11 @@
     let currentHistoryType = 'orders';
     let historyDebounceTimer;
 
+    function initializeHistory() {
+        console.log("History Initialized");
+        loadHistory('orders');
+    }
+
     function debounceHistoryLoad() {
         clearTimeout(historyDebounceTimer);
         historyDebounceTimer = setTimeout(() => loadHistory(currentHistoryType), 300);

@@ -4,7 +4,11 @@ import db from "../../config/dataBase.js";
 export const getSettings = async (req, res) => {
     try {
         const settingsRes = await db.query(
-            "SELECT tax_rate, delivery_fee, is_open FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1"
+            "SELECT tax_rate, delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1"
+        );
+
+        const statusRes = await db.query(
+            "SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1"
         );
 
         const logsRes = await db.query(`
@@ -17,7 +21,10 @@ export const getSettings = async (req, res) => {
 
         res.json({
             success: true,
-            settings: settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00, is_open: true },
+            settings: {
+                ...(settingsRes.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 }),
+                is_open: statusRes.rows[0] ? statusRes.rows[0].is_open : true
+            },
             logs: logsRes.rows
         });
     } catch (err) {
@@ -37,12 +44,12 @@ export const updateSettings = async (req, res) => {
         }
 
         // Get current status to maintain it
-        const current = await db.query("SELECT is_open FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1");
+        const current = await db.query("SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1");
         const is_open = current.rows.length > 0 ? current.rows[0].is_open : true;
 
         await db.query(
-            "INSERT INTO pharmacy_settings (id, tax_rate, delivery_fee, is_open, modified_by, created_at) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())",
-            [tax_rate, delivery_fee, is_open, adminId]
+            "INSERT INTO pharmacy_settings (id, tax_rate, delivery_fee, modified_by, created_at) VALUES (gen_random_uuid(), $1, $2, $3, NOW())",
+            [tax_rate, delivery_fee, adminId]
         );
 
         res.json({ success: true, message: "Settings updated correctly" });
@@ -62,10 +69,10 @@ export const toggleStatus = async (req, res) => {
         const latest = await db.query("SELECT tax_rate, delivery_fee FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1");
         const { tax_rate, delivery_fee } = latest.rows[0] || { tax_rate: 0.10, delivery_fee: 5.00 };
 
-        // 2. Insert new settings row with toggled status
+        // 2. Insert new settings row (maintain legacy structure without is_open)
         await db.query(
-            "INSERT INTO pharmacy_settings (id, tax_rate, delivery_fee, is_open, modified_by, created_at) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())",
-            [tax_rate, delivery_fee, is_open, adminId]
+            "INSERT INTO pharmacy_settings (id, tax_rate, delivery_fee, modified_by, created_at) VALUES (gen_random_uuid(), $1, $2, $3, NOW())",
+            [tax_rate, delivery_fee, adminId]
         );
 
         // 3. Log the status change

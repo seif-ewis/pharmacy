@@ -19,13 +19,17 @@ export const getModulePartial = async (req, res) => {
     try {
         const { name } = req.params;
         const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
 
         // 1. Whitelist & RBAC Check
         if (!MODULE_PERMISSIONS[name]) {
             return res.status(404).send('<div class="p-8 text-red-500 font-bold">Module not found in whitelist.</div>');
         }
 
-        if (!MODULE_PERMISSIONS[name].includes(userRole)) {
+        const allowedRoles = MODULE_PERMISSIONS[name];
+        const hasPermission = allowedRoles.includes(userRole) || userRoles.some(r => allowedRoles.includes(r));
+
+        if (!hasPermission) {
             return res.status(403).send('<div class="p-8 text-red-500 font-bold uppercase tracking-widest">Access Denied: High Security Clearance Required.</div>');
         }
 

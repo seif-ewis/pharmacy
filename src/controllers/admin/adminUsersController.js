@@ -5,7 +5,8 @@ import bcrypt from "bcrypt";
 export const getUsers = async (req, res) => {
     const { search, role } = req.query;
     let query = `
-        SELECT id, full_name, email, phone, role, created_at, total_orders_placed
+        SELECT id, full_name, email, phone, role, created_at,
+        (SELECT COUNT(*)::INTEGER FROM orders WHERE user_id = users.id) as orders_count
         FROM users
         WHERE 1=1
     `;

@@ -42,6 +42,8 @@ router.get("/history/orders", adminHistoryController.getOrdersHistory);
 router.get("/history/orders/:id", adminHistoryController.getOrderDetails);
 router.get("/history/shifts", adminHistoryController.getShiftsHistory);
 router.get("/history/shifts/:id", adminHistoryController.getShiftDetails);
+router.get("/history/returns", adminHistoryController.getReturnsHistory);
+router.get("/history/inventory", adminHistoryController.getInventoryHistory);
 router.get("/audit/logs", adminAuditController.getAuditLogs);
 
 // Promotions & Coupons

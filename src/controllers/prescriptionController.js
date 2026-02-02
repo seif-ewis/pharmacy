@@ -25,7 +25,7 @@ export const uploadPrescription = async (req, res) => {
             await client.query('BEGIN');
 
             const result = await client.query(
-                "INSERT INTO prescriptions (id, user_id, image_url, status, created_at) VALUES (gen_random_uuid(), $1, $2, 'reviewing', NOW()) RETURNING id",
+                "INSERT INTO prescriptions (id, user_id, image_url, status, created_at) VALUES (gen_random_uuid(), $1, $2, 'pending', NOW()) RETURNING id",
                 [req.user.id, imageUrl]
             );
 

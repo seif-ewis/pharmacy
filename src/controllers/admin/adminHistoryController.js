@@ -135,3 +135,31 @@ export const getReturnsHistory = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to fetch returns history" });
     }
 };
+
+// GET: Inventory Adjustments History
+export const getInventoryHistory = async (req, res) => {
+    const { search } = req.query;
+    let query = `
+        SELECT ia.*, m.name as medicine_name, u.full_name as performer_name
+        FROM inventory_adjustments ia
+        JOIN medicines m ON ia.medicine_id = m.id
+        LEFT JOIN users u ON ia.performed_by = u.id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    if (search) {
+        params.push(`%${search}%`);
+        query += ` AND (m.name ILIKE $${params.length} OR u.full_name ILIKE $${params.length})`;
+    }
+
+    query += ` ORDER BY ia.created_at DESC LIMIT 100`;
+
+    try {
+        const result = await db.query(query, params);
+        res.json({ success: true, adjustments: result.rows });
+    } catch (err) {
+        console.error("Get Inventory History Error:", err);
+        res.status(500).json({ success: false, message: "Failed to fetch inventory history" });
+    }
+};

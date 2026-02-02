@@ -74,7 +74,7 @@ export const getDashboard = async (req, res) => {
 
         // Fetch prescriptions (Pending)
         const presRes = await db.query(
-            "SELECT p.*, u.full_name as user_name FROM prescriptions p JOIN users u ON p.user_id = u.id WHERE p.status = 'reviewing' ORDER BY p.created_at DESC"
+            "SELECT p.*, u.full_name as user_name FROM prescriptions p JOIN users u ON p.user_id = u.id WHERE p.status = 'pending' ORDER BY p.created_at DESC"
         );
         const pendingPrescriptions = presRes.rows.map(p => ({
             ...p,

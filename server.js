@@ -86,9 +86,11 @@ io.on("connection", (socket) => {
         // Groups
         // Check roles array (populated by deserializer)
         const roles = user.roles || [];
-        console.log(`User connected: ${user.full_name} [${roles.join(', ')}]`);
+        const primaryRole = user.role;
+        console.log(`User connected: ${user.full_name} [${roles.join(', ')}] (Primary: ${primaryRole})`);
 
-        if (roles.includes('pharmacist') || roles.includes('admin') || roles.includes('doctor')) {
+        if (roles.includes('pharmacist') || roles.includes('admin') || roles.includes('doctor') ||
+            ['pharmacist', 'admin', 'doctor'].includes(primaryRole)) {
             socket.join('doctors');
             // Send current online users to this doctor
             socket.emit('online:users', Array.from(onlineUsers));
@@ -140,7 +142,9 @@ io.on("connection", (socket) => {
 
         socket.on("disconnect", () => {
             const roles = user.roles || [];
-            if (!roles.includes('pharmacist') && !roles.includes('admin') && !roles.includes('doctor')) {
+            const primaryRole = user.role;
+            if (!roles.includes('pharmacist') && !roles.includes('admin') && !roles.includes('doctor') &&
+                !['pharmacist', 'admin', 'doctor'].includes(primaryRole)) {
                 onlineUsers.delete(user.id);
                 io.to('doctors').emit('user:offline', { userId: user.id });
             }

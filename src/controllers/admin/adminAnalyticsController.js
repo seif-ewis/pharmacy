@@ -46,8 +46,10 @@ export const getDashboardSummary = async (req, res) => {
         // Today's Revenue and Active Shift Info
         const summary = await db.query(`
             SELECT 
-                (SELECT is_open FROM pharmacy_settings ORDER BY created_at DESC LIMIT 1) as is_open,
+                (SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1) as is_open,
                 (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed' AND created_at >= CURRENT_DATE) as today_revenue,
+                (SELECT COUNT(*) FROM prescriptions WHERE status = 'pending') as pending_prescriptions,
+                (SELECT COUNT(*) FROM medicines m LEFT JOIN medicine_stock ms ON m.id = ms.id WHERE COALESCE(ms.current_stock, 0) <= m.low_stock_threshold) as low_stock_count,
                 (SELECT json_build_object(
                     'id', s.id,
                     'doctor_name', u.full_name,
@@ -66,6 +68,8 @@ export const getDashboardSummary = async (req, res) => {
             success: true,
             is_open: summary.rows[0].is_open,
             today_revenue: summary.rows[0].today_revenue,
+            pending_prescriptions: summary.rows[0].pending_prescriptions,
+            low_stock_count: summary.rows[0].low_stock_count,
             active_shift: summary.rows[0].active_shift
         });
     } catch (err) {

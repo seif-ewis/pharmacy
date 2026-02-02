@@ -266,13 +266,21 @@
                     container.innerHTML = html;
                     currentModule = name;
 
-                    // Fire initialization event if defined in the partial
+                    // Execute scripts manually (since innerHTML doesn't)
+                    const scripts = container.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+
+                    // Fire initialization event
                     const initFunc = `initialize${name.charAt(0).toUpperCase() + name.slice(1)}`;
                     if (typeof window[initFunc] === 'function') {
                         window[initFunc]();
                     }
 
-                    // Update URL hash without reload
                     window.location.hash = name;
 
                 } catch (err) {
