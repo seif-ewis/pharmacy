@@ -85,7 +85,7 @@
                             <%= user.full_name.charAt(0) %>
                         </div>
                         <span class="text-xs font-bold dark:text-gray-300 hidden sm:inline">Admin: <%= user.full_name %>
-                                </span>
+                        </span>
                     </div>
                 </header>
 
@@ -165,7 +165,7 @@
                 const btn = document.querySelector('button[type="submit"]');
 
                 if (tax_rate < 0 || delivery_fee < 0) {
-                    alert('Values cannot be negative.');
+                    showToast('Warning', 'Values cannot be negative.', 'amber');
                     return;
                 }
 
@@ -184,11 +184,11 @@
                         showToast('Success', 'Settings updated successfully.', 'green');
                         setTimeout(() => window.location.reload(), 1000);
                     } else {
-                        alert('Failed: ' + data.message);
+                        showToast('Error', 'Failed: ' + data.message, 'red');
                     }
                 } catch (e) {
                     console.error(e);
-                    alert('Error updating settings');
+                    showToast('Error', 'Error updating settings', 'red');
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-save mr-2"></i> Update Configuration';

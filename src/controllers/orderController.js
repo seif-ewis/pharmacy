@@ -401,7 +401,7 @@ VALUES($1, $2, $3, $4)`,
 
 // Cancel Order & Restock
 export const cancelOrder = async (req, res) => {
-    console.log('[OrderController] cancelOrder called for ID:', req.params.id);
+
     const { id } = req.params;
     const client = await db.connect();
     try {
@@ -469,7 +469,7 @@ export const cancelOrder = async (req, res) => {
 
 // Get Order Details (Invoice View)
 export const getOrderDetails = async (req, res) => {
-    console.log('[OrderController] getOrderDetails called for ID:', req.params.id);
+
     const { id } = req.params;
     const client = await db.connect();
     try {

@@ -12,10 +12,10 @@ export const login = (req, res, next) => {
         if (err) return next(err);
         if (!user) {
             if (info.message === "unverified") {
-                return res.json({ success: false, message: "Please verify your email address.", unverified: true, email: info.email });
+                return res.status(403).json({ success: false, message: "Please verify your email address.", unverified: true, email: info.email });
             }
             if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-                return res.json({ success: false, message: info.message || "Invalid credentials" });
+                return res.status(401).json({ success: false, message: info.message || "Invalid credentials" });
             }
             req.flash("error", info.message || "Invalid credentials");
             return res.redirect("/");

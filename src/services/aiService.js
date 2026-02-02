@@ -26,7 +26,7 @@ try {
 export const generateProductDetails = async (productName) => {
     // 1. Mock Mode (Fallback)
     if (!model) {
-        console.log(`🤖 AI Mock: Generating details for ${productName}`);
+
         return {
             description: `(AI Generated) ${productName} is commonly used for [Condition]. It works by [Mechanism]. Please verify this information manually.`,
             benefits: "Relieves symptoms effectively (Mock Benefit)",
@@ -127,7 +127,7 @@ export const generateProductDetails = async (productName) => {
 export const analyzePrescription = async (imageBase64) => {
     // 1. Mock Mode (Fallback)
     if (!model) {
-        console.log(`🤖 AI Mock: Analyzing prescription image`);
+
         return {
             medicines: [
                 { name: "Amoxicillin (Mock)", dosage: "500mg", instructions: "Twice daily", quantity: 20 },

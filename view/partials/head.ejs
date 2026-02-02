@@ -16,6 +16,55 @@
     <!-- Anime.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 
+    <!-- Toastify -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        /**
+         * Global Toast Notification Helper
+         * @param {('success'|'error'|'warning'|'info')} type 
+         * @param {string} message 
+         */
+        function showToast(type, message) {
+            let bgColor;
+            let icon;
+            switch (type) {
+                case 'success':
+                    bgColor = "linear-gradient(to right, #059669, #10b981)";
+                    icon = "✅";
+                    break;
+                case 'error':
+                    bgColor = "linear-gradient(to right, #dc2626, #ef4444)";
+                    icon = "❌";
+                    break;
+                case 'warning':
+                    bgColor = "linear-gradient(to right, #d97706, #f59e0b)";
+                    icon = "⚠️";
+                    break;
+                case 'info':
+                default:
+                    bgColor = "linear-gradient(to right, #2563eb, #3b82f6)";
+                    icon = "ℹ️";
+                    break;
+            }
+
+            Toastify({
+                text: `${icon} ${message}`,
+                duration: 5000,
+                gravity: "top",
+                position: "right",
+                stopOnFocus: true,
+                style: {
+                    background: bgColor,
+                    borderRadius: "12px",
+                    fontWeight: "600",
+                    fontFamily: "Inter, sans-serif",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                }
+            }).showToast();
+        }
+    </script>
+
     <!-- Tailwind Config -->
     <script>
         tailwind.config = {

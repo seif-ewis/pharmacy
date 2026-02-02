@@ -26,7 +26,7 @@ async function updateDashboardStats() {
             document.getElementById('alert-low-stock-count').textContent = data.lowStockCount;
             document.getElementById('alert-scheduled-count').textContent = data.scheduledOrdersCount;
 
-            console.log('📊 Dashboard stats updated:', data);
+
         }
     } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);
@@ -36,7 +36,7 @@ async function updateDashboardStats() {
 // Socket.IO listener for real-time updates
 if (typeof socket !== 'undefined') {
     socket.on('dashboard:stats-update', (data) => {
-        console.log('📡 Received dashboard stats update via socket:', data);
+
 
         // Update all counters
         if (data.revenue !== undefined) {

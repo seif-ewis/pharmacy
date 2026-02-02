@@ -164,7 +164,7 @@
 
                 <script>
                     let medicationArray = [];
-                    const medicinesData = <% - JSON.stringify(medicines) %>;
+                    const medicinesData = <% - JSON.stringify(medicines || []) %>;
 
                     function addItem(name = null, qty = null, price = null) {
                         const searchInput = document.getElementById(' medSearch'); const
@@ -237,11 +237,11 @@
 
                     function validateForm() {
                         if (medicationArray.length === 0) {
-                            alert('Please add at least one medication.');
+                            showToast('warning', 'Please add at least one medication.');
                             return false;
                         }
                         if (!document.getElementById('reviewedCheck').checked) {
-                            alert('You must confirm you have reviewed the prescription.');
+                            showToast('warning', 'You must confirm you have reviewed the prescription.');
                             return false;
                         }
                         return true;
@@ -264,8 +264,8 @@
                             btn.innerHTML = '<i class="fas fa-check"></i> AI Extraction Complete';
                             btn.className = 'w-full bg-green-500 text-white font-bold py-3 rounded-xl
                             transition - all flex items - center justify - center gap - 2';
-                            alert('AI has extracted two medications from the image. Please verify they are
-                                    correct and adjust quantities if needed.');
+                            showToast('info', 'AI has extracted two medications from the image. Please verify
+                                    they are correct and adjust quantities if needed.');
                         }, 2000);
                     }
 

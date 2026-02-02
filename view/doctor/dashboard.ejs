@@ -2089,18 +2089,18 @@
 
             socket.on('chat:message', (data) => {
                 const myId = '<%= user.id %>'; // Get current user ID
-                console.log('Socket received chat:message:', data);
+
 
                 // Ignore if I sent it (Optimistic UI handled it)
                 if (data.senderId === myId) return;
 
                 // If this is the active chat, append message
                 if (activeChatId && (data.chatId == activeChatId)) {
-                    console.log('Appending message to active chat');
+
                     appendMessage(data.message, false); // Append as incoming
                     // Optionally check data.isDoctor here if needed for specific UI
                 } else {
-                    console.log('Message not for active chat, showing toast');
+
                     showToast('info', `New message from ${data.senderName}`);
                     loadActiveChats();
                 }
@@ -3128,7 +3128,7 @@
             }
 
             function openInventoryModal() {
-                console.log('>>> openInventoryModal CALLED');
+
                 editingProductId = null;
 
                 const title = document.getElementById('modal-title');
@@ -3136,26 +3136,21 @@
                 const pid = document.getElementById('product-id');
                 const modal = document.getElementById('inventory-modal');
 
-                console.log('Elements found:', {
-                    title: !!title,
-                    form: !!form,
-                    pid: !!pid,
-                    modal: !!modal
-                });
+
 
                 if (title) title.textContent = 'Add Product';
                 if (form) form.reset();
                 if (pid) pid.value = '';
 
                 if (modal) {
-                    console.log('Removing hidden class from modal. Current classes:', modal.className);
+
                     modal.classList.remove('hidden');
-                    console.log('New classes:', modal.className);
+
                     // Force style just in case of tailwind issues
                     modal.style.display = 'block';
                 } else {
                     console.error('CRITICAL: inventory-modal element NOT FOUND in DOM');
-                    alert('Error: Modal element missing from page. Please reload.');
+                    showToast('error', 'Error: Modal element missing from page. Please reload.');
                 }
             }
 
@@ -4527,13 +4522,13 @@
             let activeRequestId = null;
 
             function fulfillRequest(reqId, productName, description) {
-                console.log('Fulfilling request:', reqId);
+
                 activeRequestId = reqId;
 
                 // Ensure modal opens
                 try {
                     openInventoryModal();
-                    console.log('Modal opened');
+
                 } catch (e) {
                     console.error('Failed to open modal:', e);
                     showToast('error', 'Error opening validation form');

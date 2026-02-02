@@ -76,7 +76,8 @@
                                                     </span>
                                                     <% } %>
                                                         <span class="text-xl font-extrabold text-dark dark:text-white">$
-                                                            <%= parseFloat(order.total_price).toFixed(2) %></span>
+                                                            <%= parseFloat(order.total_price).toFixed(2) %>
+                                                        </span>
                                         </div>
                                     </div>
 
@@ -243,14 +244,13 @@
                             const res = await fetch(`/orders/request/${requestId}/confirm`, { method: 'POST' });
                             const data = await res.json();
                             if (data.success) {
-                                alert('Success! Your order has been created.');
-                                window.location.reload();
+                                showToast('success', 'Success! Your order has been created.');
+                                setTimeout(() => window.location.reload(), 1500);
                             } else {
-                                alert(data.message || 'Error occurred');
+                                showToast('error', data.message || 'Error occurred');
                             }
                         } catch (err) {
-                            console.error(err);
-                            alert('Failed to process request');
+                            showToast('error', 'Failed to process request');
                         }
                     }
                 </script>

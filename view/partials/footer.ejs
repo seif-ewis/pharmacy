@@ -96,18 +96,18 @@
         const socket = io();
 
         socket.on('connect', () => {
-            console.log('✅ Socket.IO connected:', socket.id);
+
         });
 
         socket.on('disconnect', () => {
-            console.log('❌ Socket.IO disconnected');
+
         });
 
         // Global Pharmacy Status Listener
         socket.on('pharmacy:status', (data) => {
-            console.log('📡 Received pharmacy:status event:', data);
+
             const statusContainers = document.querySelectorAll('.pharmacy-status-badge');
-            console.log('🎯 Found', statusContainers.length, 'status badge(s) to update');
+
 
             statusContainers.forEach((container, index) => {
                 if (data.isOpen) {
@@ -145,7 +145,7 @@
                     }
                 }
             });
-            console.log('✅ All badges updated successfully');
+
         });
     </script>
     <% if (typeof user !=='undefined' && user) { %>

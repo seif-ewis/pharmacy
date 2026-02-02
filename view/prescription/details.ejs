@@ -224,9 +224,11 @@
                         btn.disabled = false;
                     }
                 }).catch(err => {
-                    console.error(err);
-                    alert('PDF Generation failed');
-                    if (btn) btn.disabled = false;
+                    showToast('error', 'PDF Generation failed');
+                    if (btn) {
+                        btn.innerText = 'Download PDF';
+                        btn.disabled = false;
+                    }
                 });
             }
         </script>

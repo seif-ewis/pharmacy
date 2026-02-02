@@ -617,14 +617,14 @@
                                         btn.remove();
                                     }
                                 } else {
-                                    alert('Failed: ' + data.error);
+                                    showToast('error', 'Failed: ' + data.error);
                                     icon.classList.add('fa-star');
                                     icon.classList.remove('fa-spinner', 'fa-spin');
                                 }
                             })
                             .catch(err => {
                                 console.error(err);
-                                alert('Network error');
+                                showToast('error', 'Network error');
                                 icon.classList.add('fa-star');
                                 icon.classList.remove('fa-spinner', 'fa-spin');
                             });

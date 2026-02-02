@@ -251,8 +251,7 @@
                         btn.disabled = false;
                     }
                 }).catch(err => {
-                    console.error(err);
-                    alert('Failed to generate PDF. check console.');
+                    showToast('error', 'Failed to generate PDF.');
                     if (btn) {
                         btn.innerText = 'Download PDF';
                         btn.disabled = false;

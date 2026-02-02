@@ -25,7 +25,16 @@ const otpVerifyLimiter = rateLimit({
     validate: { keyGeneratorIpFallback: false },
 });
 
-router.post("/login", authController.login);
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 failed login requests per 15 minutes
+    message: { success: false, message: "Too many failed login attempts. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true, // This ensures it only counts non-2xx responses
+});
+
+router.post("/login", loginLimiter, authController.login);
 router.post("/register", otpSendLimiter, authController.register);
 router.post("/verify-email", otpVerifyLimiter, authController.verifyEmail);
 router.get("/logout", authController.logout);

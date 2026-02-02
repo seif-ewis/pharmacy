@@ -11,7 +11,7 @@ dotenv.config();
 passport.use(
     "local",                                      // cb callback function
     new LocalStrategy({ usernameField: 'email' }, async function verify(email, password, cb) {
-        console.log("Attempting login for:", email);
+
         try {
             const result = await db.query("SELECT * FROM users WHERE email = $1 ", [
                 email.toLowerCase(),
@@ -41,7 +41,7 @@ passport.use(
                 return cb(null, false, { message: "User not found" });
             }
         } catch (err) {
-            console.log(err);
+            console.error(err);
             return cb(err);
         }
     })

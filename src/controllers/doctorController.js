@@ -394,7 +394,6 @@ export const getShiftDetails = async (req, res) => {
 
         res.json({ success: true, shift: shiftRes.rows[0] });
     } catch (err) {
-        console.error('Get Shift Details Error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
@@ -440,12 +439,12 @@ export const togglePharmacyStatus = async (req, res) => {
 
         // Emit realtime event
         const io = req.app.get('io');
-        console.log('🔄 Pharmacy Status Toggle:', { status, hasIO: !!io });
+
 
         if (io) {
             // Emit to all connected clients
             io.emit('pharmacy:status', { isOpen: status });
-            console.log('✅ Socket event emitted to all clients:', { isOpen: status });
+
         } else {
             console.error('❌ Socket.io instance not found!');
         }
@@ -1450,7 +1449,6 @@ export const createManualOrder = async (req, res) => {
 
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Create Manual Order Error:', err);
         res.status(500).json({ success: false, message: err.message || 'Failed to create order' });
     } finally {
         client.release();

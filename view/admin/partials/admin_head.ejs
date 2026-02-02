@@ -31,18 +31,50 @@
         const socket = io();
         socket.emit('join', 'admin');
 
+        /**
+         * Global Toast Notification Helper
+         */
+        function showToast(type, message) {
+            let bgColor;
+            let icon;
+            switch (type) {
+                case 'success':
+                    bgColor = "linear-gradient(to right, #059669, #10b981)";
+                    icon = "✅";
+                    break;
+                case 'error':
+                    bgColor = "linear-gradient(to right, #dc2626, #ef4444)";
+                    icon = "❌";
+                    break;
+                case 'warning':
+                    bgColor = "linear-gradient(to right, #d97706, #f59e0b)";
+                    icon = "⚠️";
+                    break;
+                case 'info':
+                default:
+                    bgColor = "linear-gradient(to right, #1E3A8A, #3B82F6)";
+                    icon = "ℹ️";
+                    break;
+            }
+
+            Toastify({
+                text: `${icon} ${message}`,
+                duration: 5000,
+                gravity: "top",
+                position: "right",
+                stopOnFocus: true,
+                style: {
+                    background: bgColor,
+                    borderRadius: "12px",
+                    fontWeight: "600",
+                    fontFamily: "Inter, sans-serif"
+                }
+            }).showToast();
+        }
+
         // Listen for global announcements
         socket.on('announcement', (data) => {
-            if (window.Toastify) {
-                Toastify({
-                    text: `📢 ${data.title}: ${data.message.substring(0, 50)}...`,
-                    duration: 10000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "linear-gradient(to right, #1E3A8A, #3B82F6)",
-                    onClick: () => { window.location.hash = 'announcements'; window.location.reload(); }
-                }).showToast();
-            }
+            showToast('info', `${data.title}: ${data.message.substring(0, 50)}...`);
         });
     </script>
 

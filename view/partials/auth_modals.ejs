@@ -222,7 +222,7 @@
             const email = document.getElementById('reset-email').value;
 
             if (!gmailRegex.test(email) && email !== 'admin@hosam.com') {
-                alert('Invalid email address. Only Gmail is allowed.');
+                showToast('warning', 'Invalid email address. Only Gmail is allowed.');
                 return;
             }
 
@@ -245,10 +245,10 @@
                     document.getElementById('otp-subtitle').innerText = 'Enter the 6-digit code sent to your Gmail.';
                     switchTab('verify-otp');
                 } else {
-                    alert(data.message || 'Error occurred');
+                    showToast('error', data.message || 'Error occurred');
                 }
             } catch (err) {
-                alert('An error occurred. Please try again.');
+                showToast('error', 'An error occurred. Please try again.');
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Send Verification Code';
@@ -265,7 +265,7 @@
             const data = Object.fromEntries(formData.entries());
 
             if (!gmailRegex.test(data.email)) {
-                alert('Invalid email address. Only Gmail is allowed.');
+                showToast('warning', 'Invalid email address. Only Gmail is allowed.');
                 return;
             }
 
@@ -288,10 +288,10 @@
                     document.getElementById('otp-subtitle').innerText = 'A code has been sent to your Gmail for activation.';
                     switchTab('verify-otp');
                 } else {
-                    alert(result.message || 'Registration failed');
+                    showToast('error', result.message || 'Registration failed');
                 }
             } catch (err) {
-                alert('An error occurred');
+                showToast('error', 'An error occurred');
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Create Account';
@@ -322,17 +322,17 @@
 
                 if (data.success) {
                     if (otpMode === 'verify') {
-                        alert('Email verified successfully! You can now log in.');
+                        showToast('success', 'Email verified successfully! You can now log in.');
                         switchTab('login');
                     } else {
                         document.getElementById('reset-token-input').value = data.resetToken;
                         switchTab('reset-password');
                     }
                 } else {
-                    alert(data.message || 'Verification failed');
+                    showToast('error', data.message || 'Verification failed');
                 }
             } catch (err) {
-                alert('An error occurred. Please try again.');
+                showToast('error', 'An error occurred. Please try again.');
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Verify Code';
@@ -351,7 +351,7 @@
             const btn = document.getElementById('reset-pw-btn');
 
             if (newPassword !== confirmPassword) {
-                alert('Passwords do not match');
+                showToast('warning', 'Passwords do not match');
                 return;
             }
 
@@ -367,13 +367,13 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    alert('Password successfully reset! You can now log in.');
+                    showToast('success', 'Password successfully reset! You can now log in.');
                     switchTab('login');
                 } else {
-                    alert(data.message || 'Reset failed');
+                    showToast('error', data.message || 'Reset failed');
                 }
             } catch (err) {
-                alert('An error occurred. Please try again.');
+                showToast('error', 'An error occurred. Please try again.');
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Update Password';
@@ -390,7 +390,7 @@
             const data = Object.fromEntries(formData.entries());
 
             if (!gmailRegex.test(data.email) && data.email !== 'admin@hosam.com') {
-                alert('Invalid email address. Only Gmail is allowed.');
+                showToast('warning', 'Invalid email address. Only Gmail is allowed.');
                 return;
             }
 
@@ -420,11 +420,10 @@
                     document.getElementById('otp-subtitle').innerText = 'Your account is not activated. Enter the code sent to your Gmail.';
                     switchTab('verify-otp');
                 } else {
-                    alert(result.message || 'Login failed');
+                    showToast('error', result.message || 'Login failed');
                 }
             } catch (err) {
-                console.error(err);
-                alert('An error occurred');
+                showToast('error', 'An error occurred');
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;

@@ -21,7 +21,7 @@ export async function logOrderStatusChange(orderId, oldStatus, newStatus, change
             [orderId, oldStatus, newStatus, changedBy]
         );
 
-        console.log(`📝 Status Log: Order ${orderId}: ${oldStatus || 'NEW'} → ${newStatus} (by ${changedBy})`);
+
     } catch (err) {
         console.error('❌ Failed to log order status change:', err);
         // Don't throw - logging failure shouldn't block the main operation

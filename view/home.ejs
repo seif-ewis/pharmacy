@@ -660,7 +660,7 @@
                                 // Play sound
                                 if (chatSound) {
                                     chatSound.currentTime = 0;
-                                    chatSound.play().catch(e => console.log('Audio play failed', e));
+                                    chatSound.play().catch(e => { });
                                 }
                                 // Show red dot
                                 if (notificationBadge) {
@@ -761,7 +761,7 @@
                                 const currentQty = existingItem ? (existingItem.qty || 1) : 0;
 
                                 if (currentQty + qty > stock) {
-                                    alert(`Sorry, we only have ${stock} items left in stock.`);
+                                    showToast('warning', `Sorry, we only have ${stock} items left in stock.`);
                                     return;
                                 }
 
@@ -776,7 +776,7 @@
                                 // Dispatch for header update
                                 window.dispatchEvent(new Event('storage'));
 
-                                console.log(`Added ${name} to cart`);
+
                             }
 
 

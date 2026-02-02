@@ -285,7 +285,7 @@
                     } else {
                         cart = JSON.parse(localStorage.getItem('cart') || '[]');
                     }
-                    const deliveryFee = <%= typeof deliveryFee !== 'undefined' ? deliveryFee : 0.00 %>;
+                    const deliveryFee = <%= typeof deliveryFee !== 'undefined' ? deliveryFee : 0 %>;
 
                     document.addEventListener('DOMContentLoaded', () => {
                         renderCheckoutItems();
@@ -413,7 +413,7 @@
                     async function submitOrder() {
                         const selectedAddress = document.querySelector('input[name="address_id"]:checked');
                         if (!selectedAddress) {
-                            alert('Please select a delivery address');
+                            showToast('warning', 'Please select a delivery address');
                             return;
                         }
 
@@ -454,13 +454,12 @@
                                     window.location.href = '/orders'; // Redirect to My Orders
                                 }, 1000);
                             } else {
-                                alert('Order Failed: ' + (result.error || 'Unknown error'));
+                                showToast('error', 'Order Failed: ' + (result.error || 'Unknown error'));
                                 btn.innerHTML = originalContent;
                                 btn.disabled = false;
                             }
                         } catch (err) {
-                            console.error(err);
-                            alert('An error occurred. Please try again.');
+                            showToast('error', 'An error occurred. Please try again.');
                             btn.innerHTML = originalContent;
                             btn.disabled = false;
                         }

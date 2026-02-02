@@ -90,13 +90,12 @@
                                 document.getElementById('request-success').classList.remove('hidden');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             } else {
-                                alert(result.message || 'Submission failed');
+                                showToast('error', result.message || 'Submission failed');
                                 btn.disabled = false;
                                 btn.innerHTML = '<span>Submit Request</span><i class="fas fa-paper-plane"></i>';
                             }
                         } catch (err) {
-                            console.error(err);
-                            alert('An error occurred. Please try again.');
+                            showToast('error', 'An error occurred. Please try again.');
                             btn.disabled = false;
                             btn.innerHTML = '<span>Submit Request</span><i class="fas fa-paper-plane"></i>';
                         }

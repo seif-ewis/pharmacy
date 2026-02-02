@@ -188,7 +188,7 @@
 
                             <% if (Number(product.quantity)> 0) { %>
                                 <button
-                                    onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price %>, <%= product.quantity %>)"
+                                    onclick="addToCart('<%= product.id %>', '<%= product.name %>', <%= product.price || 0 %>, <%= product.quantity || 0 %>)"
                                     class="flex-1 bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
                                     <i class="fas fa-shopping-cart group-hover:animate-bounce"></i>
                                     Add to Cart
@@ -361,7 +361,7 @@
                     const currentQty = existingItem ? (existingItem.qty || 1) : 0;
 
                     if (currentQty + qty > stock) {
-                        alert(`Sorry, we only have ${stock} items left in stock.`);
+                        showToast('warning', `Sorry, we only have ${stock} items left in stock.`);
                         return;
                     }
 
@@ -438,7 +438,7 @@
                     window.updateCartCount();
                 } else {
                     // Fallback if header script somehow hasn't defined it
-                    console.warn('updateCartCount not found');
+
                     window.dispatchEvent(new Event('storage'));
                 }
 
@@ -469,7 +469,7 @@
                                     window.location.href = '/profile';
                                 }
                             } else {
-                                alert(data.message);
+                                showToast('error', data.message);
                             }
                         }
                     } catch (err) {
