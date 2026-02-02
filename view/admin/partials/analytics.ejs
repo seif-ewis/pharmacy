@@ -1,0 +1,223 @@
+<div id="module-analytics" class="module-content">
+    <div class="mb-10 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Business Intelligence</h1>
+            <p class="text-gray-500 text-sm font-medium">Deep-dive into revenue patterns, clinical throughput, and
+                performance metrics.</p>
+        </div>
+        <div
+            class="flex gap-4 p-2 bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
+            <div class="flex flex-col px-4">
+                <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Date Start</span>
+                <input type="date" id="analytics-start-date"
+                    class="bg-transparent border-none p-0 text-xs font-black dark:text-white focus:ring-0">
+            </div>
+            <div class="w-[1px] h-10 bg-gray-100 dark:bg-slate-700"></div>
+            <div class="flex flex-col px-4">
+                <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Date End</span>
+                <input type="date" id="analytics-end-date"
+                    class="bg-transparent border-none p-0 text-xs font-black dark:text-white focus:ring-0">
+            </div>
+            <button onclick="loadDetailedAnalytics()"
+                class="bg-primary text-white p-3 rounded-2xl hover:scale-105 transition-all shadow-lg shadow-primary/20">
+                <i class="fas fa-chart-pie"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD EMPTY STATE -->
+    <div id="analytics-empty-state" class="flex flex-col items-center justify-center p-24 text-center">
+        <div
+            class="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-4xl text-gray-300 mb-8 border-4 border-dashed border-gray-200 dark:border-slate-700">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <h2 class="text-2xl font-black dark:text-white tracking-tighter mb-4">Date Range Selection Required</h2>
+        <p class="text-gray-400 max-w-sm font-medium leading-relaxed italic">Analytics processing requires a specific
+            time boundary. Select a start and end date above to generate the visual intelligence briefing.</p>
+    </div>
+
+    <!-- CHARTS GRID -->
+    <div id="analytics-charts-container" class="hidden space-y-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Revenue Over Time -->
+            <div
+                class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="font-black dark:text-white tracking-tighter">Revenue Trajectory</h3>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1 italic">Financial
+                            Volume Index</p>
+                    </div>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-revenue"></canvas>
+                </div>
+            </div>
+
+            <!-- Orders vs Returns -->
+            <div
+                class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="font-black dark:text-white tracking-tighter">Success vs Variance</h3>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1 italic">Order
+                            Lifecycle Comparison</p>
+                    </div>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="chart-metrics"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.2rem] border border-gray-100 dark:border-slate-800 shadow-sm">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h3 class="font-black dark:text-white tracking-tighter">Medical Performance Matrix</h3>
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1 italic">Staff
+                        Throughput & Attribution</p>
+                </div>
+            </div>
+            <div class="h-80 relative">
+                <canvas id="chart-doctors"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let revenueChart = null;
+    let metricsChart = null;
+    let doctorsChart = null;
+
+    function initializeAnalytics() {
+        console.log("Analytics Module Loaded");
+        // Set default dates to past week
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 7);
+
+        document.getElementById('analytics-start-date').value = start.toISOString().split('T')[0];
+        document.getElementById('analytics-end-date').value = end.toISOString().split('T')[0];
+    }
+
+    async function loadDetailedAnalytics() {
+        const start = document.getElementById('analytics-start-date').value;
+        const end = document.getElementById('analytics-end-date').value;
+        const emptyState = document.getElementById('analytics-empty-state');
+        const container = document.getElementById('analytics-charts-container');
+
+        if (!start || !end) {
+            showToast('error', 'Select both start and end dates');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/admin/analytics/detailed?startDate=${start}&endDate=${end}`);
+            const data = await res.json();
+
+            if (data.success) {
+                renderRevenueChart(data.revenueTime);
+                renderMetricsChart(data.orderMetrics);
+                renderDoctorChart(data.doctorPerformance);
+            }
+        } catch (err) {
+            showToast('error', 'Failed to generate intelligence charts');
+        }
+    }
+
+    function renderRevenueChart(data) {
+        if (revenueChart) revenueChart.destroy();
+        const ctx = document.getElementById('chart-revenue').getContext('2d');
+
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => new Date(d.date).toLocaleDateString([], { month: 'short', day: 'numeric' })),
+                datasets: [{
+                    label: 'Revenue (EGP)',
+                    data: data.map(d => Number(d.revenue)),
+                    borderColor: '#1E3A8A',
+                    backgroundColor: 'rgba(30, 58, 138, 0.05)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderMetricsChart(data) {
+        if (metricsChart) metricsChart.destroy();
+        const ctx = document.getElementById('chart-metrics').getContext('2d');
+
+        const counts = { completed: 0, cancelled: 0, pending: 0 };
+        data.forEach(d => { if (counts[d.status] !== undefined) counts[d.status] = d.count; });
+
+        metricsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Cancelled', 'Other'],
+                datasets: [{
+                    data: [counts.completed, counts.cancelled, counts.pending],
+                    backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'right', labels: { font: { weight: 'bold', size: 10 } } }
+                }
+            }
+        });
+    }
+
+    function renderDoctorChart(data) {
+        if (doctorsChart) doctorsChart.destroy();
+        const ctx = document.getElementById('chart-doctors').getContext('2d');
+
+        doctorsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.full_name),
+                datasets: [{
+                    label: 'Revenue Generated',
+                    data: data.map(d => Number(d.revenue)),
+                    backgroundColor: '#1E3A8A',
+                    borderRadius: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(0,0,0,0.03)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    initializeAnalytics();
+</script>

@@ -1,0 +1,244 @@
+<div id="module-inventory" class="module-content">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Inventory Ledger</h1>
+            <p class="text-gray-500 text-sm">Monitor stock levels, track adjustments, and manage medicine thresholds.
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="loadInventory()"
+                class="px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh Stock
+            </button>
+        </div>
+    </div>
+
+    <!-- INVENTORY UTILS -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div
+            class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-wrap gap-4 items-center">
+            <div class="relative flex-1 min-w-[200px]">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="inventory-search" placeholder="Search medicine name..."
+                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 dark:text-white transition-all">
+            </div>
+            <select id="inventory-status-filter" onchange="loadInventory()"
+                class="px-6 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 dark:text-white">
+                <option value="all">All Items</option>
+                <option value="OK">Status: OK</option>
+                <option value="LOW">Status: LOW</option>
+                <option value="OUT">Status: OUT</option>
+            </select>
+        </div>
+
+        <div class="bg-slate-900 dark:bg-primary p-6 rounded-3xl text-white flex flex-col justify-center">
+            <p class="text-[9px] font-black uppercase tracking-widest opacity-50 mb-1 text-center">System Authority</p>
+            <p class="text-xs font-bold text-center italic">Append-Only Logs Enforced</p>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-4 mb-6 ml-4">
+        <button onclick="switchInventoryTab('stock')" id="tab-btn-stock"
+            class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-primary text-primary">Live
+            Stock</button>
+        <button onclick="switchInventoryTab('logs')" id="tab-btn-logs"
+            class="text-sm font-black uppercase tracking-widest py-2 border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all">Change
+            Logs</button>
+    </div>
+
+    <!-- STOCK TABLE -->
+    <div id="inventory-stock-view"
+        class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden">
+        <table class="w-full text-left">
+            <thead
+                class="bg-gray-50/50 dark:bg-slate-700/30 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                <tr>
+                    <th class="px-6 py-5">Medicine</th>
+                    <th class="px-6 py-5 text-center">Stock Level</th>
+                    <th class="px-6 py-5">Threshold</th>
+                    <th class="px-6 py-5">Status</th>
+                    <th class="px-6 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- LOGS TABLE -->
+    <div id="inventory-logs-view"
+        class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden hidden">
+        <table class="w-full text-left">
+            <thead
+                class="bg-gray-50/50 dark:bg-slate-700/30 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                <tr>
+                    <th class="px-6 py-5">Medicine</th>
+                    <th class="px-6 py-5">Δ Qty</th>
+                    <th class="px-6 py-5">Reason</th>
+                    <th class="px-6 py-5">Performed By</th>
+                    <th class="px-6 py-5">Time</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-logs-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let inventoryDebounce = null;
+
+    function initializeInventory() {
+        loadInventory();
+        document.getElementById('inventory-search').addEventListener('input', () => {
+            clearTimeout(inventoryDebounce);
+            inventoryDebounce = setTimeout(loadInventory, 500);
+        });
+    }
+
+    async function loadInventory() {
+        const search = document.getElementById('inventory-search').value;
+        const status = document.getElementById('inventory-status-filter').value;
+        const tbody = document.getElementById('inventory-tbody');
+
+        try {
+            const res = await fetch(`/admin/inventory?search=${search}&status=${status}`);
+            const data = await res.json();
+
+            if (data.success) {
+                tbody.innerHTML = data.items.map(item => `
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
+                        <td class="px-6 py-5">
+                            <span class="font-black dark:text-white block">${item.name}</span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-widest">Price: ${item.price} EGP</span>
+                        </td>
+                        <td class="px-6 py-5 text-center">
+                            <span class="text-lg font-black dark:text-white">${item.quantity}</span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${item.low_stock_threshold} units</span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getStockStatusClass(item.stock_status)}">
+                                ${item.stock_status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5 text-right">
+                             <button onclick="openAdjustModal('${item.id}', '${item.name.replace(/'/g, "\\'")}')" class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+                                <i class="fas fa-plus-minus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold">Failed to load inventory</td></tr>';
+        }
+    }
+
+    async function loadInventoryLogs() {
+        const tbody = document.getElementById('inventory-logs-tbody');
+        try {
+            const res = await fetch('/admin/inventory/logs');
+            const data = await res.json();
+            if (data.success) {
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr class="hover:bg-gray-50/50 transition-all text-sm">
+                        <td class="px-6 py-5 font-black dark:text-white">${log.medicine_name}</td>
+                        <td class="px-6 py-5">
+                            <span class="font-black ${log.quantity_change > 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${log.quantity_change > 0 ? '+' : ''}${log.quantity_change}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5 italic text-gray-500 text-xs">${log.reason}</td>
+                        <td class="px-6 py-5 font-bold text-xs">${log.actor_name || 'System'}</td>
+                        <td class="px-6 py-5 text-gray-400 text-xs">${new Date(log.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500">Failed to load logs</td></tr>';
+        }
+    }
+
+    function switchInventoryTab(tab) {
+        const stockView = document.getElementById('inventory-stock-view');
+        const logsView = document.getElementById('inventory-logs-view');
+        const stockBtn = document.getElementById('tab-btn-stock');
+        const logsBtn = document.getElementById('tab-btn-logs');
+
+        if (tab === 'stock') {
+            stockView.classList.remove('hidden');
+            logsView.classList.add('hidden');
+            stockBtn.classList.replace('border-transparent', 'border-primary');
+            stockBtn.classList.replace('text-gray-400', 'text-primary');
+            logsBtn.classList.replace('border-primary', 'border-transparent');
+            logsBtn.classList.replace('text-primary', 'text-gray-400');
+            loadInventory();
+        } else {
+            stockView.classList.add('hidden');
+            logsView.classList.remove('hidden');
+            logsBtn.classList.replace('border-transparent', 'border-primary');
+            logsBtn.classList.replace('text-gray-400', 'text-primary');
+            stockBtn.classList.replace('border-primary', 'border-transparent');
+            stockBtn.classList.replace('text-primary', 'text-gray-400');
+            loadInventoryLogs();
+        }
+    }
+
+    function openAdjustModal(id, name) {
+        const content = `
+            <form onsubmit="submitInventoryAdjustment(event, '${id}')" class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Quantity Adjustment (+/-)</label>
+                    <input type="number" name="change" required class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl font-black text-lg focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="e.g. 50 or -10">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Reason for Adjustment</label>
+                    <textarea name="reason" required class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl h-24 text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20" placeholder="Describe why this adjustment is being made (e.g. Restock, Damaged, Error fix)..."></textarea>
+                </div>
+                <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] transition-all">Execute Stock Modification</button>
+            </form>
+        `;
+        openDrawer(`Adjust Stock: ${name}`, content, 'Inventory Protocol');
+    }
+
+    async function submitInventoryAdjustment(e, id) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const jsonData = Object.fromEntries(formData.entries());
+        jsonData.medicine_id = id;
+
+        try {
+            const res = await fetch('/admin/inventory/adjust', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(jsonData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('success', "Stock level adjusted successfully");
+                closeDrawer();
+                loadInventory();
+            } else {
+                showToast('error', "Adjustment failed");
+            }
+        } catch (err) {
+            showToast('error', "Connection error");
+        }
+    }
+
+    function getStockStatusClass(status) {
+        switch (status) {
+            case 'OK': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+            case 'LOW': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse';
+            case 'OUT': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+            default: return 'bg-gray-100 text-gray-500';
+        }
+    }
+
+    initializeInventory();
+</script>

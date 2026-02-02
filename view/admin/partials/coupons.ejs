@@ -1,150 +1,172 @@
-<div class="flex items-center justify-between mb-8">
-    <div>
-        <h1 class="text-3xl font-black dark:text-white mb-2">Coupon System</h1>
-        <p class="text-gray-500">Create and manage pharmacy discount codes.</p>
+<div id="module-coupons" class="module-content">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Promotions Hub</h1>
+            <p class="text-gray-500 text-sm">Create and manage marketing campaigns, discount codes, and usage limits.
+            </p>
+        </div>
+        <button onclick="openAddCouponModal()"
+            class="px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+            <i class="fas fa-plus mr-2"></i> Create Coupon
+        </button>
     </div>
-    <button onclick="openAddCouponModal()"
-        class="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/30 transition-all">
-        <i class="fas fa-plus"></i> Create Coupon
-    </button>
-</div>
 
-<!-- Coupons List -->
-<div
-    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-    <table class="w-full text-left">
-        <thead class="bg-gray-50 dark:bg-slate-700/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
-            <tr>
-                <th class="px-6 py-4">Code & Description</th>
-                <th class="px-6 py-4 text-center">Discount</th>
-                <th class="px-6 py-4 text-center">Usage</th>
-                <th class="px-6 py-4 text-center">Status</th>
-                <th class="px-6 py-4 text-right">Actions</th>
-            </tr>
-        </thead>
-        <tbody id="coupons-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
-            <!-- Loaded via AJAX -->
-        </tbody>
-    </table>
-</div>
+    <!-- COUPONS LIST -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="coupons-container">
+        <!-- Loaded via AJAX -->
+        <div class="lg:col-span-3 p-12 text-center text-gray-400 italic font-bold">
+            <i class="fas fa-circle-notch fa-spin mr-2"></i> Synching promotions...
+        </div>
+    </div>
 
-<!-- Add Coupon Modal -->
-<div id="add-coupon-modal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
-    <div
-        class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 animate-fadeIn">
-        <form onsubmit="submitAddCoupon(event)" class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-black dark:text-white">Create New Coupon</h3>
-                <button type="button" onclick="closeAddCouponModal()" class="text-gray-400 hover:text-gray-600"><i
-                        class="fas fa-times"></i></button>
+    <!-- Add Coupon Modal -->
+    <div id="add-coupon-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden p-4">
+        <div
+            class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+            <div
+                class="p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                <div>
+                    <h3 class="text-xl font-black dark:text-white">New Campaign</h3>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 italic">Promotion
+                        Protocol Entry</p>
+                </div>
+                <button onclick="closeAddCouponModal()"
+                    class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 text-gray-400 transition-all">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Coupon Code</label>
-                    <input type="text" name="code" required placeholder="SAVE10"
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white uppercase">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Label (Internal)</label>
-                    <input type="text" name="label" required placeholder="Summer Sale"
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-                </div>
-
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Discount Type</label>
-                    <select name="discount_type"
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-bold">
-                        <option value="percentage">Percentage (%)</option>
-                        <option value="fixed">Fixed Amount ($)</option>
-                    </select>
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Discount Value</label>
-                    <input type="number" step="0.01" name="discount_value" required
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+            <form onsubmit="submitAddCoupon(event)" class="p-8 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Unique
+                            Code</label>
+                        <input type="text" name="code" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20"
+                            placeholder="SUMMER2026">
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Internal
+                            Label</label>
+                        <input type="text" name="label" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20"
+                            placeholder="Summer Growth">
+                    </div>
                 </div>
 
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Min Order ($)</label>
-                    <input type="number" step="0.01" name="min_order_amount" value="0"
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Usage Limit (Global)</label>
-                    <input type="number" name="usage_limit_global" placeholder="Unlimited"
-                        class="w-full bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Disc.
+                            Type</label>
+                        <select name="discount_type"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20">
+                            <option value="percent">Percentage %</option>
+                            <option value="fixed">Fixed Amount</option>
+                            <option value="free_delivery">Free Delivery</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Disc.
+                            Value</label>
+                        <input type="number" name="discount_value" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20">
+                    </div>
                 </div>
 
-                <div class="col-span-2">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" name="is_public" class="w-5 h-5 rounded-lg text-primary focus:ring-0">
-                        <span class="text-sm font-bold text-gray-500">Public (Visible to everyone in checkout)</span>
-                    </label>
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Min
+                        Order Amount (EGP)</label>
+                    <input type="number" name="min_order_amount" value="0"
+                        class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-primary/20">
                 </div>
-            </div>
 
-            <button type="submit"
-                class="w-full mt-8 bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all">
-                Publish Coupon
-            </button>
-        </form>
+                <div class="grid grid-cols-2 gap-4 items-center p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Publically
+                        Visible</label>
+                    <div class="flex justify-end">
+                        <input type="checkbox" name="is_public"
+                            class="w-6 h-6 rounded-lg border-none bg-white dark:bg-slate-800 text-primary">
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
+                    Initialize Campaign
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
+    function initializeCoupons() {
+        loadCoupons();
+    }
+
     async function loadCoupons() {
-        const tbody = document.getElementById('coupons-tbody');
+        const container = document.getElementById('coupons-container');
         try {
             const res = await fetch('/admin/coupons');
             const data = await res.json();
 
             if (data.success) {
                 if (data.coupons.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold">No coupons found.</td></tr>';
+                    container.innerHTML = `<div class="lg:col-span-3 p-24 text-center text-gray-300">
+                        <i class="fas fa-ticket-alt text-4xl mb-4 opacity-20"></i>
+                        <p class="font-black uppercase tracking-widest">No Active Campaigns</p>
+                    </div>`;
                     return;
                 }
 
-                tbody.innerHTML = data.coupons.map(c => `
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors text-sm">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-lg font-black tracking-tighter">
-                                    ${c.code}
-                                </div>
-                                <div>
-                                    <p class="font-bold dark:text-white">${c.label}</p>
-                                    <p class="text-[10px] text-gray-400 uppercase font-black">${c.is_public ? 'Public' : 'Private'}</p>
-                                </div>
+                container.innerHTML = data.coupons.map(c => `
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 p-8 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 relative overflow-hidden">
+                        <div class="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all"></div>
+                        
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl shadow-inner font-black">
+                                <i class="fas fa-tag"></i>
                             </div>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="font-black dark:text-gray-300">
-                                ${c.discount_type === 'percentage' ? `${c.discount_value}%` : `$${parseFloat(c.discount_value).toFixed(2)}`}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <p class="font-bold text-gray-500">${c.usage_count} Used</p>
-                            <p class="text-[10px] text-gray-400">Limit: ${c.usage_limit_global || '∞'}</p>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button onclick="toggleCouponStatus('${c.id}', ${!c.is_active})" 
-                                class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider 
-                                ${c.is_active ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">
+                            <span class="px-3 py-1 bg-gray-50 dark:bg-slate-900 rounded-full text-[9px] font-black uppercase tracking-widest ${c.is_active ? 'text-green-500' : 'text-red-500'}">
                                 ${c.is_active ? 'Active' : 'Paused'}
+                            </span>
+                        </div>
+
+                        <h3 class="text-2xl font-black dark:text-white tracking-tighter mb-1">${c.code}</h3>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-6">${c.label}</p>
+
+                        <div class="space-y-3 mb-8">
+                            <div class="flex justify-between text-xs font-bold text-gray-500">
+                                <span>Discount</span>
+                                <span class="dark:text-white font-black">${c.discount_type === 'percent' ? c.discount_value + '%' : c.discount_value + ' EGP'}</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-gray-500">
+                                <span>Min. Order</span>
+                                <span class="dark:text-white font-black">${c.min_order_amount} EGP</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-gray-500">
+                                <span>Usage Count</span>
+                                <span class="dark:text-white font-black">${c.usage_count} Redemptions</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="toggleCoupon('${c.id}', ${!c.is_active})" class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${c.is_active ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-green-50 text-green-500 hover:bg-green-500 hover:text-white'} transition-all">
+                                ${c.is_active ? 'Deactivate' : 'Activate'}
                             </button>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <button onclick="deleteCoupon('${c.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-2">
-                                <i class="fas fa-trash-alt"></i>
+                            <button onclick="deleteCoupon('${c.id}')" class="py-2.5 bg-gray-50 dark:bg-slate-900 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+                                Delete
                             </button>
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
                 `).join('');
             }
         } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-400">Failed to load system.</td></tr>';
+            container.innerHTML = `<div class="lg:col-span-3 text-red-500 text-center font-bold">Failed to load promotions</div>`;
         }
     }
 
@@ -169,9 +191,8 @@
                 body: JSON.stringify(jsonData)
             });
             const data = await res.json();
-
             if (data.success) {
-                showToast('success', "Coupon published successfully!");
+                showToast('success', 'Campaign initialized successfully');
                 closeAddCouponModal();
                 loadCoupons();
                 e.target.reset();
@@ -179,41 +200,42 @@
                 showToast('error', data.message);
             }
         } catch (err) {
-            showToast('error', "Network error publishing coupon.");
+            showToast('error', 'Promotion engine connection error');
         }
     }
 
-    async function toggleCouponStatus(id, newStatus) {
+    async function toggleCoupon(id, status) {
         try {
             const res = await fetch(`/admin/coupons/${id}/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_active: newStatus })
+                body: JSON.stringify({ is_active: status })
             });
             const data = await res.json();
             if (data.success) {
-                showToast('success', "Status updated.");
+                showToast('success', `Campaign ${status ? 'activated' : 'deactivated'}`);
                 loadCoupons();
             }
         } catch (err) {
-            showToast('error', "Failed to toggle status.");
+            showToast('error', 'Failed to update campaign state');
         }
     }
 
     async function deleteCoupon(id) {
-        if (!confirm("Are you sure you want to delete this coupon? This action cannot be undone.")) return;
-
+        if (!confirm('Are you sure you want to delete this coupon? This cannot be undone.')) return;
         try {
             const res = await fetch(`/admin/coupons/${id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
-                showToast('success', data.message);
+                showToast('success', 'Campaign deleted');
                 loadCoupons();
             } else {
                 showToast('error', data.message);
             }
         } catch (err) {
-            showToast('error', "Failed to delete coupon.");
+            showToast('error', 'Failed to delete campaign');
         }
     }
+
+    initializeCoupons();
 </script>

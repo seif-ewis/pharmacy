@@ -1,0 +1,287 @@
+<div id="module-orders" class="module-content">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Orders Management</h1>
+            <p class="text-gray-500 text-sm">Search, filter, and track order lifecycles and shift attribution.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="loadOrders()"
+                class="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- PERSISTENT FILTERS BAR -->
+    <div
+        class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm mb-8 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+        <div class="col-span-1 md:col-span-2">
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-2 block">Search Order /
+                Customer</label>
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="order-search" placeholder="Type Order ID or name..."
+                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 dark:text-white transition-all">
+            </div>
+        </div>
+
+        <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-2 block">Status</label>
+            <select id="order-status-filter"
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 dark:text-white transition-all">
+                <option value="all">All States</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-2 block">Time
+                Range</label>
+            <select id="order-time-filter"
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 dark:text-white transition-all">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+
+        <button onclick="applyOrderFilters()"
+            class="px-6 py-3 bg-slate-900 dark:bg-primary text-white rounded-xl text-sm font-black uppercase tracking-widest hover:shadow-lg transition-all">
+            Search
+        </button>
+    </div>
+
+    <!-- ORDERS TABLE -->
+    <div
+        class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden">
+        <table class="w-full text-left">
+            <thead
+                class="bg-gray-50/50 dark:bg-slate-700/30 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                <tr>
+                    <th class="px-6 py-5">Order ID</th>
+                    <th class="px-6 py-5">Customer</th>
+                    <th class="px-6 py-5">Status</th>
+                    <th class="px-6 py-5">Shift / Doctor</th>
+                    <th class="px-6 py-5">Total</th>
+                    <th class="px-6 py-5">Time</th>
+                    <th class="px-6 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="orders-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+                <!-- Search-first state -->
+                <tr>
+                    <td colspan="7" class="px-6 py-24 text-center">
+                        <div class="max-w-xs mx-auto text-gray-400">
+                            <i class="fas fa-search text-5xl mb-6 opacity-20"></i>
+                            <p class="font-black dark:text-gray-500 uppercase tracking-widest mb-2">Search First</p>
+                            <p class="text-xs font-bold">Use the filters above to find specific orders. No data is
+                                auto-loaded to ensure performance.</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- PAGINATION -->
+        <div id="orders-pagination"
+            class="p-6 bg-gray-50/30 dark:bg-slate-700/10 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center hidden">
+            <span id="orders-count-info" class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Showing
+                0 orders</span>
+            <div class="flex gap-2">
+                <button id="prev-btn"
+                    class="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-xs font-bold disabled:opacity-50">Prev</button>
+                <button id="next-btn"
+                    class="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-xs font-bold disabled:opacity-50">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let orderPage = 1;
+    let orderSearchTimeout = null;
+
+    function initializeOrders() {
+        console.log("Orders Module Initialized");
+        document.getElementById('order-search').addEventListener('input', (e) => {
+            clearTimeout(orderSearchTimeout);
+            orderSearchTimeout = setTimeout(() => {
+                applyOrderFilters();
+            }, 500);
+        });
+    }
+
+    function applyOrderFilters() {
+        orderPage = 1;
+        loadOrders();
+    }
+
+    async function loadOrders() {
+        const search = document.getElementById('order-search').value;
+        const status = document.getElementById('order-status-filter').value;
+        const timeRange = document.getElementById('order-time-filter').value;
+
+        const tbody = document.getElementById('orders-tbody');
+        const pagination = document.getElementById('orders-pagination');
+
+        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 font-bold italic"><i class="fas fa-circle-notch fa-spin mr-2"></i> Loading...</td></tr>`;
+
+        try {
+            const params = new URLSearchParams({
+                search,
+                status,
+                timeRange,
+                page: orderPage,
+                limit: 15
+            });
+
+            const res = await fetch(`/admin/history/orders?${params.toString()}`);
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-24 text-center text-gray-400 font-bold italic">No orders found matching your criteria.</td></tr>';
+                    pagination.classList.add('hidden');
+                    return;
+                }
+
+                tbody.innerHTML = data.orders.map(o => `
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
+                        <td class="px-6 py-5 font-black dark:text-white">#${o.order_uid}</td>
+                        <td class="px-6 py-5">
+                            <span class="font-bold dark:text-gray-300 block">${o.customer_name}</span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getStatusClass(o.status)}">
+                                ${o.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="text-xs font-bold dark:text-gray-400 block">${o.doctor_name || 'System / Auto'}</span>
+                            <span class="text-[9px] text-gray-400 uppercase tracking-tighter">Shift #${(o.shift_id || 'N/A').substring(0, 8)}</span>
+                        </td>
+                        <td class="px-6 py-5 font-black dark:text-white text-primary">${Number(o.total_price).toLocaleString()} EGP</td>
+                        <td class="px-6 py-5 text-gray-400 font-medium">${new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td class="px-6 py-5 text-right">
+                            <button onclick="viewOrderDetails('${o.id}')" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                pagination.classList.remove('hidden');
+                document.getElementById('orders-count-info').innerText = `Total: ${data.totalCount} orders found | Page ${data.currentPage} of ${data.totalPages}`;
+
+                document.getElementById('prev-btn').disabled = data.currentPage === 1;
+                document.getElementById('next-btn').disabled = data.currentPage === data.totalPages;
+
+                document.getElementById('prev-btn').onclick = () => { orderPage--; loadOrders(); };
+                document.getElementById('next-btn').onclick = () => { orderPage++; loadOrders(); };
+            }
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-red-500 font-bold">Failed to load orders: ${err.message}</td></tr>`;
+        }
+    }
+
+    async function viewOrderDetails(id) {
+        try {
+            const res = await fetch(`/admin/history/orders/${id}`);
+            const data = await res.json();
+            if (data.success) {
+                const o = data.order;
+                const itemsHtml = data.items.map(i => `
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center border p-1 border-gray-100">
+                             <img src="${i.image_url}" class="w-full h-full object-contain" onerror="this.src='/img/medicine-placeholder.png'">
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-sm dark:text-white">${i.medicine_name}</p>
+                            <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest">Qty: ${i.quantity} × ${i.price} EGP</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-black dark:text-white text-sm">${(i.quantity * i.price).toLocaleString()} EGP</p>
+                        </div>
+                    </div>
+                `).join('');
+
+                const content = `
+                    <div class="space-y-8">
+                        <div class="p-6 bg-primary/5 rounded-3xl border border-primary/10">
+                            <p class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">Lifecycle & Attribution</p>
+                            <div class="space-y-4 mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</div>
+                                    <div>
+                                        <p class="text-xs font-black dark:text-white uppercase tracking-widest">Order Placed</p>
+                                        <p class="text-[10px] text-gray-400 font-bold">${new Date(o.created_at).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                <div class="w-[2px] h-6 bg-gray-100 dark:bg-slate-700 ml-4"></div>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>
+                                    <div>
+                                        <p class="text-xs font-black dark:text-white uppercase tracking-widest">Processed By</p>
+                                        <p class="text-[10px] text-gray-400 font-bold">${o.doctor_name || 'System'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Order Items</p>
+                            <div class="space-y-2">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-gray-50 dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-700">
+                             <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                <span class="font-bold dark:text-white">${Number(o.subtotal).toLocaleString()} EGP</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Tax (VAT)</span>
+                                <span class="font-bold dark:text-white">${Number(o.tax_amount).toLocaleString()} EGP</span>
+                            </div>
+                             <div class="flex justify-between items-center mb-4">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Delivery</span>
+                                <span class="font-bold dark:text-white">${Number(o.delivery_fee).toLocaleString()} EGP</span>
+                            </div>
+                            <hr class="border-gray-200 dark:border-slate-700 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-black dark:text-white uppercase tracking-widest">Total Price</span>
+                                <span class="text-2xl font-black text-primary">${Number(o.total_price).toLocaleString()} EGP</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                openDrawer(`Order #${o.order_uid}`, content);
+            }
+        } catch (err) {
+            showToast('error', "Failed to load order details");
+        }
+    }
+
+    function getStatusClass(status) {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+            case 'processing': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+            case 'shipped': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
+            case 'delivered': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+            case 'completed': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+            case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    }
+
+    initializeOrders();
+</script>

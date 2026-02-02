@@ -1,0 +1,210 @@
+<div id="module-prescriptions" class="module-content">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Prescription Workflow</h1>
+            <p class="text-gray-500 text-sm">Review clinical uploads, verify AI suggestions, and authorize medication
+                fulfillment.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="loadPrescriptions()"
+                class="px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                <i class="fas fa-sync-alt mr-2"></i> Refresh Queue
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-8 mb-8 ml-4 items-center">
+        <button onclick="switchPrescTab('pending')" id="presc-tab-pending"
+            class="presc-tab active flex items-center gap-3 py-2 border-b-2 border-primary text-primary font-black uppercase tracking-widest text-[10px]">
+            Pending Review <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[9px]"
+                id="count-pending-presc">0</span>
+        </button>
+        <button onclick="switchPrescTab('approved')" id="presc-tab-approved"
+            class="presc-tab flex items-center gap-3 py-2 border-b-2 border-transparent text-gray-400 font-extrabold uppercase tracking-widest text-[10px] hover:text-gray-600">
+            Approved History
+        </button>
+        <button onclick="switchPrescTab('rejected')" id="presc-tab-rejected"
+            class="presc-tab flex items-center gap-3 py-2 border-b-2 border-transparent text-gray-400 font-extrabold uppercase tracking-widest text-[10px] hover:text-gray-600">
+            Rejected
+        </button>
+    </div>
+
+    <div id="presc-list-tbody" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Cards loaded via AJAX -->
+        <div class="lg:col-span-3 p-12 text-center text-gray-400 italic font-bold">
+            <i class="fas fa-circle-notch fa-spin mr-2"></i> Synching clinic database...
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPrescStatus = 'pending';
+
+    function initializePrescriptions() {
+        loadPrescriptions();
+    }
+
+    async function loadPrescriptions() {
+        const container = document.getElementById('presc-list-tbody');
+        try {
+            const res = await fetch(`/admin/prescriptions?status=${currentPrescStatus}`);
+            const data = await res.json();
+
+            if (data.success) {
+                document.getElementById('count-pending-presc').innerText = currentPrescStatus === 'pending' ? data.totalCount : '--';
+
+                if (data.prescriptions.length === 0) {
+                    container.innerHTML = `<div class="lg:col-span-3 p-24 text-center">
+                        <i class="fas fa-clipboard-check text-4xl text-gray-200 mb-4"></i>
+                        <p class="text-gray-400 font-black uppercase tracking-widest">No ${currentPrescStatus} prescriptions found</p>
+                    </div>`;
+                    return;
+                }
+
+                container.innerHTML = data.prescriptions.map(p => `
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 border-b-4 ${getStatusBorder(p.status)}">
+                        <div class="h-48 bg-slate-100 dark:bg-slate-900 overflow-hidden relative">
+                            <img src="${p.image_url}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" loading="lazy">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                                <span class="text-[10px] font-black text-white uppercase tracking-widest">ID: ${p.id.substring(0, 8)}</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-black dark:text-white tracking-tighter">${p.customer_name}</h3>
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">${p.customer_email}</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-file-medical"></i>
+                                </div>
+                            </div>
+                            
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Internal Status</p>
+                            <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${getStatusClass(p.status)} mb-6 inline-block">
+                                ${p.status}
+                            </span>
+
+                            <button onclick="viewPrescriptionDetails('${p.id}')" class="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all">
+                                Open Clinical Review
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {
+            container.innerHTML = '<div class="lg:col-span-3 p-8 text-center text-red-500">Failed to load queue.</div>';
+        }
+    }
+
+    function switchPrescTab(status) {
+        currentPrescStatus = status;
+        document.querySelectorAll('.presc-tab').forEach(btn => {
+            if (btn.id === `presc-tab-${status}`) {
+                btn.classList.add('active', 'border-primary', 'text-primary');
+                btn.classList.remove('border-transparent', 'text-gray-400');
+            } else {
+                btn.classList.remove('active', 'border-primary', 'text-primary');
+                btn.classList.add('border-transparent', 'text-gray-400');
+            }
+        });
+        loadPrescriptions();
+    }
+
+    async function viewPrescriptionDetails(id) {
+        try {
+            const res = await fetch(`/admin/prescriptions/${id}`);
+            const data = await res.json();
+            if (data.success) {
+                const p = data.prescription;
+                const ai = data.ai_results;
+
+                const aiHtml = ai ? `
+                    <div class="p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/20 mb-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500 text-white flex items-center justify-center text-xs">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <span class="text-[10px] font-black text-indigo-900 dark:text-indigo-400 uppercase tracking-widest">AI Clinical Suggestion</span>
+                        </div>
+                        <p class="text-sm font-bold dark:text-gray-300 leading-relaxed mb-4 italic">"I detected: ${ai.detected_meds || 'Unclear handwriting'}. Confidence Score: ${ai.confidence}%"</p>
+                        <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest">Disclaimer: Final decision must be made by a licensed doctor.</p>
+                    </div>
+                ` : `<div class="p-4 text-center text-gray-400 italic text-xs mb-6">AI analysis not available for this upload.</div>`;
+
+                const actionHtml = p.status === 'pending' ? `
+                    <div class="space-y-4">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-2">Final Conclusion</p>
+                        <textarea id="presc-notes" class="w-full p-4 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20" placeholder="Internal clinical notes..."></textarea>
+                        
+                        <div class="flex gap-4">
+                            <button onclick="processPresc('${p.id}', 'rejected')" class="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">Reject Upload</button>
+                            <button onclick="processPresc('${p.id}', 'approved')" class="flex-1 py-4 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">Approve & Sign</button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="p-6 bg-gray-50 dark:bg-slate-900 rounded-2xl text-center">
+                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Conclusion Reached</p>
+                         <p class="mt-2 font-black dark:text-white">${p.status.toUpperCase()}</p>
+                    </div>
+                `;
+
+                const content = `
+                    <div class="space-y-6">
+                         <div class="rounded-3xl overflow-hidden border border-gray-100 dark:border-slate-800 shadow-lg mb-6">
+                            <img src="${p.image_url}" class="w-full">
+                        </div>
+                        
+                        ${aiHtml}
+                        
+                        ${actionHtml}
+                    </div>
+                `;
+
+                openDrawer(`Clinical Review: ${p.customer_name}`, content, 'Prescription Protocol');
+            }
+        } catch (err) {
+            showToast('error', 'Clinical error fetching prescription details');
+        }
+    }
+
+    async function processPresc(id, status) {
+        const notes = document.getElementById('presc-notes')?.value || '';
+        try {
+            const res = await fetch(`/admin/prescriptions/${id}/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, notes, final_meds: [] })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('success', `Prescription ${status} and logged in shift.`);
+                closeDrawer();
+                loadPrescriptions();
+            }
+        } catch (err) {
+            showToast('error', 'Network failure during authorization');
+        }
+    }
+
+    function getStatusClass(status) {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-700';
+            case 'approved': return 'bg-green-100 text-green-700';
+            case 'rejected': return 'bg-red-100 text-red-700';
+            default: return 'bg-gray-100 text-gray-500';
+        }
+    }
+
+    function getStatusBorder(status) {
+        switch (status) {
+            case 'pending': return 'border-yellow-200';
+            case 'approved': return 'border-green-200';
+            case 'rejected': return 'border-red-200';
+            default: return 'border-gray-100';
+        }
+    }
+
+    initializePrescriptions();
+</script>

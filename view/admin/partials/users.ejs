@@ -1,94 +1,119 @@
-<div class="flex items-center justify-between mb-8">
-    <div>
-        <h1 class="text-3xl font-black dark:text-white mb-2">User Management</h1>
-        <p class="text-gray-500">Search and filter through all registered pharmacy users.</p>
+<div id="module-users" class="module-content">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Patient Directory</h1>
+            <p class="text-gray-500 text-sm">Search and manage patient profiles and order history.</p>
+        </div>
     </div>
-</div>
 
-<!-- Filters & Search -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-    <div class="relative">
-        <input type="text" id="user-search" oninput="loadUsers()" placeholder="Search by name or email..."
-            class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 pl-10 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white">
-        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+    <!-- SEARCH BAR -->
+    <div
+        class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm mb-8 flex gap-4">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="user-search" placeholder="Search by name, email, or phone..."
+                class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 dark:text-white">
+        </div>
+        <button onclick="loadUsers()"
+            class="px-8 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+            Find Patient
+        </button>
     </div>
-    <select id="user-role-filter" onchange="loadUsers()"
-        class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary shadow-sm dark:text-white font-bold">
-        <option value="all">All Roles</option>
-        <option value="patient">Patients</option>
-        <option value="doctor">Doctors</option>
-        <option value="admin">Administrators</option>
-    </select>
-</div>
 
-<!-- Users Table -->
-<div
-    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-    <table class="w-full text-left">
-        <thead class="bg-gray-50 dark:bg-slate-700/50 text-xs font-bold text-gray-400 uppercase tracking-widest">
-            <tr>
-                <th class="px-6 py-4">User Details</th>
-                <th class="px-6 py-4">Role</th>
-                <th class="px-6 py-4">Contact</th>
-                <th class="px-6 py-4 text-center">Orders</th>
-                <th class="px-6 py-4 text-right">Joined</th>
-            </tr>
-        </thead>
-        <tbody id="users-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
-            <!-- Loaded via AJAX -->
-        </tbody>
-    </table>
+    <!-- USERS TABLE -->
+    <div
+        class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden">
+        <table class="w-full text-left">
+            <thead
+                class="bg-gray-50/50 dark:bg-slate-700/30 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                <tr>
+                    <th class="px-6 py-5">Patient Name</th>
+                    <th class="px-6 py-5">Contact Details</th>
+                    <th class="px-6 py-5 text-center">Orders</th>
+                    <th class="px-6 py-5">Joined</th>
+                    <th class="px-6 py-5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody" class="divide-y divide-gray-50 dark:divide-slate-700">
+                <tr>
+                    <td colspan="5" class="px-6 py-24 text-center">
+                        <div class="max-w-xs mx-auto text-gray-300">
+                            <i class="fas fa-user-search text-5xl mb-6 opacity-20"></i>
+                            <p class="font-black dark:text-gray-500 uppercase tracking-widest mb-2">Search Required</p>
+                            <p class="text-xs font-bold">To protect performance, use the search bar above to fetch
+                                patient records.</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
+    function initializeUsers() {
+        // No auto-load as per commandment
+    }
+
     async function loadUsers() {
         const search = document.getElementById('user-search').value;
-        const role = document.getElementById('user-role-filter').value;
         const tbody = document.getElementById('users-tbody');
 
+        if (!search) {
+            showToast('info', 'Please enter a name or email to search');
+            return;
+        }
+
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 font-bold italic">Finding patients...</td></tr>';
+
         try {
-            const res = await fetch(`/admin/users/all?search=${encodeURIComponent(search)}&role=${role}`);
+            const res = await fetch(`/admin/users/all?search=${search}`);
             const data = await res.json();
 
             if (data.success) {
                 if (data.users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">No users found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-24 text-center text-gray-400 font-bold italic">No patients found.</td></tr>';
                     return;
                 }
 
                 tbody.innerHTML = data.users.map(u => `
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors text-sm">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-500 font-bold uppercase">
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-all text-sm group">
+                        <td class="px-6 py-5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-black dark:text-white">
                                     ${u.full_name.charAt(0)}
                                 </div>
-                                <div>
-                                    <p class="font-bold dark:text-white line-clamp-1">${u.full_name}</p>
-                                    <p class="text-xs text-gray-400">${u.email}</p>
-                                </div>
+                                <span class="font-black dark:text-white">${u.full_name}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider 
-                                ${u.role === 'admin' ? 'bg-red-100 text-red-600' : u.role === 'doctor' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}">
-                                ${u.role}
+                        <td class="px-6 py-5">
+                            <p class="text-xs font-bold dark:text-gray-300">${u.email}</p>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest">${u.phone || 'No phone'}</p>
+                        </td>
+                        <td class="px-6 py-5 text-center">
+                            <span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                ${u.orders_count || 0} Orders
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
-                            ${u.phone || 'No phone'}
-                        </td>
-                        <td class="px-6 py-4 text-center font-bold dark:text-gray-300">
-                            ${u.total_orders_placed}
-                        </td>
-                        <td class="px-6 py-4 text-right text-xs text-gray-400">
+                        <td class="px-6 py-5 text-gray-400 font-medium text-xs">
                             ${new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                        <td class="px-6 py-5 text-right">
+                             <button onclick="viewUserDetails('${u.id}')" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center text-gray-400 hover:text-primary transition-all">
+                                <i class="fas fa-history"></i>
+                            </button>
                         </td>
                     </tr>
                 `).join('');
             }
         } catch (err) {
-            console.error("Failed to load users:", err);
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-500 font-bold">Failed to connect to patient database.</td></tr>';
         }
     }
+
+    async function viewUserDetails(id) {
+        showToast('info', 'Deep user profile coming in settings update');
+    }
+
+    initializeUsers();
 </script>

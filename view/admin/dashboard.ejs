@@ -1,184 +1,378 @@
 <!DOCTYPE html>
 <html lang="en">
 <%- include('partials/admin_head') %>
-    <title>
-        <%= typeof pageTitle !=='undefined' ? pageTitle : 'Admin' %> | Admin Panel
-    </title>
 
-    <style>
-        .admin-sidebar-item.active {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-            border-right: 4px solid #3b82f6;
-        }
+    <body class="bg-[#F8FAFC] dark:bg-[#020617] min-h-screen flex flex-col custom-scrollbar overflow-x-hidden">
 
-        .module-content.hidden {
-            display: none;
-        }
-
-        .module-content {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
-
-    <body class="bg-gray-50 dark:bg-slate-900 min-h-screen custom-scrollbar">
-        <div class="flex">
-            <!-- Sidebar -->
-            <aside
-                class="w-64 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 min-h-screen sticky top-0 shrink-0">
-                <div class="p-6">
-                    <div class="flex items-center gap-3 mb-10">
-                        <div
-                            class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                            <i class="fas fa-user-shield text-xl"></i>
+        <!-- TOP BAR (Always Visible) -->
+        <header
+            class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-slate-800 sticky top-0 z-40 px-8 flex items-center justify-between transition-all">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Store Status</p>
+                        <div class="flex items-center gap-2">
+                            <span id="store-status-text"
+                                class="text-sm font-black dark:text-white uppercase">OFFLINE</span>
+                            <div id="store-status-dot" class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
                         </div>
-                        <span class="font-black text-xl dark:text-white tracking-tighter">Admin <span
-                                class="text-primary">Panel</span></span>
+                    </div>
+                </div>
+
+                <div class="h-8 w-[1px] bg-gray-100 dark:bg-slate-800"></div>
+
+                <div class="flex items-center gap-6">
+                    <div id="active-shift-badge"
+                        class="hidden flex items-center gap-4 py-2 px-4 bg-primary/5 rounded-2xl border border-primary/10">
+                        <div
+                            class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow-lg shadow-primary/30">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div>
+                            <p id="active-doctor-name"
+                                class="text-xs font-black dark:text-white tracking-tight leading-none mb-1">Dr.
+                                Loading...</p>
+                            <p id="shift-start-time"
+                                class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Started --:--</p>
+                        </div>
+                        <div class="ml-4 pl-4 border-l border-primary/20 text-right">
+                            <p class="text-[9px] font-black text-primary uppercase tracking-widest">Live Revenue</p>
+                            <p id="live-revenue-text" class="text-sm font-black dark:text-white">+0 EGP</p>
+                        </div>
+                    </div>
+                    <div id="no-shift-warning"
+                        class="flex items-center gap-2 text-amber-500 bg-amber-50 dark:bg-amber-900/10 px-4 py-2 rounded-2xl border border-amber-100 dark:border-amber-900/20">
+                        <i class="fas fa-exclamation-triangle text-xs"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">No Active Shift</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-black dark:text-white mb-0.5">
+                        <%= user.full_name %>
+                    </p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                        <%= user.role %>
+                    </p>
+                </div>
+                <div
+                    class="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black shadow-lg border-2 border-white dark:border-slate-700">
+                    <%= user.full_name.charAt(0) %>
+                </div>
+                <a href="/logout"
+                    class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- SIDEBAR -->
+            <aside
+                class="w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0 z-30 transition-all overflow-y-auto custom-scrollbar">
+                <div class="p-8">
+                    <div class="flex items-center gap-3 mb-10 pl-2">
+                        <div
+                            class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-primary/30">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <span class="font-black text-lg dark:text-white tracking-tighter">PHARMA<span
+                                class="text-primary">OS</span></span>
                     </div>
 
-                    <nav class="space-y-1">
+                    <nav class="space-y-1.5" id="sidebar-nav">
+                        <p
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
+                            Operation</p>
                         <button onclick="showModule('overview')"
-                            class="admin-sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            class="sidebar-item active w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
                             data-module="overview">
-                            <i class="fas fa-th-large w-5"></i> Overview
+                            <i class="fas fa-th-large w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Overview
                         </button>
-                        <button onclick="showModule('users')"
-                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
-                            data-module="users">
-                            <i class="fas fa-users w-5"></i> All Users
+                        <button onclick="showModule('orders')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="orders">
+                            <i
+                                class="fas fa-shopping-basket w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Orders
+                        </button>
+                        <button onclick="showModule('shift')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="shift">
+                            <i class="fas fa-clock w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Shift Log
+                        </button>
+                        <button onclick="showModule('prescriptions')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="prescriptions">
+                            <i
+                                class="fas fa-file-medical w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Prescriptions
+                        </button>
+
+                        <p
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
+                            Resources</p>
+                        <button onclick="showModule('inventory')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="inventory">
+                            <i class="fas fa-boxes w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Inventory
                         </button>
                         <button onclick="showModule('doctors')"
-                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
                             data-module="doctors">
-                            <i class="fas fa-user-md w-5"></i> Doctors
+                            <i class="fas fa-user-md w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Doctors
+                        </button>
+                        <button onclick="showModule('users')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="users">
+                            <i class="fas fa-id-card w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Patients
+                        </button>
+
+                        <p
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
+                            Intelligence</p>
+                        <button onclick="showModule('analytics')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="analytics">
+                            <i class="fas fa-chart-line w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Analytics
                         </button>
                         <button onclick="showModule('coupons')"
-                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
                             data-module="coupons">
-                            <i class="fas fa-ticket-alt w-5"></i> Coupons
+                            <i class="fas fa-ticket-alt w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Coupons
                         </button>
-                        <button onclick="showModule('history')"
-                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
-                            data-module="history">
-                            <i class="fas fa-history w-5"></i> Global History
-                        </button>
+
+                        <p
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
+                            Governance</p>
                         <button onclick="showModule('settings')"
-                            class="admin-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
                             data-module="settings">
-                            <i class="fas fa-cog w-5"></i> Settings
+                            <i class="fas fa-cog w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Settings
+                        </button>
+                        <button onclick="showModule('audit')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="audit">
+                            <i class="fas fa-shield-alt w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Audit Logs
                         </button>
                     </nav>
                 </div>
-
-                <div class="absolute bottom-6 left-6 right-6">
-                    <a href="/"
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
-                        <i class="fas fa-arrow-left"></i> Back to Site
-                    </a>
-                </div>
             </aside>
 
-            <!-- Main Content -->
-            <main class="flex-1 p-8">
-                <div id="module-overview" class="module-content">
-                    <%- include('partials/overview') %>
-                </div>
-                <div id="module-users" class="module-content hidden">
-                    <%- include('partials/users') %>
-                </div>
-                <div id="module-doctors" class="module-content hidden">
-                    <%- include('partials/doctors') %>
-                </div>
-                <div id="module-coupons" class="module-content hidden">
-                    <%- include('partials/coupons') %>
-                </div>
-                <div id="module-history" class="module-content hidden">
-                    <%- include('partials/history') %>
-                </div>
-                <div id="module-settings" class="module-content hidden">
-                    <%- include('partials/settings') %>
+            <!-- MAIN CONTENT AREA -->
+            <main class="flex-1 overflow-y-auto custom-scrollbar relative p-8 lg:p-12">
+                <div id="module-container" class="max-w-7xl mx-auto">
+                    <!-- AJAX loaded modules land here -->
+                    <div class="flex items-center justify-center min-h-[60vh]">
+                        <div class="text-center">
+                            <i class="fas fa-circle-notch fa-spin text-4xl text-primary/20 mb-4"></i>
+                            <p class="font-black text-gray-400 uppercase tracking-[0.3em]">Synching Core...</p>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
 
+        <!-- SIDE DRAWER (Global Detail Viewer) -->
+        <div id="global-drawer"
+            class="fixed inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-slate-900 shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.1)] z-50 translate-x-full transition-transform duration-500 ease-in-out border-l border-gray-100 dark:border-slate-800">
+            <div class="h-full flex flex-col">
+                <div
+                    class="p-8 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                    <div>
+                        <h3 id="drawer-title" class="text-2xl font-black dark:text-white tracking-tighter">Details</h3>
+                        <p id="drawer-subtitle"
+                            class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mt-1 italic">Resource
+                            Metadata</p>
+                    </div>
+                    <button onclick="closeDrawer()"
+                        class="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-400 hover:text-primary transition-all shadow-sm">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="drawer-content" class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <!-- Async detail content -->
+                </div>
+            </div>
+        </div>
+        <div id="drawer-overlay" onclick="closeDrawer()"
+            class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300">
+        </div>
+
+        <style>
+            .sidebar-item {
+                color: #94A3B8;
+            }
+
+            .sidebar-item:hover {
+                color: #1E3A8A;
+                background: rgba(30, 58, 138, 0.05);
+            }
+
+            .sidebar-item.active {
+                color: white;
+                background: #1E3A8A;
+                box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.2);
+            }
+
+            .dark .sidebar-item.active {
+                background: #2563EB;
+                box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            }
+        </style>
+
         <script>
-            function showModule(moduleId) {
-                // Hide all modules
-                document.querySelectorAll('.module-content').forEach(el => el.classList.add('hidden'));
-                // Remove active from all buttons
-                document.querySelectorAll('.admin-sidebar-item').forEach(el => el.classList.remove('active'));
+            let currentModule = null;
 
-                // Show target module
-                const target = document.getElementById(`module-${moduleId}`);
-                if (target) target.classList.remove('hidden');
+            async function showModule(name) {
+                if (currentModule === name) return;
 
-                // Set active button
-                const btn = document.querySelector(`[data-module="${moduleId}"]`);
-                if (btn) btn.classList.add('active');
+                const container = document.getElementById('module-container');
+                const navItems = document.querySelectorAll('.sidebar-item');
 
-                // Trigger load functions
-                switch (moduleId) {
-                    case 'overview': loadStats(); break;
-                    case 'users': loadUsers(); break;
-                    case 'doctors': loadDoctors(); break;
-                    case 'coupons': loadCoupons(); break;
-                    case 'history': loadHistory('orders'); break;
-                    case 'settings': loadSettings(); break;
+                // Set Loading state
+                container.innerHTML = `<div class="flex items-center justify-center min-h-[60vh] animate-pulse">
+                <div class="text-center">
+                    <i class="fas fa-circle-notch fa-spin text-4xl text-primary/20 mb-4"></i>
+                    <p class="font-black text-gray-400 uppercase tracking-widest">Loading ${name}...</p>
+                </div>
+            </div>`;
+
+                // Update Nav UI
+                navItems.forEach(item => {
+                    if (item.getAttribute('data-module') === name) item.classList.add('active');
+                    else item.classList.remove('active');
+                });
+
+                try {
+                    const res = await fetch(`/admin/module/${name}`);
+                    const html = await res.text();
+
+                    container.innerHTML = html;
+                    currentModule = name;
+
+                    // Fire initialization event if defined in the partial
+                    const initFunc = `initialize${name.charAt(0).toUpperCase() + name.slice(1)}`;
+                    if (typeof window[initFunc] === 'function') {
+                        window[initFunc]();
+                    }
+
+                    // Update URL hash without reload
+                    window.location.hash = name;
+
+                } catch (err) {
+                    container.innerHTML = `<div class="p-12 text-center text-red-500 font-bold">Failed to load module. Check network or permissions.</div>`;
                 }
             }
 
-            async function loadStats() {
+            async function updateTopBar() {
                 try {
-                    const res = await fetch('/admin/stats');
+                    const res = await fetch('/admin/summary');
                     const data = await res.json();
-                    if (data.success) {
-                        const s = data.stats;
-                        const kpis = document.querySelectorAll('#module-overview h3.text-2xl');
-                        if (kpis.length >= 4) {
-                            kpis[0].innerText = `$${Number(s.net_revenue).toFixed(2)}`;
-                            kpis[1].innerText = s.total_orders;
-                            kpis[2].innerText = s.total_doctors;
-                            kpis[3].innerText = s.total_coupons;
-                        }
+                    if (!data.success) return;
+
+                    // 1. Store Status (is_open)
+                    const statusText = document.getElementById('store-status-text');
+                    const statusDot = document.getElementById('store-status-dot');
+                    if (statusText && statusDot) {
+                        statusText.innerText = data.is_open ? 'ONLINE' : 'OFFLINE';
+                        statusDot.className = `w-2 h-2 rounded-full ${data.is_open ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`;
+                    }
+
+                    // 2. Active Shift Badge & Warning
+                    const badge = document.getElementById('active-shift-badge');
+                    const warning = document.getElementById('no-shift-warning');
+
+                    if (data.active_shift) {
+                        if (badge) badge.classList.remove('hidden');
+                        if (warning) warning.classList.add('hidden');
+
+                        const drName = document.getElementById('active-doctor-name');
+                        const startTime = document.getElementById('shift-start-time');
+                        const liveRev = document.getElementById('live-revenue-text');
+
+                        if (drName) drName.innerText = data.active_shift.doctor_name;
+                        if (startTime) startTime.innerText = `Started ${new Date(data.active_shift.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                        if (liveRev) liveRev.innerText = `+${Number(data.active_shift.net_revenue).toLocaleString()} EGP`;
+                    } else {
+                        if (badge) badge.classList.add('hidden');
+                        if (warning) warning.classList.remove('hidden');
                     }
                 } catch (err) {
-                    console.error("Failed to load global stats");
+                    console.warn("Polling failed", err);
                 }
             }
 
-            // Load stats on initial page load
-            window.addEventListener('load', () => loadStats());
+            // Drawer Logic
+            function openDrawer(title, content, subtitle = 'Resource Metadata') {
+                const drawer = document.getElementById('global-drawer');
+                const overlay = document.getElementById('drawer-overlay');
 
-            // Global Toast Helper
+                document.getElementById('drawer-title').innerText = title;
+                document.getElementById('drawer-subtitle').innerText = subtitle;
+                document.getElementById('drawer-content').innerHTML = content;
+
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.style.opacity = '1';
+                    drawer.classList.remove('translate-x-full');
+                }, 10);
+            }
+
+            function closeDrawer() {
+                const drawer = document.getElementById('global-drawer');
+                const overlay = document.getElementById('drawer-overlay');
+
+                drawer.classList.add('translate-x-full');
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+
+            // Global ShowToast (Fallback if Toastify not loaded)
             function showToast(type, message) {
                 if (window.Toastify) {
                     Toastify({
                         text: message,
-                        duration: 3000,
+                        duration: 4000,
                         gravity: "top",
                         position: "right",
                         style: {
-                            background: type === 'success' ? "#10b981" : "#ef4444",
-                            borderRadius: "12px",
-                            fontWeight: "bold"
+                            background: type === 'success' ? "linear-gradient(to right, #10b981, #059669)" : "linear-gradient(to right, #ef4444, #dc2626)",
+                            borderRadius: "20px",
+                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                            fontFamily: "'Inter', sans-serif",
+                            fontWeight: "800",
+                            textTransform: "uppercase",
+                            fontSize: "10px",
+                            letterSpacing: "0.1em",
+                            padding: "16px 24px"
                         }
                     }).showToast();
-                } else {
-                    alert(message);
-                }
+                } else alert(message);
             }
+
+            // Bootstrap
+            window.onload = () => {
+                const hash = window.location.hash.replace('#', '') || 'overview';
+                showModule(hash);
+                updateTopBar();
+                setInterval(updateTopBar, 15000); // 15s Revenue/Shift Status Polling
+            };
         </script>
     </body>
 

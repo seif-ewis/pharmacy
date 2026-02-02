@@ -32,13 +32,16 @@ export const getUsers = async (req, res) => {
     }
 };
 
-// GET: View Doctors & Stats
+// GET: View Doctors & Stats (Hardened for Dashboard V2)
 export const getDoctors = async (req, res) => {
     try {
         const result = await db.query(`
             SELECT u.id, u.full_name, u.email, u.phone, u.created_at,
-            (SELECT COUNT(*) FROM orders WHERE processed_by = u.id) as orders_count,
-            (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE processed_by = u.id) as total_revenue
+            (SELECT COUNT(*)::INTEGER FROM orders WHERE processed_by = u.id AND status IN ('completed', 'delivered') AND date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE)) as month_orders,
+            (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE processed_by = u.id AND status IN ('completed', 'delivered') AND date_trunc('month', created_at) = date_trunc('month', CURRENT_DATE)) as month_revenue,
+            (SELECT opened_at FROM shifts WHERE opened_by = u.id ORDER BY opened_at DESC LIMIT 1) as last_shift_at,
+            (SELECT net_revenue FROM shifts WHERE opened_by = u.id AND status = 'closed' ORDER BY closed_at DESC LIMIT 1) as last_shift_revenue,
+            (SELECT status FROM shifts WHERE opened_by = u.id AND status = 'open' LIMIT 1) as current_shift_status
             FROM users u
             WHERE u.role = 'doctor'
             ORDER BY u.created_at DESC

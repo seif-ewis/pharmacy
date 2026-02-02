@@ -1,87 +1,246 @@
-<div class="mb-8">
-    <h1 class="text-3xl font-black dark:text-white mb-2">Dashboard Overview</h1>
-    <p class="text-gray-500">Global pharmacy performance and status metrics.</p>
+<div id="module-overview" class="module-content">
+    <div class="mb-10 flex justify-between items-end">
+        <div>
+            <h1 class="text-4xl font-black dark:text-white mb-2 tracking-tighter">Command Center</h1>
+            <p class="text-gray-500 font-medium">Situational overview of today's clinical and financial health.</p>
+        </div>
+        <div class="flex gap-4">
+            <div
+                class="px-6 py-3 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Pulsing</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI ROW (Cached/Fast) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center text-xl group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <span
+                    class="text-[10px] font-black text-green-500 bg-green-50 dark:bg-green-900/10 px-2 py-1 rounded-lg uppercase tracking-widest">Today</span>
+            </div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Net Revenue</p>
+            <h3 id="kpi-revenue" class="text-3xl font-black dark:text-white tracking-tighter loading-shimmer">0.00 EGP
+            </h3>
+        </div>
+
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm group hover:shadow-xl hover:shadow-blue/5 transition-all duration-500">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-blue-500/5 text-blue-500 flex items-center justify-center text-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-500">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <span
+                    class="text-[10px] font-black text-blue-500 bg-blue-50 dark:bg-blue-900/10 px-2 py-1 rounded-lg uppercase tracking-widest">Total</span>
+            </div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Orders Count</p>
+            <h3 id="kpi-orders" class="text-3xl font-black dark:text-white tracking-tighter">0</h3>
+        </div>
+
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm group hover:shadow-xl hover:shadow-amber/5 transition-all duration-500">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-amber-500/5 text-amber-500 flex items-center justify-center text-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <span
+                    class="text-[10px] font-black text-gray-400 bg-gray-50 dark:bg-slate-900 px-2 py-1 rounded-lg uppercase tracking-widest">Staff</span>
+            </div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Medical Staff</p>
+            <h3 id="kpi-doctors" class="text-3xl font-black dark:text-white tracking-tighter">0</h3>
+        </div>
+
+        <div
+            class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm group hover:shadow-xl hover:shadow-indigo/5 transition-all duration-500">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-indigo-500/5 text-indigo-500 flex items-center justify-center text-xl group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <span
+                    class="text-[10px] font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/10 px-2 py-1 rounded-lg uppercase tracking-widest">Active</span>
+            </div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Active Coupons</p>
+            <h3 id="kpi-coupons" class="text-3xl font-black dark:text-white tracking-tighter">0</h3>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- OPERATIONAL ALERTS -->
+        <div class="lg:col-span-1 space-y-4">
+            <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] font-black ml-4 mb-4">Operational
+                Status</h2>
+
+            <div id="alert-no-shift"
+                class="hidden p-6 bg-red-50 dark:bg-red-900/10 rounded-3xl border border-red-100 dark:border-red-900/20">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg">
+                        <i class="fas fa-exclamation-circle font-black"></i>
+                    </div>
+                    <p class="font-black text-red-900 dark:text-red-400 uppercase text-xs tracking-widest">Critical
+                        Alert</p>
+                </div>
+                <p class="text-xs font-bold text-red-700 dark:text-red-500/80 leading-relaxed mb-4">Store is currently
+                    OPEN but no medical shift is active. Revenue attribution is disabled.</p>
+                <button onclick="showModule('shift')"
+                    class="w-full py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-600/20 hover:scale-105 transition-all">Authorize
+                    Shift Now</button>
+            </div>
+
+            <div
+                class="p-6 bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
+                <h3 class="text-xs font-black dark:text-white uppercase tracking-widest mb-4">Task Queue</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-xl">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pending
+                            Prescriptions</span>
+                        <span id="stat-pending-presc" class="text-sm font-black dark:text-white">...</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-xl">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Low Stock
+                            Items</span>
+                        <span id="stat-low-stock" class="text-sm font-black text-amber-500">...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CURRENT SHIFT PANEL -->
+        <div class="lg:col-span-2">
+            <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] font-black ml-4 mb-4">Active
+                Shift Heartbeat</h2>
+            <div id="active-shift-panel"
+                class="bg-slate-900 dark:bg-black rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+                <!-- Background decor -->
+                <div
+                    class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[100px] group-hover:bg-primary/30 transition-all duration-700">
+                </div>
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px]"></div>
+
+                <div id="shift-content-active" class="relative z-10 hidden">
+                    <div class="flex justify-between items-start mb-10">
+                        <div class="flex items-center gap-6">
+                            <div
+                                class="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-md flex items-center justify-center text-4xl shadow-2xl">
+                                <i class="fas fa-user-md text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 id="panel-doctor-name" class="text-3xl font-black tracking-tighter mb-1">Dr.
+                                    Loading...</h3>
+                                <p id="panel-shift-time"
+                                    class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Session
+                                    started at --:--</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div
+                                class="inline-flex items-center px-4 py-1.5 bg-green-500/10 text-green-500 rounded-full border border-green-500/20 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                                Live Session
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+                            <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Orders</p>
+                            <p id="panel-orders" class="text-xl font-black">0</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+                            <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Returns</p>
+                            <p id="panel-returns" class="text-xl font-black text-red-400">0</p>
+                        </div>
+                        <div
+                            class="p-4 rounded-2xl bg-white/10 border border-white/10 col-span-2 flex justify-between items-end">
+                            <div>
+                                <p class="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Shift Net
+                                    Revenue</p>
+                                <p id="panel-net" class="text-3xl font-black tracking-tighter loading-shimmer">0 EGP</p>
+                            </div>
+                            <button onclick="showModule('shift')"
+                                class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white text-white hover:text-black transition-all flex items-center justify-center">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shift-content-empty"
+                    class="relative z-10 flex flex-col items-center justify-center py-20 text-center">
+                    <div
+                        class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl text-gray-600 mb-6">
+                        <i class="fas fa-power-off"></i>
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tighter mb-2">No Active Medical Session</h3>
+                    <p class="text-gray-500 max-w-xs font-bold text-sm italic">The store is operational but no doctor is
+                        currently signed in to authorize transactions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- KPIs -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center gap-4 mb-4">
-            <div
-                class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-green-600">
-                <i class="fas fa-dollar-sign text-xl"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Revenue</p>
-                <h3 class="text-2xl font-black dark:text-white">$0.00</h3>
-            </div>
-        </div>
-        <p class="text-xs text-green-500 font-bold"><i class="fas fa-arrow-up mr-1"></i> 12% from last month</p>
-    </div>
+<script>
+    function initializeOverview() {
+        console.log("Overview Initialized");
+        loadOverviewStats();
+    }
 
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center gap-4 mb-4">
-            <div
-                class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600">
-                <i class="fas fa-shopping-cart text-xl"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Orders</p>
-                <h3 class="text-2xl font-black dark:text-white">0</h3>
-            </div>
-        </div>
-        <p class="text-xs text-blue-500 font-bold">Processed globally</p>
-    </div>
+    async function loadOverviewStats() {
+        try {
+            // 1. Load Caching KPIs
+            const kpiRes = await fetch('/admin/stats');
+            const kpiData = await kpiRes.json();
+            if (kpiData.success) {
+                const s = kpiData.stats;
+                document.getElementById('kpi-revenue').innerText = `${Number(s.net_revenue).toLocaleString()} EGP`;
+                document.getElementById('kpi-orders').innerText = s.total_orders;
+                document.getElementById('kpi-doctors').innerText = s.total_doctors;
+                document.getElementById('kpi-coupons').innerText = s.total_coupons;
+            }
 
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center gap-4 mb-4">
-            <div
-                class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600">
-                <i class="fas fa-user-md text-xl"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Active Doctors</p>
-                <h3 class="text-2xl font-black dark:text-white">0</h3>
-            </div>
-        </div>
-        <p class="text-xs text-purple-500 font-bold">Currently on duty</p>
-    </div>
+            // 2. Load Shift & Alert Context
+            const summaryRes = await fetch('/admin/summary');
+            const data = await summaryRes.json();
 
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center gap-4 mb-4">
-            <div
-                class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600">
-                <i class="fas fa-ticket-alt text-xl"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Active Coupons</p>
-                <h3 class="text-2xl font-black dark:text-white">0</h3>
-            </div>
-        </div>
-        <p class="text-xs text-amber-500 font-bold">Promotions live</p>
-    </div>
-</div>
+            // Pending Stats (Replace with real API if wanted later)
+            document.getElementById('stat-pending-presc').innerText = '--';
+            document.getElementById('stat-low-stock').innerText = '--';
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Chart placeholder -->
-    <div
-        class="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm h-96 flex items-center justify-center text-gray-400">
-        <div class="text-center">
-            <i class="fas fa-chart-line text-6xl mb-4 opacity-20"></i>
-            <p class="font-bold">Revenue Analytics coming soon</p>
-        </div>
-    </div>
+            const activePanel = document.getElementById('shift-content-active');
+            const emptyPanel = document.getElementById('shift-content-empty');
+            const shiftAlert = document.getElementById('alert-no-shift');
 
-    <!-- Recent Activity -->
-    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <h3 class="font-black text-xl mb-6 dark:text-white">System Alerts</h3>
-        <div class="space-y-4">
-            <div
-                class="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
-                <i class="fas fa-exclamation-circle text-red-500"></i>
-                <p class="text-sm text-red-700 dark:text-red-400">Low stock alert: 5 products under threshold.</p>
-            </div>
-            <!-- More dynamic alerts will be added here -->
-        </div>
-    </div>
-</div>
+            if (data.active_shift) {
+                activePanel.classList.remove('hidden');
+                emptyPanel.classList.add('hidden');
+                shiftAlert.classList.add('hidden');
+
+                const s = data.active_shift;
+                document.getElementById('panel-doctor-name').innerText = s.doctor_name;
+                document.getElementById('panel-shift-time').innerText = `Session started at ${new Date(s.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                document.getElementById('panel-orders').innerText = s.total_orders;
+                document.getElementById('panel-returns').innerText = s.total_returns;
+                document.getElementById('panel-net').innerText = `${Number(s.net_revenue).toLocaleString()} EGP`;
+            } else {
+                activePanel.classList.add('hidden');
+                emptyPanel.classList.remove('hidden');
+                if (data.store_status === 'open') {
+                    shiftAlert.classList.remove('hidden');
+                }
+            }
+
+        } catch (err) {
+            console.error("Overview load failed", err);
+        }
+    }
+
+    initializeOverview();
+</script>

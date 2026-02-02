@@ -5,49 +5,54 @@ import * as adminHistoryController from "../controllers/admin/adminHistoryContro
 import * as adminSettingsController from "../controllers/admin/adminSettingsController.js";
 import * as adminAnalyticsController from "../controllers/admin/adminAnalyticsController.js";
 import * as adminCouponsController from "../controllers/admin/adminCouponsController.js";
-import * as requestController from "../controllers/requestController.js";
-import * as returnController from "../controllers/returnController.js";
+import * as adminModuleController from "../controllers/admin/adminModuleController.js";
+import * as adminInventoryController from "../controllers/admin/adminInventoryController.js";
+import * as adminPrescriptionsController from "../controllers/admin/adminPrescriptionsController.js";
+import * as adminAuditController from "../controllers/admin/adminAuditController.js";
 
 const router = express.Router();
 
 // Apply ensureAdmin globally to all routes in this file
 router.use(ensureAdmin);
 
-// Dashboard Overview
+// Dashboard Core & Dynamic Modules
 router.get("/dashboard", (req, res) => res.render("admin/dashboard", { user: req.user, pageTitle: "Admin Dashboard" }));
+router.get("/module/:name", adminModuleController.getModulePartial);
 router.get("/stats", adminAnalyticsController.getGlobalStats);
+router.get("/summary", adminAnalyticsController.getDashboardSummary);
+router.get("/analytics/detailed", adminAnalyticsController.getDetailedAnalytics);
 
-// Users Management
-router.get("/users/all", adminUsersController.getUsers); // Generic users list with filters
+// Users (Patients) Management
+router.get("/users/all", adminUsersController.getUsers);
 router.get("/doctors", adminUsersController.getDoctors);
 router.post("/doctors/add", adminUsersController.addDoctor);
 
-// Coupons Management
+// Inventory Control
+router.get("/inventory", adminInventoryController.getInventory);
+router.get("/inventory/logs", adminInventoryController.getInventoryLogs);
+router.post("/inventory/adjust", adminInventoryController.adjustStock);
+
+// Prescriptions
+router.get("/prescriptions", adminPrescriptionsController.getPrescriptions);
+router.get("/prescriptions/:id", adminPrescriptionsController.getPrescriptionDetails);
+router.post("/prescriptions/:id/process", adminPrescriptionsController.processPrescription);
+
+// History & Logs
+router.get("/history/orders", adminHistoryController.getOrdersHistory);
+router.get("/history/orders/:id", adminHistoryController.getOrderDetails);
+router.get("/history/shifts", adminHistoryController.getShiftsHistory);
+router.get("/history/shifts/:id", adminHistoryController.getShiftDetails);
+router.get("/audit/logs", adminAuditController.getAuditLogs);
+
+// Promotions & Coupons
 router.get("/coupons", adminCouponsController.getCoupons);
 router.post("/coupons/add", adminCouponsController.addCoupon);
 router.post("/coupons/:id/toggle", adminCouponsController.toggleStatus);
 router.delete("/coupons/:id", adminCouponsController.deleteCoupon);
 
-// Product Requests 
-router.get("/product-requests", requestController.getAdminRequests);
-router.post("/requests/:requestId/status", requestController.updateRequestStatus);
-
-// Returns
-router.get("/returns", returnController.getAdminReturns);
-router.post("/returns/process", returnController.processReturn);
-
-// History
-router.get("/history/orders", adminHistoryController.getOrdersHistory);
-router.get("/history/returns", adminHistoryController.getReturnsHistory);
-router.get("/history/shifts", adminHistoryController.getShiftsHistory);
-router.get("/history/inventory", adminHistoryController.getInventoryHistory);
-
-// Settings & Status
+// System Settings
 router.get("/settings", adminSettingsController.getSettings);
 router.post("/settings/update", adminSettingsController.updateSettings);
 router.post("/settings/toggle-status", adminSettingsController.toggleStatus);
-
-// Audit 
-router.get("/audit", (req, res) => res.render("admin/audit", { user: req.user, pageTitle: "Audit Logs" }));
 
 export default router;
