@@ -25,6 +25,16 @@ const otpVerifyLimiter = rateLimit({
     validate: { keyGeneratorIpFallback: false },
 });
 
+const resendResetLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 3,
+    keyGenerator: (req) => req.body.email || req.ip,
+    message: { success: false, message: "Too many resend requests. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { keyGeneratorIpFallback: false },
+});
+
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // Limit each IP to 10 failed login requests per 15 minutes
@@ -44,6 +54,7 @@ router.get("/google/secrets", authController.googleCallback);
 
 // Password Reset Routes
 router.post("/forgot-password", otpSendLimiter, authController.forgotPassword);
+router.post("/resend-reset-code", resendResetLimiter, authController.resendResetCode);
 router.post("/verify-reset-code", otpVerifyLimiter, authController.verifyResetCode);
 router.post("/reset-password", authController.resetPassword);
 

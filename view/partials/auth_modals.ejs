@@ -163,6 +163,13 @@
                             Verify Code
                         </button>
                     </form>
+                    <div id="resend-reset-wrap" class="hidden mt-3 text-center">
+                        <button type="button" id="resend-reset-btn" onclick="handleResendResetCode()"
+                            class="text-sm text-primary hover:text-blue-800 font-bold underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+                            Resend code
+                        </button>
+                        <span id="resend-cooldown" class="text-sm text-gray-500 hidden">Resend in <span id="resend-countdown">60</span>s</span>
+                    </div>
                     <button onclick="handleOtpBack()"
                         class="w-full mt-4 text-sm text-gray-500 hover:text-dark font-medium font-bold italic underline"
                         id="otp-back-btn">Go Back</button>
@@ -205,6 +212,7 @@
     let currentEmail = '';
     let otpMode = 'reset'; // 'reset' or 'verify'
     const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    let resendCooldownTimer = null;
 
     function handleOtpBack() {
         if (otpMode === 'verify') {
@@ -244,6 +252,7 @@
                     document.getElementById('otp-title').innerText = 'Reset Code';
                     document.getElementById('otp-subtitle').innerText = 'Enter the 6-digit code sent to your Gmail.';
                     switchTab('verify-otp');
+                    startResendCooldown(60);
                 } else {
                     showToast('error', data.message || 'Error occurred');
                 }
@@ -473,6 +482,70 @@
             }
         } else {
             tabs.classList.add('hidden');
+        }
+
+        // Show resend button only for password reset flow (verify-otp + otpMode=reset)
+        const resendWrap = document.getElementById('resend-reset-wrap');
+        if (resendWrap) {
+            resendWrap.classList.toggle('hidden', tab !== 'verify-otp' || otpMode !== 'reset');
+        }
+    }
+
+    function startResendCooldown(seconds) {
+        const btn = document.getElementById('resend-reset-btn');
+        const cooldownEl = document.getElementById('resend-cooldown');
+        const countdownEl = document.getElementById('resend-countdown');
+        if (!btn || !cooldownEl || !countdownEl) return;
+
+        if (resendCooldownTimer) clearInterval(resendCooldownTimer);
+        btn.disabled = true;
+        btn.classList.add('hidden');
+        cooldownEl.classList.remove('hidden');
+        let left = seconds;
+        countdownEl.textContent = left;
+
+        resendCooldownTimer = setInterval(() => {
+            left--;
+            countdownEl.textContent = left;
+            if (left <= 0) {
+                clearInterval(resendCooldownTimer);
+                resendCooldownTimer = null;
+                btn.disabled = false;
+                btn.classList.remove('hidden');
+                cooldownEl.classList.add('hidden');
+            }
+        }, 1000);
+    }
+
+    async function handleResendResetCode() {
+        if (!currentEmail) return;
+        const btn = document.getElementById('resend-reset-btn');
+        if (btn?.disabled) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
+
+        try {
+            const res = await fetch('/auth/resend-reset-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: currentEmail })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast('success', data.message || 'A new code has been sent.');
+                startResendCooldown(data.retryAfter || 60);
+            } else {
+                showToast('error', data.message || 'Could not resend code.');
+                if (data.retryAfter) startResendCooldown(data.retryAfter);
+                else btn.disabled = false;
+            }
+        } catch (err) {
+            showToast('error', 'An error occurred. Please try again.');
+            btn.disabled = false;
+        } finally {
+            if (btn && !btn.disabled) btn.innerHTML = 'Resend code';
         }
     }
 

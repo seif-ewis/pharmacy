@@ -174,9 +174,10 @@ export const forgotPassword = async (req, res) => {
         // Delete any existing reset records for this user
         await db.query("DELETE FROM password_resets WHERE user_id = $1", [userId]);
 
-        // Store new OTP
+        // Store new OTP (resend_count=0, last_sent_at for resend cooldown)
         await db.query(
-            "INSERT INTO password_resets (user_id, otp_hash, expires_at) VALUES ($1, $2, $3)",
+            `INSERT INTO password_resets (user_id, otp_hash, expires_at, resend_count, last_sent_at)
+             VALUES ($1, $2, $3, 0, NOW())`,
             [userId, otpHash, expiresAt]
         );
 
@@ -244,6 +245,80 @@ export const verifyResetCode = async (req, res) => {
         res.json({ success: true, resetToken });
     } catch (err) {
         console.error("Verify code error:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// 2b. Resend Reset Code (with limits: max 2 resends, 60s cooldown)
+export const resendResetCode = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    if (!gmailRegex.test(email) && email !== 'admin@hosam.com') {
+        return res.status(400).json({ success: false, message: "Invalid email address" });
+    }
+
+    try {
+        const userResult = await db.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+        if (userResult.rows.length === 0) {
+            return res.json({ success: true, message: "If an account exists, a new code has been sent." });
+        }
+
+        const userId = userResult.rows[0].id;
+        const resetResult = await db.query(
+            `SELECT * FROM password_resets WHERE user_id = $1 AND expires_at > NOW() AND verified = FALSE`,
+            [userId]
+        );
+
+        if (resetResult.rows.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No active code found. Please request a new code from the forgot password page.",
+            });
+        }
+
+        const record = resetResult.rows[0];
+        const resendCount = Number(record.resend_count) || 0;
+        const lastSentAt = record.last_sent_at ? new Date(record.last_sent_at) : null;
+
+        if (resendCount >= 2) {
+            return res.status(429).json({
+                success: false,
+                message: "You've reached the resend limit. Please request a new code from the forgot password page.",
+            });
+        }
+
+        const cooldownSec = 60;
+        if (lastSentAt && (Date.now() - lastSentAt.getTime()) < cooldownSec * 1000) {
+            const waitSec = Math.ceil(cooldownSec - (Date.now() - lastSentAt.getTime()) / 1000);
+            return res.status(429).json({
+                success: false,
+                message: `Please wait ${waitSec} seconds before requesting another code.`,
+                retryAfter: waitSec,
+            });
+        }
+
+        const otp = crypto.randomInt(100000, 1000000).toString();
+        const otpHash = await bcrypt.hash(otp, saltRound);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await db.query(
+            `UPDATE password_resets SET otp_hash = $1, expires_at = $2, attempts = 0, resend_count = resend_count + 1, last_sent_at = NOW() WHERE id = $3`,
+            [otpHash, expiresAt, record.id]
+        );
+
+        try {
+            await sendOTP(email, otp);
+        } catch (mailErr) {
+            console.error("Mail send error:", mailErr);
+        }
+
+        res.json({ success: true, message: "A new code has been sent to your email." });
+    } catch (err) {
+        console.error("Resend code error:", err);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
