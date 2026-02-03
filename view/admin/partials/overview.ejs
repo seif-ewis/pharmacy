@@ -188,77 +188,75 @@
 </div>
 
 <script>
-    {
-        function initializeOverview() {
-            console.log("Overview Initialized");
-            loadOverviewStats();
-        }
-
-        async function loadOverviewStats() {
-            try {
-                // 1. Load Caching KPIs
-                const kpiRes = await fetch('/admin/stats');
-                const kpiData = await kpiRes.json();
-                if (kpiData.success) {
-                    const s = kpiData.stats;
-                    document.getElementById('kpi-revenue').innerText = `${Number(s.today_revenue).toLocaleString()} EGP`;
-                    document.getElementById('kpi-orders').innerText = s.today_orders;
-                    document.getElementById('kpi-doctors').innerText = s.total_doctors;
-                    document.getElementById('kpi-coupons').innerText = s.total_coupons;
-                }
-
-                // 2. Load Shift & Alert Context
-                const summaryRes = await fetch('/admin/summary');
-                const data = await summaryRes.json();
-                if (!data.success) return;
-
-                // Pending Stats
-                document.getElementById('stat-pending-presc').innerText = data.pending_prescriptions || 0;
-                document.getElementById('stat-low-stock').innerText = data.low_stock_count || 0;
-                if (data.low_stock_count > 0) {
-                    document.getElementById('stat-low-stock').classList.add('text-amber-500');
-                } else {
-                    const stockEl = document.getElementById('stat-low-stock');
-                    if (stockEl.classList.contains('text-amber-500')) {
-                        stockEl.classList.replace('text-amber-500', 'text-green-500');
-                    } else {
-                        stockEl.classList.add('text-green-500');
-                    }
-                }
-
-                const activePanel = document.getElementById('shift-content-active');
-                const emptyPanel = document.getElementById('shift-content-empty');
-                const shiftAlert = document.getElementById('alert-no-shift');
-
-                if (data.active_shift) {
-                    if (activePanel) activePanel.classList.remove('hidden');
-                    if (emptyPanel) emptyPanel.classList.add('hidden');
-                    if (shiftAlert) shiftAlert.classList.add('hidden');
-
-                    const drName = document.getElementById('panel-doctor-name');
-                    const shiftTime = document.getElementById('panel-shift-time');
-                    const ordersCount = document.getElementById('panel-orders');
-                    const returnsCount = document.getElementById('panel-returns');
-                    const netRevenue = document.getElementById('panel-net');
-
-                    if (drName) drName.innerText = data.active_shift.doctor_name;
-                    if (shiftTime) shiftTime.innerText = `Session started at ${new Date(data.active_shift.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                    if (ordersCount) ordersCount.innerText = data.active_shift.total_orders;
-                    if (returnsCount) returnsCount.innerText = data.active_shift.total_returns;
-                    if (netRevenue) netRevenue.innerText = `${Number(data.active_shift.net_revenue).toLocaleString()} EGP`;
-                } else {
-                    if (activePanel) activePanel.classList.add('hidden');
-                    if (emptyPanel) emptyPanel.classList.remove('hidden');
-                    if (data.store_status === 'open' && shiftAlert) {
-                        shiftAlert.classList.remove('hidden');
-                    }
-                }
-
-            } catch (err) {
-                console.error("Overview load failed", err);
-            }
-        }
-
-        initializeOverview();
+    function initializeOverview() {
+        console.log("Overview Initialized");
+        loadOverviewStats();
     }
+
+    async function loadOverviewStats() {
+        try {
+            // 1. Load Caching KPIs
+            const kpiRes = await fetch('/admin/stats');
+            const kpiData = await kpiRes.json();
+            if (kpiData.success) {
+                const s = kpiData.stats;
+                document.getElementById('kpi-revenue').innerText = `${Number(s.today_revenue).toLocaleString()} EGP`;
+                document.getElementById('kpi-orders').innerText = s.today_orders;
+                document.getElementById('kpi-doctors').innerText = s.total_doctors;
+                document.getElementById('kpi-coupons').innerText = s.total_coupons;
+            }
+
+            // 2. Load Shift & Alert Context
+            const summaryRes = await fetch('/admin/summary');
+            const data = await summaryRes.json();
+            if (!data.success) return;
+
+            // Pending Stats
+            document.getElementById('stat-pending-presc').innerText = data.pending_prescriptions || 0;
+            document.getElementById('stat-low-stock').innerText = data.low_stock_count || 0;
+            if (data.low_stock_count > 0) {
+                document.getElementById('stat-low-stock').classList.add('text-amber-500');
+            } else {
+                const stockEl = document.getElementById('stat-low-stock');
+                if (stockEl.classList.contains('text-amber-500')) {
+                    stockEl.classList.replace('text-amber-500', 'text-green-500');
+                } else {
+                    stockEl.classList.add('text-green-500');
+                }
+            }
+
+            const activePanel = document.getElementById('shift-content-active');
+            const emptyPanel = document.getElementById('shift-content-empty');
+            const shiftAlert = document.getElementById('alert-no-shift');
+
+            if (data.active_shift) {
+                if (activePanel) activePanel.classList.remove('hidden');
+                if (emptyPanel) emptyPanel.classList.add('hidden');
+                if (shiftAlert) shiftAlert.classList.add('hidden');
+
+                const drName = document.getElementById('panel-doctor-name');
+                const shiftTime = document.getElementById('panel-shift-time');
+                const ordersCount = document.getElementById('panel-orders');
+                const returnsCount = document.getElementById('panel-returns');
+                const netRevenue = document.getElementById('panel-net');
+
+                if (drName) drName.innerText = data.active_shift.doctor_name;
+                if (shiftTime) shiftTime.innerText = `Session started at ${new Date(data.active_shift.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                if (ordersCount) ordersCount.innerText = data.active_shift.total_orders;
+                if (returnsCount) returnsCount.innerText = data.active_shift.total_returns;
+                if (netRevenue) netRevenue.innerText = `${Number(data.active_shift.net_revenue).toLocaleString()} EGP`;
+            } else {
+                if (activePanel) activePanel.classList.add('hidden');
+                if (emptyPanel) emptyPanel.classList.remove('hidden');
+                if (data.store_status === 'open' && shiftAlert) {
+                    shiftAlert.classList.remove('hidden');
+                }
+            }
+
+        } catch (err) {
+            console.error("Overview load failed", err);
+        }
+    }
+
+    initializeOverview();
 </script>
