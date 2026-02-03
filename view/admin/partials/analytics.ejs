@@ -179,16 +179,24 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
 
-            const counts = { completed: 0, cancelled: 0, returned: 0, pending: 0 };
-            data.forEach(d => { if (counts[d.status] !== undefined) counts[d.status] = d.count; });
+            const counts = { completed: 0, cancelled: 0, returned: 0, pending: 0, other: 0 };
+            data.forEach(d => {
+                const status = (d.status || '').toLowerCase();
+                const count = Number(d.count) || 0;
+                if (status === 'completed') counts.completed += count;
+                else if (status === 'canceled' || status === 'cancelled') counts.cancelled += count;
+                else if (status === 'returned') counts.returned += count;
+                else if (status === 'pending') counts.pending += count;
+                else counts.other += count;
+            });
 
             metricsChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Completed', 'Cancelled', 'Returned', 'Other'],
+                    labels: ['Completed', 'Cancelled', 'Returned', 'Pending', 'Other'],
                     datasets: [{
-                        data: [counts.completed, counts.cancelled, counts.returned, counts.pending],
-                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#94a3b8'],
+                        data: [counts.completed, counts.cancelled, counts.returned, counts.pending, counts.other],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#94a3b8', '#64748b'],
                         borderWidth: 0,
                         hoverOffset: 10
                     }]
