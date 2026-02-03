@@ -29,6 +29,15 @@ export const addCoupon = async (req, res) => {
             return res.status(400).json({ success: false, message: "Code and discount values are required" });
         }
 
+        // Normalize discount_type
+        let finalType = discount_type;
+        if (finalType === 'percent') finalType = 'percentage';
+
+        const allowedTypes = ['percentage', 'fixed', 'free_delivery'];
+        if (!allowedTypes.includes(finalType)) {
+            return res.status(400).json({ success: false, message: "Invalid discount type" });
+        }
+
         // Check unique code
         const exists = await db.query("SELECT id FROM promotions WHERE code = $1", [code.toUpperCase()]);
         if (exists.rows.length > 0) {
@@ -44,7 +53,7 @@ export const addCoupon = async (req, res) => {
                 gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW()
             )
         `, [
-            code.toUpperCase(), label, discount_type, discount_value,
+            code.toUpperCase(), label, finalType, discount_value,
             min_order_amount || 0, usage_limit_global || null, is_public || false,
             start_date || null, end_date || null
         ]);

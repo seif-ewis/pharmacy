@@ -64,7 +64,7 @@
                             Type</label>
                         <select name="discount_type"
                             class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20">
-                            <option value="percent">Percentage %</option>
+                            <option value="percentage">Percentage %</option>
                             <option value="fixed">Fixed Amount</option>
                             <option value="free_delivery">Free Delivery</option>
                         </select>
@@ -154,7 +154,7 @@
                         <div class="space-y-3 mb-8">
                             <div class="flex justify-between text-xs font-bold text-gray-500">
                                 <span>Discount</span>
-                                <span class="dark:text-white font-black">${c.discount_type === 'percent' ? c.discount_value + '%' : c.discount_value + ' EGP'}</span>
+                                <span class="dark:text-white font-black">${c.discount_type === 'percentage' ? c.discount_value + '%' : c.discount_value + ' EGP'}</span>
                             </div>
                             <div class="flex justify-between text-xs font-bold text-gray-500">
                                 <span>Min. Order</span>

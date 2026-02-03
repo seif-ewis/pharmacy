@@ -142,7 +142,11 @@ export const calculateOrder = async (req, res) => {
         // 2. Apply Coupon
         if (couponCode) {
             const promoRes = await client.query(
-                "SELECT * FROM promotions WHERE code = $1 AND is_active = true AND start_date <= NOW() AND end_date >= NOW()",
+                `SELECT * FROM promotions 
+                 WHERE code = $1 
+                 AND is_active = true 
+                 AND (start_date IS NULL OR start_date <= NOW()) 
+                 AND (end_date IS NULL OR end_date >= NOW())`,
                 [couponCode.toUpperCase()]
             );
 
@@ -271,7 +275,11 @@ export const createOrder = async (req, res) => {
         // If frontend passes 'couponCode', we use it. If not, no discount.
         if (req.body.couponCode) {
             const promoRes = await client.query(
-                "SELECT * FROM promotions WHERE code = $1 AND is_active = true AND start_date <= NOW() AND end_date >= NOW()",
+                `SELECT * FROM promotions 
+                 WHERE code = $1 
+                 AND is_active = true 
+                 AND (start_date IS NULL OR start_date <= NOW()) 
+                 AND (end_date IS NULL OR end_date >= NOW())`,
                 [req.body.couponCode.toUpperCase()]
             );
             if (promoRes.rows.length > 0) {
