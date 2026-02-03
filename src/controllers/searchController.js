@@ -1,4 +1,5 @@
 import db from "../config/dataBase.js";
+import redisClient from "../config/redis.js";
 
 export const searchMedicines = async (req, res) => {
     const query = req.query.q || "";
@@ -8,6 +9,17 @@ export const searchMedicines = async (req, res) => {
     }
 
     try {
+        const cacheKey = `search:${query.toLowerCase().trim()}`;
+        const cachedResults = await redisClient.get(cacheKey);
+
+        if (cachedResults) {
+            const medicines = JSON.parse(cachedResults);
+            if (req.xhr || req.headers.accept.includes('application/json') || req.query.ajax) {
+                return res.json({ medicines });
+            }
+            return res.render("searchResults", { query, medicines, user: req.user || null });
+        }
+
         const result = await db.query(
             `SELECT 
                 m.id, m.name, m.description, m.price, m.icon, m.category,
@@ -19,13 +31,18 @@ export const searchMedicines = async (req, res) => {
             [`%${query}%`]
         );
 
+        const medicines = result.rows;
+
+        // Cache for 60 seconds
+        await redisClient.setEx(cacheKey, 60, JSON.stringify(medicines));
+
         if (req.xhr || req.headers.accept.includes('application/json') || req.query.ajax) {
-            return res.json({ medicines: result.rows });
+            return res.json({ medicines });
         }
 
         res.render("searchResults", {
             query,
-            medicines: result.rows,
+            medicines,
             user: req.user || null
         });
     } catch (err) {

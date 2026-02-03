@@ -9,6 +9,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import corsOptions from "./src/config/corsOption.js";
 import flash from "connect-flash";
+import { RedisStore } from "connect-redis";
+import redisClient from "./src/config/redis.js";
 
 dotenv.config();
 
@@ -33,7 +35,13 @@ import { setApp as setUserNotificationApp } from "./src/utils/userNotificationEv
 setUserNotificationApp(app);
 
 // 2. Configure Session Middleware
+let redisStore = new RedisStore({
+    client: redisClient,
+    prefix: "sess:",
+});
+
 const sessionMiddleware = session({
+    store: redisStore,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,

@@ -1,15 +1,14 @@
 import db from "../../config/dataBase.js";
+import redisClient from "../../config/redis.js";
 
-// KPI Cache (30s TTL as per commandment)
-let kpiCache = null;
-let lastCacheUpdate = 0;
-
-// GET: Global Dashboard Stats (Cached)
+// GET: Global Dashboard Stats (Cached with Redis)
 export const getGlobalStats = async (req, res) => {
     try {
-        const now = Date.now();
-        if (kpiCache && (now - lastCacheUpdate < 30000)) {
-            return res.json({ success: true, stats: kpiCache, cached: true });
+        const cacheKey = "admin:global:kpis";
+        const cachedKpis = await redisClient.get(cacheKey);
+
+        if (cachedKpis) {
+            return res.json({ success: true, stats: JSON.parse(cachedKpis), cached: true });
         }
 
         // Stats for Today (Revenue and Orders)
@@ -38,16 +37,18 @@ export const getGlobalStats = async (req, res) => {
             LIMIT 6
         `);
 
-        kpiCache = {
+        const kpis = {
             today_revenue: today_net.toFixed(2),
             today_orders: today_orders,
             total_doctors,
             total_coupons,
             monthly_history: monthlyHistory.rows
         };
-        lastCacheUpdate = now;
 
-        res.json({ success: true, stats: kpiCache, cached: false });
+        // Cache in Redis for 30 seconds
+        await redisClient.setEx(cacheKey, 30, JSON.stringify(kpis));
+
+        res.json({ success: true, stats: kpis, cached: false });
     } catch (err) {
         console.error("Get Global Stats Error:", err);
         res.status(500).json({ success: false });

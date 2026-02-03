@@ -1,4 +1,5 @@
 import db from "../config/dataBase.js";
+import redisClient from "../config/redis.js";
 // import { formatTimeAgo } from "../utils/formatDate.js"; // REFACTORED: Now in globalState middleware
 import * as chatController from "./chatController.js";
 
@@ -14,40 +15,51 @@ export const getHomePage = async (req, res) => {
     };
 
     try {
-        const result = await db.query(`
-            SELECT 
-                m.id, 
-                m.name, 
-                m.description, 
-                m.price, 
-                m.original_price, 
-                m.icon, 
-                COALESCE(ms.current_stock, 0) as quantity,
-                m.category
-            FROM (
-                SELECT *,
-                       ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC) AS rn
-                FROM medicines
-                WHERE category = ANY($1)
-            ) m
-            LEFT JOIN medicine_stock ms ON ms.id = m.id
-            WHERE m.rn <= 10
-        `, [CATEGORIES]);
+        const cacheKey = "homepage:products";
+        const cachedProducts = await redisClient.get(cacheKey);
 
-        // Group by category
-        result.rows.forEach(row => {
-            if (products[row.category]) {
-                products[row.category].push({
-                    id: row.id,
-                    name: row.name,
-                    description: row.description,
-                    price: row.price,
-                    originalPrice: row.original_price,
-                    icon: row.icon,
-                    stock: row.quantity
-                });
-            }
-        });
+        if (cachedProducts) {
+            const parsed = JSON.parse(cachedProducts);
+            Object.assign(products, parsed);
+        } else {
+            const result = await db.query(`
+                SELECT 
+                    m.id, 
+                    m.name, 
+                    m.description, 
+                    m.price, 
+                    m.original_price, 
+                    m.icon, 
+                    COALESCE(ms.current_stock, 0) as quantity,
+                    m.category
+                FROM (
+                    SELECT *,
+                           ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC) AS rn
+                    FROM medicines
+                    WHERE category = ANY($1)
+                ) m
+                LEFT JOIN medicine_stock ms ON ms.id = m.id
+                WHERE m.rn <= 10
+            `, [CATEGORIES]);
+
+            // Group by category
+            result.rows.forEach(row => {
+                if (products[row.category]) {
+                    products[row.category].push({
+                        id: row.id,
+                        name: row.name,
+                        description: row.description,
+                        price: row.price,
+                        originalPrice: row.original_price,
+                        icon: row.icon,
+                        stock: row.quantity
+                    });
+                }
+            });
+
+            // Cache for 60 seconds
+            await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
+        }
 
     } catch (err) {
         console.error("Homepage medicines error:", err);
