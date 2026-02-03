@@ -128,9 +128,8 @@ io.on("connection", (socket) => {
                 return;
             }
 
-            // Forward to Doctors
-            // We include properties to help UI: userId, userName
-            io.to('doctors').emit('chat:message', {
+            // Forward to Doctors (socket.to excludes sender so they don't see their own message twice)
+            socket.to('doctors').emit('chat:message', {
                 chatId: chatId, // Sending the Chat UUID so the dashboard can route it
                 senderId: user.id,
                 senderName: user.full_name,
