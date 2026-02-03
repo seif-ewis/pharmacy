@@ -40,7 +40,7 @@ export const ensureDoctor = async (req, res, next) => {
             return next();
         }
 
-        req.flash("error", "Access denied. Doctor or Pharmacist role required.");
+        req.flash("error", "Access denied.");
         res.redirect("/");
     } catch (err) {
         console.error("ensureDoctor check failed:", err);

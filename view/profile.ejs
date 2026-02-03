@@ -460,7 +460,7 @@
                                                                                 <form
                                                                                     action="/profile/address/<%= addr.id %>/delete"
                                                                                     method="POST"
-                                                                                    onsubmit="return confirm('Are you sure?')">
+                                                                                    onsubmit="event.preventDefault(); showConfirm('Delete Address', 'Are you sure you want to remove this address?').then(ok => { if(ok) this.submit(); });">
                                                                                     <button type="submit"
                                                                                         class="text-gray-400 hover:text-red-500 transition-colors">
                                                                                         <i class="fas fa-trash-alt"></i>

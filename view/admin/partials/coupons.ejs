@@ -234,7 +234,8 @@
     }
 
     async function deleteCoupon(id) {
-        if (!confirm('Are you sure you want to delete this coupon? This cannot be undone.')) return;
+        const confirmed = await showConfirm('Delete Coupon', 'Are you sure you want to delete this coupon? This cannot be undone.', 'Delete', 'Keep it');
+        if (!confirmed) return;
         try {
             const res = await fetch(`/admin/coupons/${id}`, { method: 'DELETE' });
             const data = await res.json();

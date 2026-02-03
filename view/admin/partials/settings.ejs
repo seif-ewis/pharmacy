@@ -178,7 +178,8 @@
 
     async function togglePharmacyStatus() {
         const nextState = !currentIsOpen;
-        if (!confirm(`Are you sure you want to ${nextState ? 'OPEN' : 'CLOSE'} the pharmacy?`)) return;
+        const confirmed = await showConfirm(`System Status Overide`, `Are you sure you want to ${nextState ? 'OPEN' : 'CLOSE'} the pharmacy? This will affect all customers immediately.`, nextState ? 'Open Now' : 'Close Now', 'Cancel');
+        if (!confirmed) return;
 
         try {
             const res = await fetch('/admin/settings/toggle-status', {

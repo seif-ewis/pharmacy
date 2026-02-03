@@ -458,7 +458,7 @@
                             <!-- Open/Close Actions -->
                             <% if (activeShift) { %>
                                 <form action="/doctor/shift/end" method="POST"
-                                    onsubmit="return confirm('End current shift? This will generate a final report.');">
+                                    onsubmit="event.preventDefault(); showConfirm('End Shift', 'Are you sure you want to end the current shift? This will generate a final report.', 'End Shift', 'Continue Working').then(ok => { if(ok) this.submit(); });">
                                     <input type="hidden" name="shiftId" value="<%= activeShift.id %>">
                                     <button type="submit"
                                         class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-red-500/30 transition-all flex items-center gap-2">
@@ -1923,7 +1923,7 @@
                 } catch (err) {
                     console.error(err);
                     input.checked = !input.checked; // Revert on error
-                    alert('Failed to update status');
+                    showAlert('Failed to update status', 'error');
                 }
             }
 
@@ -2278,7 +2278,7 @@
                         body: JSON.stringify({ chatId: activeChatId, message: text })
                     });
                 } catch (e) {
-                    alert('Failed to send');
+                    showAlert('Failed to send', 'error');
                 }
             }
 
@@ -2465,7 +2465,8 @@
             }
 
             async function handleInlineReturnAction(returnId, action) {
-                if (!confirm(`Are you sure you want to ${action} this return?`)) return;
+                const confirmed = await showConfirm('Return Action', `Are you sure you want to ${action} this return?`, action.charAt(0).toUpperCase() + action.slice(1), 'Cancel');
+                if (!confirmed) return;
 
                 // Optimistic UI update or loading state could be added here
                 try {
@@ -2743,7 +2744,8 @@
                 const checkboxes = document.querySelectorAll('#return-items-list input[type="checkbox"]:checked');
                 if (checkboxes.length === 0) return showToast('error', 'Select at least one item');
 
-                if (!confirm("Confirm Return? \nThis will deduct revenue and update stock (if selected).")) return;
+                const confirmed = await showConfirm('Confirm Return', 'This will deduct revenue and update stock (if selected). Are you sure?');
+                if (!confirmed) return;
 
                 const selectedItems = [];
                 checkboxes.forEach(cb => {
@@ -3295,7 +3297,8 @@
             });
 
             async function deleteProduct(productId, productName) {
-                if (!confirm(`Delete "${productName}"?\n\nThis action cannot be undone.`)) return;
+                const confirmed = await showConfirm('Delete Product', `Are you sure you want to delete "${productName}"? This action cannot be undone.`, 'Delete', 'Cancel');
+                if (!confirmed) return;
 
                 try {
                     const res = await fetch(`/doctor/inventory/delete/${productId}`, {
@@ -3703,7 +3706,8 @@
             }
 
             async function changeOrderStatus(orderId, newStatus) {
-                if (!confirm(`Are you sure you want to change this order to ${newStatus}?`)) return;
+                const confirmed = await showConfirm('Change Status', `Are you sure you want to change this order to ${newStatus}?`, 'Update Status', 'Cancel');
+                if (!confirmed) return;
 
                 try {
                     const res = await fetch('/doctor/orders/status', {
@@ -4351,7 +4355,8 @@
             }
 
             async function rejectPrescription() {
-                if (!confirm('Are you sure you want to reject this prescription? This action cannot be undone.')) return;
+                const confirmed = await showConfirm('Reject Prescription', 'Are you sure you want to reject this prescription? This action cannot be undone.', 'Reject', 'Keep');
+                if (!confirmed) return;
 
                 if (!currentPrescriptionId) return;
 

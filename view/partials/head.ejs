@@ -63,6 +63,78 @@
                 }
             }).showToast();
         }
+
+        /**
+         * Global UI Alert Helper
+         */
+        function showAlert(message, type = 'info') {
+            showToast(type, message);
+        }
+
+        /**
+         * Global UI Confirm Helper
+         * Returns a Promise that resolves to true (Confirm) or false (Cancel)
+         */
+        function showConfirm(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {
+            return new Promise((resolve) => {
+                const modalId = 'global-confirm-modal';
+                let modal = document.getElementById(modalId);
+
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = modalId;
+                    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden p-4';
+                    modal.innerHTML = `
+                        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="global-confirm-content">
+                            <div class="p-8 text-center">
+                                <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <i class="fas fa-question text-2xl"></i>
+                                </div>
+                                <h3 class="text-xl font-black dark:text-white mb-2" id="global-confirm-title">Confirm Action</h3>
+                                <p class="text-gray-500 text-sm font-medium" id="global-confirm-message"></p>
+                            </div>
+                            <div class="p-6 bg-gray-50 dark:bg-slate-900/50 flex gap-3">
+                                <button id="global-confirm-cancel" class="flex-1 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 font-bold rounded-2xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-all text-sm">
+                                    Cancel
+                                </button>
+                                <button id="global-confirm-ok" class="flex-1 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all text-sm">
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+
+                const content = document.getElementById('global-confirm-content');
+                document.getElementById('global-confirm-title').innerText = title;
+                document.getElementById('global-confirm-message').innerText = message;
+                document.getElementById('global-confirm-ok').innerText = confirmText;
+                document.getElementById('global-confirm-cancel').innerText = cancelText;
+
+                const openModal = () => {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        content.classList.remove('scale-95', 'opacity-0');
+                        content.classList.add('scale-100', 'opacity-100');
+                    }, 50);
+                };
+
+                const closeModal = (result) => {
+                    content.classList.remove('scale-100', 'opacity-100');
+                    content.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        resolve(result);
+                    }, 300);
+                };
+
+                document.getElementById('global-confirm-ok').onclick = () => closeModal(true);
+                document.getElementById('global-confirm-cancel').onclick = () => closeModal(false);
+
+                openModal();
+            });
+        }
     </script>
 
     <!-- Tailwind Config -->

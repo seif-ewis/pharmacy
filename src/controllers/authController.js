@@ -88,7 +88,7 @@ export const verifyEmail = async (req, res) => {
     try {
         const userResult = await db.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
         if (userResult.rows.length === 0) {
-            return res.status(400).json({ success: false, message: "Invalid email address" });
+            return res.status(400).json({ success: false, message: "Invalid Credentials" });
         }
 
         const userId = userResult.rows[0].id;
@@ -151,7 +151,7 @@ export const googleCallback = (req, res, next) => {
 export const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
-    if (!gmailRegex.test(email) && email !== 'admin@hosam.com') {
+    if (!gmailRegex.test(email)) {
         return res.status(400).json({ success: false, message: "Invalid email address" });
     }
 
@@ -258,8 +258,8 @@ export const resendResetCode = async (req, res) => {
         return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    if (!gmailRegex.test(email) && email !== 'admin@hosam.com') {
-        return res.status(400).json({ success: false, message: "Invalid email address" });
+    if (!gmailRegex.test(email)) {
+        return res.status(400).json({ success: false, message: "Invalid Credentials" });
     }
 
     try {

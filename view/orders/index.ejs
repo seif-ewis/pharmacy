@@ -152,7 +152,7 @@
                                                         </a>
                                                         <% if (order.status==='pending' ) { %>
                                                             <form action="/orders/<%= order.id %>/cancel" method="POST"
-                                                                onsubmit="return confirm('Cancel this order?');"
+                                                                onsubmit="event.preventDefault(); showConfirm('Cancel Order', 'Are you sure you want to cancel this order?').then(ok => { if(ok) this.submit(); });"
                                                                 class="inline">
                                                                 <button type="submit"
                                                                     class="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/10 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors">

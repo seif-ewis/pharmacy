@@ -33,12 +33,12 @@ passport.use(
                             return cb(null, user);
                         } else {
                             //Did not pass password check
-                            return cb(null, false, { message: "Incorrect password" });
+                            return cb(null, false, { message: "Invalid Credentials" });
                         }
                     }
                 });
             } else {
-                return cb(null, false, { message: "User not found" });
+                return cb(null, false, { message: "Invalid Credentials" });
             }
         } catch (err) {
             console.error(err);

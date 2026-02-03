@@ -2,32 +2,10 @@
 <html lang="en" class="h-full">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %> | Pharmacy Doctor
-    </title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap"
-        rel="stylesheet">
-    <!-- Toastify -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script>
-        function showToast(type, message) {
-            Toastify({
-                text: message,
-                duration: 3000,
-                gravity: "top",
-                position: "right",
-                style: {
-                    background: type === 'success' ? "#10b981" : "#ef4444",
-                    borderRadius: "10px"
-                }
-            }).showToast();
-        }
-    </script>
+    <%- include('../partials/head') %>
+        <title>
+            <%= title %> | Pharmacy Doctor
+        </title>
 </head>
 
 <body class="bg-gray-50 h-full">
@@ -191,7 +169,8 @@
         });
 
         async function handleAction(id, action) {
-            if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+            const confirmed = await showConfirm('Return Action', `Are you sure you want to ${action} this request?`, action.charAt(0).toUpperCase() + action.slice(1), 'Cancel');
+            if (!confirmed) return;
 
             try {
                 const res = await fetch('/doctor/returns/action-inline', {
