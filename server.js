@@ -25,6 +25,10 @@ const server = createServer(app);
 const io = new Server(server);
 app.set("io", io);
 
+// So notificationController can emit notification:new without req (e.g. notifyUsersOfStock)
+import { setApp as setUserNotificationApp } from "./src/utils/userNotificationEvents.js";
+setUserNotificationApp(app);
+
 // 2. Configure Session Middleware
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET,
@@ -92,6 +96,9 @@ io.on("connection", (socket) => {
         if (roles.includes('pharmacist') || roles.includes('admin') || roles.includes('doctor') ||
             ['pharmacist', 'admin', 'doctor'].includes(primaryRole)) {
             socket.join('doctors');
+            if (roles.includes('admin') || primaryRole === 'admin') {
+                socket.join('admin');
+            }
             // Send current online users to this doctor
             socket.emit('online:users', Array.from(onlineUsers));
         } else {
@@ -138,6 +145,16 @@ io.on("connection", (socket) => {
 
         socket.on("stop typing", () => {
             io.to('doctors').emit('user stop typing', { userId: user.id });
+        });
+
+        // Let client join extra rooms; 'admin' only for admin role (prevents accidental join by non-admins)
+        socket.on('join', (room) => {
+            if (!room || typeof room !== 'string') return;
+            if (room === 'admin') {
+                if (roles.includes('admin') || primaryRole === 'admin') socket.join(room);
+                return;
+            }
+            socket.join(room);
         });
 
         socket.on("disconnect", () => {

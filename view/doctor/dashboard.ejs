@@ -1812,27 +1812,48 @@
         <script src="/socket.io/socket.io.js"></script>
         <script>
             const socket = io();
-            // 1. Orders
+            // 1. Orders (real-time: no polling)
             socket.on('orders:new', (data) => {
-                showToast(`New Order #${data.id.substring(0, 8)}`, `Total: $${parseFloat(data.total_price).toFixed(2)}`, 'blue');
+                const id = (data.orderId || data.id || '').toString().substring(0, 8);
+                showToast('New Order' + (id ? ` #${id}` : ''), 'Order list will refresh.', 'blue');
                 updateBadge('orders', 1);
-                // In a full implementation, we would also prepend the new order to the table if the Order module is active
+                const ordersModule = document.getElementById('module-orders');
+                if (ordersModule && !ordersModule.classList.contains('hidden') && typeof loadOrders === 'function') loadOrders(true);
             });
-            // 2. Prescriptions
+            socket.on('orders:update', (data) => {
+                const ordersModule = document.getElementById('module-orders');
+                if (ordersModule && !ordersModule.classList.contains('hidden') && typeof loadOrders === 'function') loadOrders(true);
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            });
+            // 2. Prescriptions (real-time: no polling)
             socket.on('prescription:new', (data) => {
-                showToast(`New Prescription`, `Uploaded by ${data.user_name}`, 'purple');
+                showToast('New Prescription', (data.user_name ? `Uploaded by ${data.user_name}` : 'Pending review'), 'purple');
                 updateBadge('prescriptions', 1);
+                const presModule = document.getElementById('module-prescriptions');
+                if (presModule && !presModule.classList.contains('hidden') && typeof loadPendingPrescriptions === 'function') loadPendingPrescriptions();
+            });
+            socket.on('prescriptions:new', (data) => {
+                showToast('New Prescription', 'Pending review', 'purple');
+                updateBadge('prescriptions', 1);
+                const presModule = document.getElementById('module-prescriptions');
+                if (presModule && !presModule.classList.contains('hidden') && typeof loadPendingPrescriptions === 'function') loadPendingPrescriptions();
+            });
+            socket.on('prescriptions:update', (data) => {
+                const presModule = document.getElementById('module-prescriptions');
+                if (presModule && !presModule.classList.contains('hidden') && typeof loadPendingPrescriptions === 'function') loadPendingPrescriptions();
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
             });
             // 3. Announcements
             socket.on('announcement:new', (data) => {
-                showToast(`📢 ${data.title}`, data.message.substring(0, 50) + '...', 'indigo');
-                // If announcement module is open, prepend it
+                showToast(`📢 ${data.title}`, (data.message || '').substring(0, 50) + (data.message && data.message.length > 50 ? '...' : ''), 'indigo');
                 const list = document.getElementById('announcementsList');
-                if (list && list.offsetParent !== null) {
-                    prependAnnouncement(data);
-                }
+                if (list && list.offsetParent !== null && typeof prependAnnouncement === 'function') prependAnnouncement(data);
             });
-            // 4. Pharmacy Status (Sync across tabs)
+            // 4. Dashboard stats (real-time: server emits on data change; fallback polling 60s)
+            socket.on('dashboard:stats-update', (data) => {
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            });
+            // 5. Pharmacy Status (Sync across tabs)
             socket.on('pharmacy:status', (data) => {
                 const label = document.getElementById('pharmacyStatusLabel');
                 const checkbox = document.querySelector('input[onchange="togglePharmacy(this)"]');
@@ -2278,7 +2299,7 @@
             }
 
             // ====================================
-            // REAL-TIME DASHBOARD STATS (every 5s)
+            // REAL-TIME DASHBOARD STATS (Socket.IO + 60s fallback when tab visible)
             // ====================================
             async function updateDashboardStats() {
                 try {
@@ -2286,7 +2307,6 @@
                     const data = await res.json();
 
                     if (data.success) {
-                        // Update counters with smooth transition
                         const updateCounter = (id, value) => {
                             const el = document.getElementById(id);
                             if (el) {
@@ -2301,19 +2321,16 @@
                             }
                         };
 
-                        // Update all counters
                         updateCounter('counter-revenue', data.data.revenue);
                         updateCounter('counter-orders', data.data.shiftOrdersCount);
                         updateCounter('counter-prescriptions', data.data.shiftPrescriptionsCount);
                         updateCounter('counter-total-requests', data.data.totalRequests);
 
-                        // Update Shift Module Live Stats (if module exists)
                         updateCounter('shift-live-revenue', data.data.revenue);
                         updateCounter('shift-live-orders', data.data.shiftOrdersCount);
                         updateCounter('shift-live-prescriptions', data.data.shiftPrescriptionsCount);
                         updateCounter('shift-live-returns', data.data.shiftReturnsCount);
 
-                        // Update alerts
                         const updateAlert = (id, value) => {
                             const el = document.getElementById(id);
                             if (el) {
@@ -2333,11 +2350,29 @@
                 }
             }
 
-            // Initialize stats polling
+            // Initial load + fallback polling only when tab visible (max 60s)
+            let statsFallbackInterval = null;
+            const STATS_FALLBACK_MS = 60000;
+
+            function startStatsFallback() {
+                if (statsFallbackInterval) return;
+                statsFallbackInterval = setInterval(updateDashboardStats, STATS_FALLBACK_MS);
+            }
+            function stopStatsFallback() {
+                if (statsFallbackInterval) {
+                    clearInterval(statsFallbackInterval);
+                    statsFallbackInterval = null;
+                }
+            }
+
             if (document.getElementById('module-overview')) {
                 updateDashboardStats(); // Initial load
-                setInterval(updateDashboardStats, 5000); // Update every 5 seconds
+                if (document.visibilityState === 'visible') startStatsFallback();
             }
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') startStatsFallback();
+                else stopStatsFallback();
+            });
 
             // ================================================
             // RETURNS MODULE LOGIC
@@ -3699,17 +3734,10 @@
                 }
             });
 
-            // Start observing
+            // Start observing (load on tab activation; updates via Socket.IO orders:new / orders:update only)
             const ordersModule = document.getElementById('module-orders');
             if (ordersModule) {
                 ordersObserver.observe(ordersModule, { attributes: true, attributeFilter: ['class'] });
-
-                // Real-time polling every 3 seconds when module is active
-                setInterval(() => {
-                    if (!ordersModule.classList.contains('hidden')) {
-                        loadOrders(true);
-                    }
-                }, 3000);
             }
         </script>
         <!-- CHART JS -->
@@ -4173,7 +4201,7 @@
                 }
             }
 
-            // Auto-load prescriptions when module active
+            // Auto-load prescriptions when module active (updates via Socket.IO prescriptions:new / prescriptions:update)
             const presModule = document.getElementById('module-prescriptions');
             if (presModule) {
                 const obs = new MutationObserver(() => {
@@ -4182,13 +4210,6 @@
                     }
                 });
                 obs.observe(presModule, { attributes: true, attributeFilter: ['class'] });
-
-                // Also poll every 30 seconds if visible
-                setInterval(() => {
-                    if (!presModule.classList.contains('hidden')) {
-                        loadPendingPrescriptions();
-                    }
-                }, 30000);
             }
 
             // Search Modal Injection & Logic
@@ -4942,7 +4963,7 @@
                 }
             }
         </script>
-        <script src="/doctor/dashboard_stats_script.js"></script>
+        <!-- Stats: handled inline (Socket.IO + 60s fallback when tab visible); external script removed to avoid duplicate polling -->
     </body>
 
 </html>

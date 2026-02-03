@@ -146,6 +146,12 @@
                 }
             });
 
+        // Real-time notifications: append to header dropdown when server emits notification:new
+        socket.on('notification:new', function (data) {
+            if (typeof window.appendLiveNotification === 'function') {
+                window.appendLiveNotification(data);
+            }
+        });
         });
     </script>
     <% if (typeof user !=='undefined' && user) { %>

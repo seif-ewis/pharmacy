@@ -1,5 +1,6 @@
 import db from "../config/dataBase.js";
 import { formatTimeAgo } from "../utils/formatDate.js";
+import { emitNotificationToUser, getApp } from "../utils/userNotificationEvents.js";
 
 export const getNotifications = async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -139,8 +140,16 @@ export const notifyUsersOfStock = async (medicineId) => {
             // 3. Mark sub as sent
             await db.query("UPDATE availability_notifications SET is_sent = true WHERE id = $1", [sub.id]);
 
-            // 4. Socket real-time (if user online)
-            // if (global.io) { global.io.to(sub.user_id).emit('notification', { title, message }); }
+            // 4. Notify user so notification appears live in header
+            emitNotificationToUser(getApp(), sub.user_id, {
+                id: notifId,
+                title,
+                message,
+                type: 'stock_alert',
+                created_at: new Date(),
+                time: 'just now',
+                read: false
+            });
         }
     } catch (err) {
         console.error("Notify Stock Error:", err);

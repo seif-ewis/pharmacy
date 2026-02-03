@@ -98,10 +98,10 @@
                             </div>
 
                             <!-- List -->
-                            <div class="max-h-[400px] md:max-h-[350px] overflow-y-auto scroll-smooth custom-scrollbar">
+                            <div id="notification-list" class="max-h-[400px] md:max-h-[350px] overflow-y-auto scroll-smooth custom-scrollbar">
                                 <% if (typeof notifications !=='undefined' && notifications.length> 0) { %>
                                     <% notifications.forEach(function(notif) { %>
-                                        <div onclick="markAsRead('<%= notif.id %>', this)"
+                                        <div class="notification-item" onclick="markAsRead('<%= notif.id %>', this)"
                                             class="px-5 py-4 border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative <%= !notif.read ? 'bg-blue-50/30 dark:bg-blue-900/5' : '' %>">
 
                                             <% if (!notif.read) { %>
@@ -122,7 +122,12 @@
                                                                         class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
                                                                         <i class="fas fa-layer-group text-sm"></i>
                                                                     </div>
-                                                                    <% } else { %>
+                                                <% } else if (notif.type==='stock_alert' ) { %>
+                                                                        <div
+                                                                            class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                                                            <i class="fas fa-box text-sm"></i>
+                                                                        </div>
+                                                                        <% } else { %>
                                                                         <div
                                                                             class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-sm group-hover:scale-110 transition-transform duration-300">
                                                                             <i class="fas fa-bell text-sm"></i>
@@ -628,6 +633,49 @@
             else dropdownHeader.style.display = 'none';
         }
     }
+
+    // Append a new notification from Socket.IO notification:new (real-time)
+    function appendLiveNotification(data) {
+        if (!data || !data.id) return;
+        const list = document.getElementById('notification-list');
+        if (!list) return;
+        const esc = (s) => {
+            if (s == null) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        };
+        const iconHtml = data.type === 'transactional'
+            ? '<div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 shadow-sm group-hover:scale-110 transition-transform duration-300"><i class="fas fa-box-open text-sm"></i></div>'
+            : data.type === 'system'
+                ? '<div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm group-hover:scale-110 transition-transform duration-300"><i class="fas fa-layer-group text-sm"></i></div>'
+                : data.type === 'stock_alert'
+                    ? '<div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-sm group-hover:scale-110 transition-transform duration-300"><i class="fas fa-box text-sm"></i></div>'
+                    : '<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-sm group-hover:scale-110 transition-transform duration-300"><i class="fas fa-bell text-sm"></i></div>';
+        const time = data.time || 'just now';
+        const itemHtml = `<div class="notification-item px-5 py-4 border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative bg-blue-50/30 dark:bg-blue-900/5" onclick="markAsRead('${esc(String(data.id))}', this)">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary dark:bg-blue-500 rounded-r-full"></div>
+            <div class="flex gap-4">
+                <div class="mt-0.5 shrink-0">${iconHtml}</div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-start mb-0.5">
+                        <p class="text-sm font-bold text-dark dark:text-gray-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors">${esc(data.title)}</p>
+                        <span class="text-[9px] text-gray-400 font-medium whitespace-nowrap ml-2">${esc(time)}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">${esc(data.message)}</p>
+                </div>
+            </div>
+        </div>`;
+        const isEmpty = list.querySelector('.py-12.px-8') || (list.children.length === 1 && list.textContent.includes('No notifications'));
+        if (isEmpty && list.children.length <= 1) {
+            list.innerHTML = itemHtml;
+        } else {
+            list.insertAdjacentHTML('afterbegin', itemHtml);
+        }
+        const count = list.querySelectorAll('.notification-item').length;
+        updateNotificationBadges(count);
+    }
+    window.appendLiveNotification = appendLiveNotification;
 
     function decrementBadgeCount() {
         // This is a bit tricky since we don't store the count in a simple variable.

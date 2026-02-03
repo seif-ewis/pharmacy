@@ -90,10 +90,5 @@ if (typeof socket !== 'undefined') {
     });
 }
 
-// Initial fetch on page load
-document.addEventListener('DOMContentLoaded', () => {
-    updateDashboardStats();
-
-    // Refresh every 30 seconds as fallback
-    setInterval(updateDashboardStats, 30000);
-});
+// No timer here: stats are handled inline in dashboard.ejs (Socket.IO + 60s fallback when tab visible).
+// If this script is loaded, it only provides updateDashboardStats() and socket listener; no duplicate polling.

@@ -1,6 +1,8 @@
 
 import db from '../config/dataBase.js';
 import { upload } from '../config/cloudinary.js';
+import { emitPrescriptionsNew, emitDashboardStatsInvalidated } from '../utils/doctorDashboardEvents.js';
+import { emitAdminSummaryInvalidated } from '../utils/adminDashboardEvents.js';
 
 // Render Upload Page
 export const getUploadPage = (req, res) => {
@@ -32,6 +34,13 @@ export const uploadPrescription = async (req, res) => {
             const prescriptionId = result.rows[0].id;
 
             await client.query('COMMIT');
+
+            // Notify doctors for real-time dashboard
+            if (req.app) {
+                emitPrescriptionsNew(req.app, { prescriptionId, status: 'pending' });
+                emitDashboardStatsInvalidated(req.app);
+                emitAdminSummaryInvalidated(req.app);
+            }
 
             req.flash('success', 'Prescription uploaded successfully!');
             res.redirect(`/prescription/${prescriptionId}`);

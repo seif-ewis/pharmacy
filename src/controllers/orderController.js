@@ -1,6 +1,9 @@
 import db from "../config/dataBase.js";
 import { logOrderStatusChange } from "../utils/orderStatusLogger.js";
 import * as inventoryController from "./inventoryController.js";
+import { emitOrdersNew, emitDashboardStatsInvalidated, emitOrdersUpdate } from "../utils/doctorDashboardEvents.js";
+import { emitNotificationToUser } from "../utils/userNotificationEvents.js";
+import { emitAdminSummaryInvalidated } from "../utils/adminDashboardEvents.js";
 
 // Render Checkout Page
 export const getCheckoutPage = async (req, res) => {
@@ -376,6 +379,23 @@ VALUES($1, $2, $3, $4)`,
 
         await client.query("COMMIT");
 
+        // Notify doctors for real-time dashboard (Socket.IO)
+        if (req.app) {
+            emitOrdersNew(req.app, { orderId, status: initialStatus });
+            emitDashboardStatsInvalidated(req.app);
+        }
+        // Notify user so notification appears live in header
+        emitNotificationToUser(req.app, req.user.id, {
+            id: notifId,
+            title: notifTitle,
+            message: notifMessage,
+            type: 'transactional',
+            created_at: new Date(),
+            time: 'just now',
+            read: false
+        });
+        emitAdminSummaryInvalidated(req.app);
+
         // Response
         if (req.headers.accept.includes('application/json')) {
             res.json({ success: true, order_id: orderId });
@@ -453,7 +473,37 @@ export const cancelOrder = async (req, res) => {
             );
         }
 
+        // 5. Notify user (order cancelled)
+        const orderUid = (order.order_uid || String(id).substring(0, 8)).toUpperCase();
+        const cancelNotifRes = await client.query(
+            "INSERT INTO notifications (title, message, type, created_at) VALUES ($1, $2, 'transactional', NOW()) RETURNING id",
+            ['Order Cancelled', `Order #${orderUid} has been cancelled. Items have been restocked.`]
+        );
+        const cancelNotifId = cancelNotifRes.rows[0].id;
+        await client.query(
+            "INSERT INTO user_notifications (user_id, notification_id, read, sent_at) VALUES ($1, $2, false, NOW())",
+            [req.user.id, cancelNotifId]
+        );
+
         await client.query("COMMIT");
+
+        // Notify doctors for real-time dashboard (after commit)
+        if (req.app) {
+            emitOrdersUpdate(req.app, { orderId: id, status: 'canceled' });
+            emitDashboardStatsInvalidated(req.app);
+        }
+        // Notify user so notification appears live in header
+        emitNotificationToUser(req.app, req.user.id, {
+            id: cancelNotifId,
+            title: 'Order Cancelled',
+            message: `Order #${orderUid} has been cancelled. Items have been restocked.`,
+            type: 'transactional',
+            created_at: new Date(),
+            time: 'just now',
+            read: false
+        });
+        emitAdminSummaryInvalidated(req.app);
+
         req.flash("success", "Order cancelled successfully. Items have been restocked.");
         res.redirect("/profile");
 

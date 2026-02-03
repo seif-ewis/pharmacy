@@ -337,6 +337,7 @@
                     console.warn("Polling failed", err);
                 }
             }
+            window.updateTopBar = updateTopBar;
 
             // Drawer Logic
             function openDrawer(title, content, subtitle = 'Resource Metadata') {
@@ -386,12 +387,42 @@
                 } else showToast('info', message);
             }
 
+            // Top bar: real-time via Socket.IO (listener in admin_head) + 30s fallback when tab visible
+            let topBarFallbackInterval = null;
+            const TOP_BAR_FALLBACK_MS = 30000;
+
+            function startTopBarFallback() {
+                if (topBarFallbackInterval) return;
+                topBarFallbackInterval = setInterval(updateTopBar, TOP_BAR_FALLBACK_MS);
+            }
+            function stopTopBarFallback() {
+                if (topBarFallbackInterval) {
+                    clearInterval(topBarFallbackInterval);
+                    topBarFallbackInterval = null;
+                }
+            }
+
+            // On connect/reconnect: refresh top bar so first push is never missed and reconnects get latest data
+            if (typeof window.socket !== 'undefined') {
+                function onSocketConnect() {
+                    updateTopBar();
+                }
+                if (window.socket.connected) onSocketConnect();
+                else window.socket.once('connect', onSocketConnect);
+                window.socket.on('connect', onSocketConnect);
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') startTopBarFallback();
+                else stopTopBarFallback();
+            });
+
             // Bootstrap
             window.onload = () => {
                 const hash = window.location.hash.replace('#', '') || 'overview';
                 showModule(hash);
                 updateTopBar();
-                setInterval(updateTopBar, 15000); // 15s Revenue/Shift Status Polling
+                if (document.visibilityState === 'visible') startTopBarFallback();
             };
         </script>
     </body>

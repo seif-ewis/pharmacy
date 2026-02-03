@@ -1,4 +1,5 @@
 import db from "../../config/dataBase.js";
+import { emitAdminSummaryInvalidated } from "../../utils/adminDashboardEvents.js";
 
 // GET: Current Settings & Status
 export const getSettings = async (req, res) => {
@@ -80,6 +81,12 @@ export const toggleStatus = async (req, res) => {
             "INSERT INTO pharmacy_status_logs (id, is_open, created_by, created_at) VALUES (gen_random_uuid(), $1, $2, NOW())",
             [is_open, adminId]
         );
+
+        const io = req.app?.get?.('io');
+        if (io) {
+            io.emit('pharmacy:status', { isOpen: is_open });
+            emitAdminSummaryInvalidated(req.app);
+        }
 
         res.json({ success: true, message: `Pharmacy is now ${is_open ? 'OPEN' : 'CLOSED'}` });
     } catch (err) {

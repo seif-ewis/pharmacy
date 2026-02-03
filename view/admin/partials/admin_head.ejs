@@ -29,7 +29,15 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        socket.emit('join', 'admin');
+        window.socket = socket;
+        // Room join happens server-side after auth; client may re-request on connect for resilience (server validates admin)
+        socket.on('connect', function () {
+            socket.emit('join', 'admin');
+        });
+        // Listener registered early so no race with first server push; calls window.updateTopBar when dashboard defines it
+        socket.on('admin:summary-update', function () {
+            if (typeof window.updateTopBar === 'function') window.updateTopBar();
+        });
 
         /**
          * Global Toast Notification Helper

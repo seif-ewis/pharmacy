@@ -165,14 +165,13 @@ export const broadcastAnnouncement = (io, announcement) => {
 
     if (announcement.target_audience === 'all') {
         io.emit('announcement', announcementPayload);
-        // Also emit standard notification to everyone
+        io.emit('announcement:new', announcementPayload);
         io.emit('notification', notificationPayload);
 
     } else if (announcement.target_audience === 'doctors') {
-        // Send to doctor rooms if they exist, or filter client side.
-        // Assuming rooms 'doctor' or 'doctors' exist.
-        io.to('doctor').emit('announcement', announcementPayload);
-        io.to('doctor').emit('notification', notificationPayload);
+        io.to('doctors').emit('announcement', announcementPayload);
+        io.to('doctors').emit('announcement:new', announcementPayload);
+        io.to('doctors').emit('notification', notificationPayload);
 
     } else if (announcement.target_audience === 'admins') {
         io.to('admin').emit('announcement', announcementPayload);

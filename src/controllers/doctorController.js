@@ -5,6 +5,9 @@ import { formatTimeAgo } from '../utils/formatDate.js';
 import { logOrderStatusChange } from '../utils/orderStatusLogger.js';
 import { generateProductDetails as aiGenerate, analyzePrescription } from '../services/aiService.js';
 import { v4 as uuidv4 } from 'uuid';
+import { emitDashboardStatsInvalidated, emitOrdersUpdate, emitPrescriptionsUpdate } from '../utils/doctorDashboardEvents.js';
+import { emitNotificationToUser } from '../utils/userNotificationEvents.js';
+import { emitAdminSummaryInvalidated } from '../utils/adminDashboardEvents.js';
 
 // Get Dashboard
 export const getDashboard = async (req, res) => {
@@ -138,52 +141,37 @@ export const getDashboard = async (req, res) => {
 };
 
 // Get Live Dashboard Stats (API endpoint for real-time updates)
+// Optimized: merged multiple DB calls into fewer round-trips.
 export const getDashboardStats = async (req, res) => {
     try {
         const doctorId = req.user.id;
 
-        // Get active shift
+        // 1. Active shift (doctor-specific)
         const shiftRes = await db.query(
             "SELECT * FROM shifts WHERE opened_by = $1 AND status = 'open' LIMIT 1",
             [doctorId]
         );
         const activeShift = shiftRes.rows[0] || null;
 
-        // Get pending orders count
-        const ordersCountRes = await db.query(
-            "SELECT COUNT(*) as count FROM orders WHERE status IN ('scheduled', 'pending', 'processing')"
-        );
-        const ordersCount = parseInt(ordersCountRes.rows[0].count);
-
-        // Get pending prescriptions count
-        const presCountRes = await db.query(
-            "SELECT COUNT(*) as count FROM prescriptions WHERE status = 'reviewing'"
-        );
-        const prescriptionsCount = parseInt(presCountRes.rows[0].count);
-
-        // Get low stock items count (stock < 10)
-        const lowStockRes = await db.query(`
-            SELECT COUNT(*) as count 
-            FROM medicines m
-            LEFT JOIN medicine_stock ms ON ms.id = m.id
-            WHERE COALESCE(ms.current_stock, 0) < 10
+        // 2. Single query: global counts + pharmacy status
+        const countsRes = await db.query(`
+            SELECT
+                (SELECT COUNT(*) FROM orders WHERE status IN ('scheduled', 'pending', 'processing')) AS orders_count,
+                (SELECT COUNT(*) FROM prescriptions WHERE status IN ('pending', 'reviewing')) AS prescriptions_count,
+                (SELECT COUNT(*) FROM medicines m LEFT JOIN medicine_stock ms ON ms.id = m.id WHERE COALESCE(ms.current_stock, 0) < 10) AS low_stock_count,
+                (SELECT COUNT(*) FROM orders WHERE status = 'scheduled') AS scheduled_count,
+                (SELECT COUNT(*) FROM product_requests) AS total_requests,
+                COALESCE((SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1), true) AS is_open
         `);
-        const lowStockCount = parseInt(lowStockRes.rows[0].count);
+        const c = countsRes.rows[0];
+        const ordersCount = parseInt(c.orders_count, 10);
+        const prescriptionsCount = parseInt(c.prescriptions_count, 10);
+        const lowStockCount = parseInt(c.low_stock_count, 10);
+        const scheduledOrdersCount = parseInt(c.scheduled_count, 10);
+        const totalRequests = parseInt(c.total_requests, 10);
+        const isOpen = !!c.is_open;
 
-        // Get scheduled orders count (waiting for pharmacy to open)
-        const scheduledRes = await db.query(
-            "SELECT COUNT(*) as count FROM orders WHERE status = 'scheduled'"
-        );
-        const scheduledOrdersCount = parseInt(scheduledRes.rows[0].count);
-
-        // Get total product requests (all-time)
-        const totalRequestsRes = await db.query(
-            "SELECT COUNT(*) as count FROM product_requests"
-        );
-        const totalRequests = parseInt(totalRequestsRes.rows[0].count);
-
-        // Calculate Live Shift Data
-        // Calculate Live Shift Data (Operational Model)
+        // 3. Shift metrics (one query when active shift exists)
         let grossRevenue = 0;
         let returnsValue = 0;
         let netRevenue = 0;
@@ -192,34 +180,24 @@ export const getDashboardStats = async (req, res) => {
         let shiftReturnsCount = 0;
 
         if (activeShift) {
-            const shiftMetricsRes = await db.query(`
-                SELECT 
-                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) as gross,
-                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) as refunds,
-                    COUNT(id) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) as orders_count,
-                    COUNT(id) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) as returns_count
+            const shiftRes2 = await db.query(`
+                SELECT
+                    COALESCE(SUM(CASE WHEN completed_shift_id = $1 AND completed_at IS NOT NULL THEN total_price ELSE 0 END), 0) AS gross,
+                    COALESCE(SUM(CASE WHEN returned_shift_id = $1 AND returned_at IS NOT NULL THEN total_price ELSE 0 END), 0) AS refunds,
+                    COUNT(*) FILTER (WHERE completed_shift_id = $1 AND completed_at IS NOT NULL) AS orders_count,
+                    COUNT(*) FILTER (WHERE returned_shift_id = $1 AND returned_at IS NOT NULL) AS returns_count,
+                    (SELECT COUNT(*) FROM prescriptions WHERE shift_id = $1) AS shift_pres_count
                 FROM orders
                 WHERE completed_shift_id = $1 OR returned_shift_id = $1
             `, [activeShift.id]);
-
-            const metrics = shiftMetricsRes.rows[0];
-            grossRevenue = parseFloat(metrics.gross);
-            returnsValue = parseFloat(metrics.refunds);
+            const sm = shiftRes2.rows[0];
+            grossRevenue = parseFloat(sm.gross);
+            returnsValue = parseFloat(sm.refunds);
             netRevenue = grossRevenue - returnsValue;
-            shiftOrdersCount = parseInt(metrics.orders_count);
-            shiftReturnsCount = parseInt(metrics.returns_count);
-
-            // Prescriptions Processed in Shift
-            const presRes = await db.query(
-                "SELECT COUNT(*) as count FROM prescriptions WHERE shift_id = $1",
-                [activeShift.id]
-            );
-            shiftPrescriptionsCount = parseInt(presRes.rows[0].count || 0);
+            shiftOrdersCount = parseInt(sm.orders_count, 10);
+            shiftReturnsCount = parseInt(sm.returns_count, 10);
+            shiftPrescriptionsCount = parseInt(sm.shift_pres_count, 10) || 0;
         }
-
-        // Get pharmacy status
-        const statusRes = await db.query("SELECT is_open FROM pharmacy_status_logs ORDER BY created_at DESC LIMIT 1");
-        const isOpen = statusRes.rows.length > 0 ? statusRes.rows[0].is_open : true;
 
         res.json({
             success: true,
@@ -314,6 +292,8 @@ export const startShift = async (req, res) => {
             [newShiftId]
         );
 
+        emitAdminSummaryInvalidated(req.app);
+
         req.flash('success', 'Shift started successfully. Scheduled orders have been activated.');
         res.redirect('/doctor/dashboard');
     } catch (err) {
@@ -372,6 +352,8 @@ export const endShift = async (req, res) => {
             total_orders: metrics.total_orders,
             total_returns: returnCount
         });
+
+        emitAdminSummaryInvalidated(req.app);
 
         req.flash('success', 'Shift ended. Summary recorded.');
         res.redirect('/doctor/dashboard');
@@ -442,9 +424,9 @@ export const togglePharmacyStatus = async (req, res) => {
 
 
         if (io) {
-            // Emit to all connected clients
             io.emit('pharmacy:status', { isOpen: status });
-
+            emitDashboardStatsInvalidated(req.app);
+            emitAdminSummaryInvalidated(req.app);
         } else {
             console.error('❌ Socket.io instance not found!');
         }
@@ -515,6 +497,12 @@ export const submitPrescriptionProcessing = async (req, res) => {
         }
 
         await client.query('COMMIT');
+
+        // Notify doctors for real-time dashboard
+        emitPrescriptionsUpdate(req.app, { prescriptionId, status: 'processing' });
+        emitDashboardStatsInvalidated(req.app);
+        emitAdminSummaryInvalidated(req.app);
+
         req.flash('success', 'Prescription processed successfully.');
         res.redirect('/doctor/dashboard');
     } catch (err) {
@@ -598,6 +586,12 @@ export const updateOrderState = async (req, res) => {
         await logOrderStatusChange(orderId, oldStatus, newState, doctorId, client);
 
         await client.query('COMMIT');
+
+        // Notify doctors for real-time dashboard
+        emitOrdersUpdate(req.app, { orderId, status: newState });
+        emitDashboardStatsInvalidated(req.app);
+        emitAdminSummaryInvalidated(req.app);
+
         res.json({ success: true });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -1607,6 +1601,17 @@ export const fulfillProductRequest = async (req, res) => {
             "INSERT INTO user_notifications (user_id, notification_id, sent_at) VALUES ($1, $2, NOW())",
             [request.user_id, notifId]
         );
+
+        // Notify user so notification appears live in header
+        emitNotificationToUser(req.app, request.user_id, {
+            id: notifId,
+            title,
+            message,
+            type: 'system',
+            created_at: new Date(),
+            time: 'just now',
+            read: false
+        });
 
         res.json({ success: true, message: "Request fulfilled and user notified!" });
 

@@ -127,6 +127,8 @@ npm start # Starts via nodemon
 ---
 
 ## 🛠️ Optimization Recommendations (Roadmap)
+For a detailed technical guide on scaling, database indexing, and security hardening, see our [Optimization Roadmap](file:///b:/future/hosam%20pharmacy/OPTIMIZATION.md).
+
 - [ ] **Redis Caching**: Cache product catalog and search results.
 - [ ] **ElasticSearch**: Integrate for advanced medical term fuzzy searches.
 - [ ] **Worker Threads**: Use BullMQ for high-volume email and AI processing.
