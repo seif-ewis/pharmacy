@@ -1,5 +1,6 @@
 import express from "express";
 import { ensureAdmin } from "../middleware/auth.js";
+import { sensitivePostLimiter } from "../middleware/rateLimit.js";
 import * as adminUsersController from "../controllers/admin/adminUsersController.js";
 import * as adminHistoryController from "../controllers/admin/adminHistoryController.js";
 import * as adminSettingsController from "../controllers/admin/adminSettingsController.js";
@@ -16,6 +17,9 @@ const router = express.Router();
 // Apply ensureAdmin globally to all routes in this file
 router.use(ensureAdmin);
 
+// Rate limit all admin POST/DELETE actions (30 per 15 min per IP)
+const adminActionLimiter = sensitivePostLimiter;
+
 // Dashboard Core & Dynamic Modules
 router.get("/dashboard", (req, res) => res.render("admin/dashboard", { user: req.user, pageTitle: "Admin Dashboard" }));
 router.get("/module/:name", adminModuleController.getModulePartial);
@@ -27,17 +31,17 @@ router.get("/performance-ledger", adminAnalyticsController.getPerformanceLedger)
 // Users (Patients) Management
 router.get("/users/all", adminUsersController.getUsers);
 router.get("/doctors", adminUsersController.getDoctors);
-router.post("/doctors/add", adminUsersController.addDoctor);
+router.post("/doctors/add", adminActionLimiter, adminUsersController.addDoctor);
 
 // Inventory Control
 router.get("/inventory", adminInventoryController.getInventory);
 router.get("/inventory/logs", adminInventoryController.getInventoryLogs);
-router.post("/inventory/adjust", adminInventoryController.adjustStock);
+router.post("/inventory/adjust", adminActionLimiter, adminInventoryController.adjustStock);
 
 // Prescriptions
 router.get("/prescriptions", adminPrescriptionsController.getPrescriptions);
 router.get("/prescriptions/:id", adminPrescriptionsController.getPrescriptionDetails);
-router.post("/prescriptions/:id/process", adminPrescriptionsController.processPrescription);
+router.post("/prescriptions/:id/process", adminActionLimiter, adminPrescriptionsController.processPrescription);
 
 // History & Logs
 router.get("/history/orders", adminHistoryController.getOrdersHistory);
@@ -53,17 +57,17 @@ router.get("/audit/details/:id", adminAuditController.getAuditDetails);
 
 // Promotions & Coupons
 router.get("/coupons", adminCouponsController.getCoupons);
-router.post("/coupons/add", adminCouponsController.addCoupon);
-router.post("/coupons/:id/toggle", adminCouponsController.toggleStatus);
-router.delete("/coupons/:id", adminCouponsController.deleteCoupon);
+router.post("/coupons/add", adminActionLimiter, adminCouponsController.addCoupon);
+router.post("/coupons/:id/toggle", adminActionLimiter, adminCouponsController.toggleStatus);
+router.delete("/coupons/:id", adminActionLimiter, adminCouponsController.deleteCoupon);
 
 // System Settings
 router.get("/settings", adminSettingsController.getSettings);
-router.post("/settings/update", adminSettingsController.updateSettings);
-router.post("/settings/toggle-status", adminSettingsController.toggleStatus);
+router.post("/settings/update", adminActionLimiter, adminSettingsController.updateSettings);
+router.post("/settings/toggle-status", adminActionLimiter, adminSettingsController.toggleStatus);
 
 // Announcements
 router.get("/announcements", announcementController.getAnnouncements);
-router.post("/announcements/create", announcementController.createAnnouncement);
+router.post("/announcements/create", adminActionLimiter, announcementController.createAnnouncement);
 
 export default router;

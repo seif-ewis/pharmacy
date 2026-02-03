@@ -25,8 +25,10 @@ export const ensureAuthenticated = (req, res, next) => {
 
 export const ensureDoctor = async (req, res, next) => {
     if (!req.isAuthenticated()) {
+        req.session.returnTo = req.originalUrl;
         req.flash("error", "Please login first.");
-        return res.redirect("/");
+        const returnUrl = encodeURIComponent(req.originalUrl);
+        return res.redirect(`/?openLogin=true&returnTo=${returnUrl}`);
     }
 
     try {
@@ -48,8 +50,10 @@ export const ensureDoctor = async (req, res, next) => {
 
 export const ensureAdmin = async (req, res, next) => {
     if (!req.isAuthenticated()) {
+        req.session.returnTo = req.originalUrl;
         req.flash("error", "Please login first.");
-        return res.redirect("/");
+        const returnUrl = encodeURIComponent(req.originalUrl);
+        return res.redirect(`/?openLogin=true&returnTo=${returnUrl}`);
     }
 
     try {

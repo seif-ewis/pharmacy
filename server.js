@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import helmet from "helmet";
 import session from "express-session";
 import passport from "./src/config/passport.js";
 import cookieParser from "cookie-parser";
@@ -10,6 +11,8 @@ import corsOptions from "./src/config/corsOption.js";
 import flash from "connect-flash";
 
 dotenv.config();
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,12 +41,29 @@ const sessionMiddleware = session({
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
         sameSite: "lax",
-        secure: process.env.NODE_ENV === "production"
+        secure: isProduction, // HTTPS only in production
     }
 });
 
 // 3. Apply Middleware to App
+app.set("trust proxy", 1); // Must be before session for correct secure cookie behind reverse proxy
+if (isProduction) {
+    app.use((req, res, next) => {
+        if (!req.secure) {
+            return res.redirect(301, "https://" + req.get("host") + req.originalUrl);
+        }
+        next();
+    });
+}
 app.use(cors(corsOptions));
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable if it breaks inline scripts/ Tailwind; tighten later if needed
+    hsts: isProduction ? {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+    } : false,
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
@@ -167,9 +187,6 @@ io.on("connection", (socket) => {
         });
     }
 });
-
-// Trust Proxy for correct IP behind load balancers/reverse proxies
-app.set("trust proxy", 1);
 
 app.use((req, res) => {
     res.status(404).render("404", { pageTitle: "Page Not Found", user: req.user });
