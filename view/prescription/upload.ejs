@@ -15,7 +15,7 @@
                     </div>
 
                     <div
-                        class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-slate-800">
+                        class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100 dark:border-slate-800">
                         <!-- Alert Messages -->
                         <%- include('../partials/alert') %>
 
@@ -24,7 +24,7 @@
                                 <!-- Drag and Drop Area -->
                                 <div class="relative group">
                                     <div id="drop-zone"
-                                        class="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl p-10 text-center transition-all duration-300 hover:border-primary hover:bg-blue-50/50 dark:hover:bg-slate-800/50 cursor-pointer">
+                                        class="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl p-6 sm:p-10 text-center transition-all duration-300 hover:border-primary hover:bg-blue-50/50 dark:hover:bg-slate-800/50 cursor-pointer">
                                         <input type="file" name="image" id="file-input" class="hidden" accept="image/*"
                                             required onchange="previewFile(this)">
 

@@ -6,55 +6,59 @@
 
         <!-- TOP BAR (Always Visible) -->
         <header
-            class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-slate-800 sticky top-0 z-40 px-8 flex items-center justify-between transition-all">
-            <div class="flex items-center gap-8">
-                <div class="flex items-center gap-3">
+            class="h-20 min-h-[5rem] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-slate-800 sticky top-0 z-40 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 transition-all flex-wrap sm:flex-nowrap">
+            <div class="flex items-center gap-2 sm:gap-4 lg:gap-8 flex-1 min-w-0">
+                <!-- Mobile: hamburger -->
+                <button type="button" onclick="toggleAdminSidebar()" aria-label="Open menu"
+                    class="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800 transition-all shrink-0">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                     <div
-                        class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner">
+                        class="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
                         <i class="fas fa-store"></i>
                     </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Store Status</p>
-                        <div class="flex items-center gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Store</p>
+                        <div class="flex items-center gap-1.5">
                             <span id="store-status-text"
-                                class="text-sm font-black dark:text-white uppercase">OFFLINE</span>
-                            <div id="store-status-dot" class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                                class="text-xs sm:text-sm font-black dark:text-white uppercase truncate">OFFLINE</span>
+                            <div id="store-status-dot" class="w-2 h-2 rounded-full bg-gray-400 animate-pulse shrink-0"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="h-8 w-[1px] bg-gray-100 dark:bg-slate-800"></div>
+                <div class="hidden sm:block h-8 w-[1px] bg-gray-100 dark:bg-slate-800 shrink-0"></div>
 
-                <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 sm:gap-6 min-w-0">
                     <div id="active-shift-badge"
-                        class="hidden flex items-center gap-4 py-2 px-4 bg-primary/5 rounded-2xl border border-primary/10">
+                        class="hidden flex items-center gap-2 sm:gap-4 py-1.5 sm:py-2 px-2 sm:px-4 bg-primary/5 rounded-xl sm:rounded-2xl border border-primary/10">
                         <div
-                            class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow-lg shadow-primary/30">
+                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow-lg shadow-primary/30 shrink-0">
                             <i class="fas fa-user-md"></i>
                         </div>
-                        <div>
+                        <div class="min-w-0 hidden sm:block">
                             <p id="active-doctor-name"
-                                class="text-xs font-black dark:text-white tracking-tight leading-none mb-1">Dr.
-                                Loading...</p>
+                                class="text-xs font-black dark:text-white tracking-tight leading-none mb-0.5 sm:mb-1 truncate">Dr. Loading...</p>
                             <p id="shift-start-time"
                                 class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Started --:--</p>
                         </div>
-                        <div class="ml-4 pl-4 border-l border-primary/20 text-right">
-                            <p class="text-[9px] font-black text-primary uppercase tracking-widest">Live Revenue</p>
-                            <p id="live-revenue-text" class="text-sm font-black dark:text-white">+0 EGP</p>
+                        <div class="pl-2 sm:ml-4 sm:pl-4 border-l border-primary/20 text-right shrink-0">
+                            <p class="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-widest">Live</p>
+                            <p id="live-revenue-text" class="text-xs sm:text-sm font-black dark:text-white">+0 EGP</p>
                         </div>
                     </div>
                     <div id="no-shift-warning"
-                        class="flex items-center gap-2 text-amber-500 bg-amber-50 dark:bg-amber-900/10 px-4 py-2 rounded-2xl border border-amber-100 dark:border-amber-900/20">
-                        <i class="fas fa-exclamation-triangle text-xs"></i>
-                        <span class="text-[10px] font-black uppercase tracking-widest">No Active Shift</span>
+                        class="flex items-center gap-1.5 sm:gap-2 text-amber-500 bg-amber-50 dark:bg-amber-900/10 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-amber-100 dark:border-amber-900/20">
+                        <i class="fas fa-exclamation-triangle text-xs shrink-0"></i>
+                        <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">No Shift</span>
                     </div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <div class="text-right hidden sm:block">
-                    <p class="text-xs font-black dark:text-white mb-0.5">
+                    <p class="text-xs font-black dark:text-white mb-0.5 truncate max-w-[120px] lg:max-w-none">
                         <%= user.full_name %>
                     </p>
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
@@ -62,22 +66,28 @@
                     </p>
                 </div>
                 <div
-                    class="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black shadow-lg border-2 border-white dark:border-slate-700">
+                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-sm shadow-lg border-2 border-white dark:border-slate-700">
                     <%= user.full_name.charAt(0) %>
                 </div>
                 <a href="/auth/logout"
-                    class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                    class="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    aria-label="Logout">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
             </div>
         </header>
 
-        <div class="flex flex-1 overflow-hidden">
-            <!-- SIDEBAR -->
-            <aside
-                class="w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0 z-30 transition-all overflow-y-auto custom-scrollbar">
-                <div class="p-8">
-                    <div class="flex items-center gap-3 mb-10 pl-2">
+        <!-- Mobile sidebar overlay (shown when sidebar is open) -->
+        <div id="admin-sidebar-overlay"
+            class="fixed inset-0 bg-black/50 z-20 transition-opacity duration-300 md:hidden hidden pointer-events-none"
+            onclick="toggleAdminSidebar()" aria-hidden="true"></div>
+
+        <div class="flex flex-1 overflow-hidden relative">
+            <!-- SIDEBAR: collapsible on mobile, always visible on md+ -->
+            <aside id="admin-sidebar"
+                class="w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0 z-30 transition-transform duration-300 overflow-y-auto custom-scrollbar fixed md:relative inset-y-0 left-0 h-[calc(100vh-5rem)] md:h-full -translate-x-full md:translate-x-0">
+                <div class="p-4 sm:p-6 lg:p-8 flex items-center justify-between md:block">
+                    <div class="flex items-center gap-3 pl-2">
                         <div
                             class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm shadow-lg shadow-primary/30">
                             <i class="fas fa-shield-alt"></i>
@@ -85,6 +95,12 @@
                         <span class="font-black text-lg dark:text-white tracking-tighter">PHARMA<span
                                 class="text-primary">OS</span></span>
                     </div>
+                    <button type="button" onclick="toggleAdminSidebar()" aria-label="Close menu"
+                        class="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="px-4 sm:px-6 lg:px-8 pb-8">
 
                     <nav class="space-y-1.5" id="sidebar-nav">
                         <p
@@ -187,7 +203,7 @@
             </aside>
 
             <!-- MAIN CONTENT AREA -->
-            <main class="flex-1 overflow-y-auto custom-scrollbar relative p-8 lg:p-12">
+            <main class="flex-1 overflow-y-auto custom-scrollbar relative p-4 sm:p-6 lg:p-8 xl:p-12 min-w-0">
                 <div id="module-container" class="max-w-7xl mx-auto">
                     <!-- AJAX loaded modules land here -->
                     <div class="flex items-center justify-center min-h-[60vh]">
@@ -295,8 +311,33 @@
 
                     window.location.hash = name;
 
+                    // On mobile, close sidebar after selecting a module
+                    if (window.innerWidth < 768) closeAdminSidebar();
                 } catch (err) {
                     container.innerHTML = `<div class="p-12 text-center text-red-500 font-bold">Failed to load module. Check network or permissions.</div>`;
+                }
+            }
+
+            function toggleAdminSidebar() {
+                const sidebar = document.getElementById('admin-sidebar');
+                const overlay = document.getElementById('admin-sidebar-overlay');
+                if (!sidebar || !overlay) return;
+                const isOpen = !sidebar.classList.contains('-translate-x-full');
+                if (isOpen) {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden', 'pointer-events-none');
+                } else {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden', 'pointer-events-none');
+                }
+            }
+            function closeAdminSidebar() {
+                const sidebar = document.getElementById('admin-sidebar');
+                const overlay = document.getElementById('admin-sidebar-overlay');
+                if (!sidebar || !overlay) return;
+                if (!sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden', 'pointer-events-none');
                 }
             }
 
