@@ -11,6 +11,9 @@ import corsOptions from "./src/config/corsOption.js";
 import flash from "connect-flash";
 import { RedisStore } from "connect-redis";
 import redisClient from "./src/config/redis.js";
+import rateLimit from "express-rate-limit";
+import xss from "xss-clean";
+import hpp from "hpp";
 
 dotenv.config();
 
@@ -64,6 +67,14 @@ if (isProduction) {
     });
 }
 app.use(cors(corsOptions));
+
+// 3.1 Rate Limiting (100 requests per 15 minutes)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again later."
+});
+app.use(limiter);
 app.use(helmet({
     contentSecurityPolicy: false, // Disable if it breaks inline scripts/ Tailwind; tighten later if needed
     hsts: isProduction ? {
@@ -74,6 +85,11 @@ app.use(helmet({
 }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
+
+// 3.2 Data Sanitization
+app.use(xss()); // Clean XSS from user input
+app.use(hpp()); // Prevent HTTP Parameter Pollution
+
 app.use(cookieParser());
 app.use(sessionMiddleware);
 app.use(flash());
