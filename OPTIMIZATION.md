@@ -1,4 +1,4 @@
-# MediCare Optimization Roadmap & Technical Guide
+# Hosam Pharmacy Optimization Roadmap & Technical Guide
 
 This document outlines the current state and prioritized recommendations for advancing the project's performance, security, and scalability.
 
@@ -8,7 +8,6 @@ This document outlines the current state and prioritized recommendations for adv
 **Current State**: Email/Password + Google OAuth, sessions in-memory, RBAC enforced.
 
 **🚀 Recommendations**:
-- **Redis Session Store**: Move sessions to Redis to support horizontal scaling and avoid losing sessions on server restarts.
 - **JWT / Rotating Sessions**: Enforce JWT or rotating session IDs for API endpoints to facilitate future mobile app integration.
 - **Multi-Factor Authentication (MFA)**: Implement 2FA for Doctor and Admin roles to harden access to sensitive pharmacy data.
 
