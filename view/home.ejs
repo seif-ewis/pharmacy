@@ -11,89 +11,108 @@
             <section class="relative bg-white dark:bg-night overflow-hidden pt-10 transition-colors duration-300">
                 <!-- Modern Promo Pill -->
                 <!-- Modern Promo Pill with Star Light Glow -->
-                <div class="flex justify-center mb-8 px-4 translate-y-4 opacity-0 animate-fade-in-down relative z-10">
-                    <!-- Back Star Light / Glow Effect -->
+                <% if (typeof featuredCoupon !=='undefined' && featuredCoupon) { %>
                     <div
-                        class="absolute -inset-1 bg-gradient-to-r from-blue-400 to-teal-400 rounded-full blur opacity-20 dark:opacity-40 animate-pulse group-hover:opacity-60 transition duration-1000 group-hover:duration-200">
-                    </div>
-
-                    <div onclick="navigator.clipboard.writeText('WELCOME20'); const el=this.querySelector('.coupon-text'); const original=el.innerText; el.innerText='COPIED!'; setTimeout(()=>el.innerText=original, 1500);"
-                        class="glass dark:bg-slate-800/90 dark:border-slate-600/50 py-2 px-6 rounded-full inline-flex items-center gap-3 border-blue-100/50 shadow-sm relative cursor-pointer hover:shadow-md dark:shadow-blue-900/20 transition-all group">
-                        <span class="flex h-2 w-2 relative">
-                            <span
-                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
-                        </span>
-                        <p class="text-[13px] font-bold text-gray-600 dark:text-gray-200">
-                            Flash Sale: <span class="text-primary dark:text-blue-300 tracking-tight">20% OFF</span> your
-                            first order
-                        </p>
-                        <div class="h-4 w-[1px] bg-gray-200 dark:bg-slate-600"></div>
-                        <p
-                            class="coupon-text text-[13px] font-mono font-bold text-secondary dark:text-teal-400 tracking-widest group-hover:text-primary dark:group-hover:text-white transition-colors">
-                            WELCOME20</p>
-                        <i
-                            class="fas fa-copy text-[10px] text-gray-300 dark:text-gray-500 group-hover:text-primary transition-colors ml-1"></i>
-                    </div>
-                </div>
-                <div class="container mx-auto px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-                    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-center">
-
-                        <!-- Text Content -->
+                        class="flex justify-center mb-8 px-4 translate-y-4 opacity-0 animate-fade-in-down relative z-10">
+                        <!-- Back Star Light / Glow Effect -->
                         <div
-                            class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left hero-content opacity-0">
-
-
-                            <h1
-                                class="text-4xl tracking-tight font-extrabold text-dark dark:text-white sm:text-5xl md:text-6xl">
-                                <span class="block">Your Health,</span>
-                                <span class="block text-primary dark:text-blue-400">Our Priority.</span>
-                            </h1>
-                            <p
-                                class="mt-4 text-lg text-gray-500 dark:text-gray-400 sm:mt-5 sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                                Order medicines from the comfort of your home. Genuine products, rapid delivery, and
-                                expert
-                                care.
-                            </p>
-                            <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
-                                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                    <a href="#medicines"
-                                        class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-blue-800 md:py-4 md:text-lg md:px-10 shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-1 cta-btn">
-                                        Order Now
-                                    </a>
-                                    <a href="/prescription/upload"
-                                        class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-secondary bg-teal-50 hover:bg-teal-100 md:py-4 md:text-lg md:px-10 transition-colors cta-btn">
-                                        <i class="fas fa-upload mr-2"></i> Upload Rx
-                                    </a>
-                                </div>
-                            </div>
+                            class="absolute -inset-1 bg-gradient-to-r from-blue-400 to-teal-400 rounded-full blur opacity-20 dark:opacity-40 animate-pulse group-hover:opacity-60 transition duration-1000 group-hover:duration-200">
                         </div>
 
-                        <!-- Hero Image/Illustration -->
-                        <div class="mt-12 lg:mt-0 lg:col-span-6 hero-image opacity-0">
-                            <div class="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-md">
-                                <div class="relative block w-full bg-white rounded-lg overflow-hidden">
-                                    <!-- Placeholder for medical illustration -->
-                                    <div class="bg-blue-50 h-96 w-full flex items-center justify-center">
-                                        <i class="fas fa-user-md text-9xl text-primary/20"></i>
-                                    </div>
-
-                                    <!-- Floating Card Animation -->
-                                    <div
-                                        class="absolute bottom-4 left-4 bg-white p-4 rounded-lg shadow-xl flex items-center gap-3 float-card">
-                                        <div class="bg-green-100 p-2 rounded-full text-green-600">
-                                            <i class="fas fa-check"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500">Delivery Status</p>
-                                            <p class="font-bold text-dark">On the way</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div onclick="navigator.clipboard.writeText('<%= featuredCoupon.code %>'); const el=this.querySelector('.coupon-text'); const original=el.innerText; el.innerText='COPIED!'; setTimeout(()=>el.innerText=original, 1500);"
+                            class="glass dark:bg-slate-800/90 dark:border-slate-600/50 py-2 px-6 rounded-full inline-flex items-center gap-3 border-blue-100/50 shadow-sm relative cursor-pointer hover:shadow-md dark:shadow-blue-900/20 transition-all group">
+                            <span class="flex h-2 w-2 relative">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+                            </span>
+                            <p class="text-[13px] font-bold text-gray-600 dark:text-gray-200">
+                                <% if (featuredCoupon.custom_message) { %>
+                                    <%- featuredCoupon.custom_message %>
+                                        <% if (featuredCoupon.highlighted_text) { %>
+                                            <span class="blue-light ml-1">
+                                                <%= featuredCoupon.highlighted_text %>
+                                            </span>
+                                            <% } %>
+                                                <% } else { %>
+                                                    Flash Sale: <span
+                                                        class="text-primary dark:text-blue-300 tracking-tight">
+                                                        <%= featuredCoupon.discount_type==='percentage' ?
+                                                            featuredCoupon.discount_value + '% OFF' :
+                                                            featuredCoupon.discount_value + ' EGP OFF' %>
+                                                    </span>
+                                                    <%= featuredCoupon.label || 'Special Offer' %>
+                                                        <% } %>
+                            </p>
+                            <div class="h-4 w-[1px] bg-gray-200 dark:bg-slate-600"></div>
+                            <p
+                                class="coupon-text text-[13px] font-mono font-bold text-secondary dark:text-teal-400 tracking-widest group-hover:text-primary dark:group-hover:text-white transition-colors">
+                                <%= featuredCoupon.code %>
+                            </p>
+                            <i
+                                class="fas fa-copy text-[10px] text-gray-300 dark:text-gray-500 group-hover:text-primary transition-colors ml-1"></i>
                         </div>
                     </div>
-                </div>
+                    <% } %>
+                        <div class="container mx-auto px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+                            <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-center">
+
+                                <!-- Text Content -->
+                                <div
+                                    class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left hero-content opacity-0">
+
+
+                                    <h1
+                                        class="text-4xl tracking-tight font-extrabold text-dark dark:text-white sm:text-5xl md:text-6xl">
+                                        <span class="block">Your Health,</span>
+                                        <span class="block text-primary dark:text-blue-400">Our Priority.</span>
+                                    </h1>
+                                    <p
+                                        class="mt-4 text-lg text-gray-500 dark:text-gray-400 sm:mt-5 sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                                        Order medicines from the comfort of your home. Genuine products, rapid delivery,
+                                        and
+                                        expert
+                                        care.
+                                    </p>
+                                    <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
+                                        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                            <a href="#medicines"
+                                                class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-blue-800 md:py-4 md:text-lg md:px-10 shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-1 cta-btn">
+                                                Order Now
+                                            </a>
+                                            <a href="/prescription/upload"
+                                                class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-secondary bg-teal-50 hover:bg-teal-100 md:py-4 md:text-lg md:px-10 transition-colors cta-btn">
+                                                <i class="fas fa-upload mr-2"></i> Upload Rx
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hero Image/Illustration -->
+                                <div class="mt-12 lg:mt-0 lg:col-span-6 hero-image opacity-0">
+                                    <div class="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-md">
+                                        <div class="relative block w-full bg-white rounded-lg overflow-hidden">
+                                            <!-- Placeholder for medical illustration -->
+                                            <div class="bg-blue-50 h-96 w-full flex items-center justify-center">
+                                                <i class="fas fa-user-md text-9xl text-primary/20"></i>
+                                            </div>
+
+                                            <!-- Floating Card Animation -->
+                                            <div
+                                                class="absolute bottom-4 left-4 bg-white p-4 rounded-lg shadow-xl flex items-center gap-3 float-card">
+                                                <div class="bg-green-100 p-2 rounded-full text-green-600">
+                                                    <i class="fas fa-check"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-gray-500">Delivery Status</p>
+                                                    <p class="font-bold text-dark">On the way</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
             </section>
 
 
@@ -107,13 +126,16 @@
                                 <i class="fas fa-fire text-lg sm:text-xl animate-pulse"></i>
                             </div>
                             <div class="min-w-0">
-                                <h2 class="text-xl sm:text-2xl font-bold text-dark dark:text-white">Featured Products</h2>
-                                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">Top picks for your daily health needs</p>
+                                <h2 class="text-xl sm:text-2xl font-bold text-dark dark:text-white">Featured Products
+                                </h2>
+                                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">Top picks for your daily health
+                                    needs</p>
                             </div>
                         </div>
                         <a href="/category/featured"
                             class="text-primary hover:text-blue-800 font-medium flex items-center gap-1 group shrink-0">
-                            View All <i class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                            View All <i
+                                class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
 

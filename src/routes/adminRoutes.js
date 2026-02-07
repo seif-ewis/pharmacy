@@ -60,6 +60,7 @@ router.get("/coupons", adminCouponsController.getCoupons);
 router.post("/coupons/add", adminActionLimiter, adminCouponsController.addCoupon);
 router.post("/coupons/:id/toggle", adminActionLimiter, adminCouponsController.toggleStatus);
 router.delete("/coupons/:id", adminActionLimiter, adminCouponsController.deleteCoupon);
+router.post("/coupons/:id/toggle-featured", adminActionLimiter, adminCouponsController.toggleFeatured);
 
 // System Settings
 router.get("/settings", adminSettingsController.getSettings);

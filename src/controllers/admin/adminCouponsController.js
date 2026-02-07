@@ -1,4 +1,5 @@
 import db from "../../config/dataBase.js";
+import redisClient from "../../config/redis.js";
 
 // GET: All Promotions
 export const getCoupons = async (req, res) => {
@@ -21,7 +22,7 @@ export const addCoupon = async (req, res) => {
     const {
         code, label, discount_type, discount_value,
         min_order_amount, usage_limit_global, is_public,
-        start_date, end_date
+        start_date, end_date, custom_message, highlighted_text
     } = req.body;
 
     try {
@@ -48,14 +49,14 @@ export const addCoupon = async (req, res) => {
             INSERT INTO promotions (
                 id, code, label, discount_type, discount_value, 
                 min_order_amount, usage_limit_global, is_public,
-                start_date, end_date, is_active, created_at
+                start_date, end_date, is_active, created_at, custom_message, highlighted_text
             ) VALUES (
-                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW()
+                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), $10, $11
             )
         `, [
             code.toUpperCase(), label, finalType, discount_value,
             min_order_amount || 0, usage_limit_global || null, is_public || false,
-            start_date || null, end_date || null
+            start_date || null, end_date || null, custom_message || null, highlighted_text || null
         ]);
 
         res.json({ success: true, message: "Coupon created successfully" });
@@ -72,6 +73,10 @@ export const toggleStatus = async (req, res) => {
 
     try {
         await db.query("UPDATE promotions SET is_active = $1 WHERE id = $2", [is_active, id]);
+
+        // Invalidate cache in case this was the featured coupon
+        await redisClient.del("homepage:featured_coupon");
+
         res.json({ success: true, message: "Coupon status updated" });
     } catch (err) {
         console.error("Toggle Coupon Status Error:", err);
@@ -91,9 +96,44 @@ export const deleteCoupon = async (req, res) => {
         }
 
         await db.query("DELETE FROM promotions WHERE id = $1", [id]);
+
+        // Invalidate cache in case this was the featured coupon
+        await redisClient.del("homepage:featured_coupon");
+
         res.json({ success: true, message: "Coupon deleted successfully" });
     } catch (err) {
         console.error("Delete Coupon Error:", err);
         res.status(500).json({ success: false, message: "Failed to delete coupon" });
+    }
+};
+
+// POST: Toggle Featured Status
+export const toggleFeatured = async (req, res) => {
+    const { id } = req.params;
+    const { is_featured } = req.body;
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // If enabling, disable all others first
+        if (is_featured) {
+            await client.query("UPDATE promotions SET is_featured = false");
+        }
+
+        await client.query("UPDATE promotions SET is_featured = $1 WHERE id = $2", [is_featured, id]);
+
+        await client.query('COMMIT');
+
+        // Invalidate homepage cache to reflect changes immediately
+        await redisClient.del("homepage:featured_coupon");
+
+        res.json({ success: true, message: "Featured status updated" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Toggle Featured Coupon Error:", err);
+        res.status(500).json({ success: false, message: "Failed to update featured status" });
+    } finally {
+        client.release();
     }
 };

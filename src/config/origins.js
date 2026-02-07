@@ -3,7 +3,11 @@
  * Example: ALLOWED_ORIGINS=https://mypharmacy.com,https://www.mypharmacy.com
  */
 const DEFAULT_ORIGINS = [
-    "https://pharmacy-btrs.onrender.com"
+    "https://pharmacy-btrs.onrender.com",
+    "http://localhost:3001",
+    "https://78b3-45-243-231-88.ngrok-free.app",
+    "http://127.0.0.1:3001",
+
 ];
 
 function getAllowedOrigins() {

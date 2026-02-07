@@ -57,6 +57,23 @@
                     </div>
                 </div>
 
+                <div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Custom
+                        Message (Optional)</label>
+                    <input type="text" name="custom_message"
+                        class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-none rounded-xl text-sm font-bold dark:text-white focus:ring-2 focus:ring-primary/20"
+                        placeholder="Ramadan Special Sale - Get">
+                </div>
+
+                <div>
+                    <label
+                        class="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1 mb-2 block">Highlighted
+                        (Glow) Word</label>
+                    <input type="text" name="highlighted_text"
+                        class="w-full px-4 py-3 bg-blue-50/50 dark:bg-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-xl text-sm font-black dark:text-white focus:ring-2 focus:ring-blue-400/20"
+                        placeholder="20% OFF">
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label
@@ -173,6 +190,9 @@
                             <button onclick="deleteCoupon('${c.id}')" class="py-2.5 bg-gray-50 dark:bg-slate-900 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
                                 Delete
                             </button>
+                            <button onclick="toggleFeatured('${c.id}', ${!c.is_featured})" class="col-span-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${c.is_featured ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white'} transition-all">
+                                <i class="fas fa-star mr-1"></i> ${c.is_featured ? 'Featured on Home' : 'Feature on Home'}
+                            </button>
                         </div>
                     </div>
                 `).join('');
@@ -247,6 +267,25 @@
             }
         } catch (err) {
             showToast('error', 'Failed to delete campaign');
+        }
+    }
+
+    async function toggleFeatured(id, status) {
+        try {
+            const res = await fetch(`/admin/coupons/${id}/toggle-featured`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_featured: status })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('success', `Campaign ${status ? 'featured' : 'un-featured'}`);
+                loadCoupons();
+            } else {
+                showToast('error', data.message);
+            }
+        } catch (err) {
+            showToast('error', 'Failed to update featured status');
         }
     }
 

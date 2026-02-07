@@ -14,6 +14,8 @@ export const getHomePage = async (req, res) => {
         servicesProducts: []
     };
 
+    let featuredCoupon = null;
+
     try {
         const cacheKey = "homepage:products";
         const cachedProducts = await redisClient.get(cacheKey);
@@ -61,6 +63,30 @@ export const getHomePage = async (req, res) => {
             await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
         }
 
+        /* ================= Featured Coupon ================= */
+        const couponCacheKey = "homepage:featured_coupon";
+
+        try {
+            const cachedCoupon = await redisClient.get(couponCacheKey);
+            if (cachedCoupon) {
+                featuredCoupon = JSON.parse(cachedCoupon);
+            } else {
+                const couponRes = await db.query(`
+                    SELECT code, discount_type, discount_value, label, custom_message, highlighted_text 
+                    FROM promotions 
+                    WHERE is_featured = true AND is_active = true 
+                    LIMIT 1
+                `);
+                if (couponRes.rows.length > 0) {
+                    featuredCoupon = couponRes.rows[0];
+                    await redisClient.setEx(couponCacheKey, 300, JSON.stringify(featuredCoupon)); // Cache for 5 mins
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching featured coupon:", err);
+            // Non-critical, continue without coupon
+        }
+
     } catch (err) {
         console.error("Homepage medicines error:", err);
         return res.status(500).send("Internal Server Error");
@@ -96,6 +122,8 @@ export const getHomePage = async (req, res) => {
         chatMessages,
         error: req.flash("error"),
         success: req.flash("success"),
+        success: req.flash("success"),
+        featuredCoupon,
         ...products,
     });
 };
