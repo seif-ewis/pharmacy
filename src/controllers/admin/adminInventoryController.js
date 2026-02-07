@@ -92,7 +92,7 @@ export const adjustStock = async (req, res) => {
         await client.query(`
             INSERT INTO inventory_adjustments (medicine_id, quantity_change, adjustment_type, performed_by, reason)
             VALUES ($1, $2, $3, $4, $5)
-        `, [medicine_id, change, change > 0 ? 'manual_increase' : 'manual_decrease', actor_id, reason]);
+        `, [medicine_id, change, 'manual_adjustment', actor_id, reason]);
 
         // Get new stock from view
         const stockRes = await client.query('SELECT current_stock FROM medicine_stock WHERE id = $1', [medicine_id]);

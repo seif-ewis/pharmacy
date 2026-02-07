@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="<%= (typeof currentLang !== 'undefined') ? currentLang : 'en' %>" dir="ltr" class="scroll-smooth">
 
 <%- include('partials/head') %>
 
@@ -35,14 +35,14 @@
                                             </span>
                                             <% } %>
                                                 <% } else { %>
-                                                    Flash Sale: <span
-                                                        class="text-primary dark:text-blue-300 tracking-tight">
-                                                        <%= featuredCoupon.discount_type==='percentage' ?
-                                                            featuredCoupon.discount_value + '% OFF' :
-                                                            featuredCoupon.discount_value + ' EGP OFF' %>
-                                                    </span>
-                                                    <%= featuredCoupon.label || 'Special Offer' %>
-                                                        <% } %>
+                                                    <%= t('flash_sale') %> <span
+                                                            class="text-primary dark:text-blue-300 tracking-tight">
+                                                            <%= featuredCoupon.discount_type==='percentage' ?
+                                                                featuredCoupon.discount_value + t('pct_off') :
+                                                                featuredCoupon.discount_value + t('egp_off') %>
+                                                        </span>
+                                                        <%= featuredCoupon.label || t('special_offer') %>
+                                                            <% } %>
                             </p>
                             <div class="h-4 w-[1px] bg-gray-200 dark:bg-slate-600"></div>
                             <p
@@ -64,25 +64,27 @@
 
                                     <h1
                                         class="text-4xl tracking-tight font-extrabold text-dark dark:text-white sm:text-5xl md:text-6xl">
-                                        <span class="block">Your Health,</span>
-                                        <span class="block text-primary dark:text-blue-400">Our Priority.</span>
+                                        <span class="block">
+                                            <%= t('hero_title_1') %>
+                                        </span>
+                                        <span class="block text-primary dark:text-blue-400">
+                                            <%= t('hero_title_2') %>
+                                        </span>
                                     </h1>
                                     <p
                                         class="mt-4 text-lg text-gray-500 dark:text-gray-400 sm:mt-5 sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                                        Order medicines from the comfort of your home. Genuine products, rapid delivery,
-                                        and
-                                        expert
-                                        care.
+                                        <%= t('hero_subtitle') %>
                                     </p>
                                     <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
                                         <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                             <a href="#medicines"
                                                 class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-primary hover:bg-blue-800 md:py-4 md:text-lg md:px-10 shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-1 cta-btn">
-                                                Order Now
+                                                <%= t('order_now') %>
                                             </a>
                                             <a href="/prescription/upload"
                                                 class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-secondary bg-teal-50 hover:bg-teal-100 md:py-4 md:text-lg md:px-10 transition-colors cta-btn">
-                                                <i class="fas fa-upload mr-2"></i> Upload Rx
+                                                <i class="fas fa-upload mr-2"></i>
+                                                <%= t('upload_rx_cta') %>
                                             </a>
                                         </div>
                                     </div>
@@ -104,8 +106,12 @@
                                                     <i class="fas fa-check"></i>
                                                 </div>
                                                 <div>
-                                                    <p class="text-xs text-gray-500">Delivery Status</p>
-                                                    <p class="font-bold text-dark">On the way</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        <%= t('delivery_status') %>
+                                                    </p>
+                                                    <p class="font-bold text-dark">
+                                                        <%= t('on_the_way') %>
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -126,16 +132,18 @@
                                 <i class="fas fa-fire text-lg sm:text-xl animate-pulse"></i>
                             </div>
                             <div class="min-w-0">
-                                <h2 class="text-xl sm:text-2xl font-bold text-dark dark:text-white">Featured Products
+                                <h2 class="text-xl sm:text-2xl font-bold text-dark dark:text-white">
+                                    <%= t('featured_products') %>
                                 </h2>
-                                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">Top picks for your daily health
-                                    needs</p>
+                                <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+                                    <%= t('featured_desc') %>
+                                </p>
                             </div>
                         </div>
                         <a href="/category/featured"
                             class="text-primary hover:text-blue-800 font-medium flex items-center gap-1 group shrink-0">
-                            View All <i
-                                class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                            <%= t('view_all') %> <i
+                                    class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
 
@@ -232,15 +240,18 @@
                                 <i class="fas fa-pills text-xl"></i>
                             </div>
                             <div>
-                                <h2 class="text-2xl font-bold text-dark dark:text-white">Daily Medicines</h2>
-                                <p class="text-gray-500 dark:text-gray-400 mt-1">Must-have medical supplies for every
-                                    home</p>
+                                <h2 class="text-2xl font-bold text-dark dark:text-white">
+                                    <%= t('daily_medicines') %>
+                                </h2>
+                                <p class="text-gray-500 dark:text-gray-400 mt-1">
+                                    <%= t('daily_desc') %>
+                                </p>
                             </div>
                         </div>
                         <a href="/category/essentials"
                             class="text-primary hover:text-blue-800 font-medium flex items-center gap-1 group">
-                            View All <i
-                                class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                            <%= t('view_all') %> <i
+                                    class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
 
@@ -330,15 +341,18 @@
                                 <i class="fas fa-magic text-xl"></i>
                             </div>
                             <div>
-                                <h2 class="text-2xl font-bold text-dark dark:text-white">Beauty & Wellness</h2>
-                                <p class="text-gray-500 dark:text-gray-400 mt-1">Boost your health with our premium
-                                    supplements</p>
+                                <h2 class="text-2xl font-bold text-dark dark:text-white">
+                                    <%= t('wellness_products') %>
+                                </h2>
+                                <p class="text-gray-500 dark:text-gray-400 mt-1">
+                                    <%= t('wellness_desc') %>
+                                </p>
                             </div>
                         </div>
                         <a href="/category/wellness"
                             class="text-primary hover:text-blue-800 font-medium flex items-center gap-1 group">
-                            View All <i
-                                class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                            <%= t('view_all') %> <i
+                                    class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
 
@@ -358,7 +372,7 @@
                                         <% if (typeof med.stock !=='undefined' && Number(med.stock) <=0) { %>
                                             <div
                                                 class="absolute top-4 left-4 z-20 bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                                Out of Stock
+                                                <%= t('out_of_stock') %>
                                             </div>
                                             <% } %>
 
@@ -429,15 +443,18 @@
                                 <i class="fas fa-hand-holding-medical text-xl"></i>
                             </div>
                             <div>
-                                <h2 class="text-2xl font-bold text-dark dark:text-white">Pharmacy Services</h2>
-                                <p class="text-gray-500 dark:text-gray-400 mt-1">Professional healthcare services at
-                                    your fingertips</p>
+                                <h2 class="text-2xl font-bold text-dark dark:text-white">
+                                    <%= t('pharmacy_services') %>
+                                </h2>
+                                <p class="text-gray-500 dark:text-gray-400 mt-1">
+                                    <%= t('services_desc') %>
+                                </p>
                             </div>
                         </div>
                         <a href="/category/services"
                             class="text-primary hover:text-blue-800 font-medium flex items-center gap-1 group">
-                            View All <i
-                                class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                            <%= t('view_all') %> <i
+                                    class="fas fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
 
@@ -510,15 +527,20 @@
 
                         <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                             <div class="text-white text-center md:text-left">
-                                <h2 class="text-3xl font-bold mb-4">Have a Prescription?</h2>
-                                <p class="text-blue-100 text-lg max-w-xl">Upload your doctor's prescription and let our
-                                    pharmacists arrange the medicines for you. We verify every order.</p>
+                                <h2 class="text-3xl font-bold mb-4">
+                                    <%= t('have_prescription') %>
+                                </h2>
+                                <p class="text-blue-100 text-lg max-w-xl">
+                                    <%= t('upload_rx_desc') %>
+                                </p>
                             </div>
 
                             <a href="/prescription/upload"
                                 class="bg-secondary hover:bg-teal-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center gap-3 transition-all transform hover:-translate-y-1 hover:shadow-teal-500/30 rx-btn">
                                 <i class="fas fa-file-medical text-2xl"></i>
-                                <span>Upload Prescription</span>
+                                <span>
+                                    <%= t('upload_prescription') %>
+                                </span>
                             </a>
                         </div>
                     </div>
@@ -564,16 +586,17 @@
                                 <div>
                                     <p class="font-bold text-sm tracking-tight">
                                         <%= (typeof activeChat !=='undefined' && activeChat &&
-                                            activeChat.pharmacist_name) ? activeChat.pharmacist_name : 'Pharmacy Doctor'
-                                            %>
+                                            activeChat.pharmacist_name) ? activeChat.pharmacist_name :
+                                            t('chat_doctor_default') %>
                                     </p>
                                     <p class="text-[10px] text-blue-100/80 flex items-center gap-1 font-medium">
                                         <% if (typeof pharmacySettings !=='undefined' && pharmacySettings.is_open) { %>
                                             <span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                                            Operational
-                                            <% } else { %>
-                                                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span> On-Call
-                                                <% } %>
+                                            <%= t('chat_operational') %>
+                                                <% } else { %>
+                                                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                                                    <%= t('chat_on_call') %>
+                                                        <% } %>
                                     </p>
                                 </div>
                             </div>
@@ -593,8 +616,9 @@
                                 </div>
                                 <div
                                     class="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-bl-none shadow-sm text-sm text-gray-700 dark:text-gray-200 max-w-[85%] border border-gray-100 dark:border-slate-700/50">
-                                    Hello <%= user.full_name %>! How can I assist you with your medication or health
-                                        concerns today?
+                                    <%= t('chat_welcome_msg_start') %>
+                                        <%= user.full_name %>
+                                            <%= t('chat_welcome_msg_end') %>
                                 </div>
                             </div>
 
@@ -606,10 +630,10 @@
                                 </div>
                                 <div
                                     class="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-bl-none shadow-sm text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 italic">
-                                    Doctor is typing <span class="flex gap-0.5 items-center ml-1"><span
-                                            class="w-1 h-1 bg-current rounded-full animate-bounce"></span><span
-                                            class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]"></span><span
-                                            class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.4s]"></span></span>
+                                    <%= t('chat_typing') %> <span class="flex gap-0.5 items-center ml-1"><span
+                                                class="w-1 h-1 bg-current rounded-full animate-bounce"></span><span
+                                                class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]"></span><span
+                                                class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.4s]"></span></span>
                                 </div>
                             </div>
                         </div>
@@ -618,7 +642,7 @@
                         <div
                             class="p-5 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex gap-3 items-center shrink-0">
                             <div class="flex-1 relative">
-                                <input type="text" id="chat-input" placeholder="Message doctor..."
+                                <input type="text" id="chat-input" placeholder="<%= t('chat_placeholder') %>"
                                     class="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-2xl px-5 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white dark:placeholder-gray-500 shadow-inner"
                                     onkeypress="if(event.key === 'Enter') sendMessage()">
                             </div>

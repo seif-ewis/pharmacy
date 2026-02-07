@@ -79,7 +79,29 @@ app.use(sessionMiddleware);
 app.use(flash());
 app.use(express.static("public"));
 
-// 4. Share Session with Socket.IO
+// 4. i18n Middleware
+import i18nextMiddleware from "i18next-http-middleware";
+import i18next from "./src/config/i18n.js";
+
+app.use(i18nextMiddleware.handle(i18next));
+
+app.use((req, res, next) => {
+    // Expose t(), currentLang, and dir to all views
+    // Expose t(), currentLang, and dir to all views
+    res.locals.t = req.t;
+    // res.locals.currentLang = req.language; 
+    // res.locals.dir = req.language === 'ar' ? 'rtl' : 'ltr';
+
+    // FORCE ENGLISH FOR NOW per user request
+    res.locals.currentLang = 'en';
+    res.locals.dir = 'ltr';
+    // Ensure t() uses English to match
+    req.i18n.changeLanguage('en');
+
+    next();
+});
+
+// 5. Share Session with Socket.IO
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 io.use(wrap(passport.initialize()));

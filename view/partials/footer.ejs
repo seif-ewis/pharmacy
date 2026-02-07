@@ -11,8 +11,7 @@
                     <span class="font-bold text-xl text-primary">MediCare</span>
                 </div>
                 <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
-                    Your trusted online pharmacy. Dedicated to providing genuine medicines and healthcare products
-                    delivered to your doorstep.
+                    <%= t('footer_slogan') %>
                 </p>
                 <div class="flex space-x-4">
                     <a href="#"
@@ -29,29 +28,48 @@
 
             <!-- Col 2: Quick Links -->
             <div>
-                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">Quick Links</h4>
+                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">
+                    <%= t('quick_links') %>
+                </h4>
                 <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-                    <li><a href="#" class="hover:text-primary transition-colors">Home</a></li>
-                    <li><a href="#medicines" class="hover:text-primary transition-colors">Buy Medicines</a></li>
-                    <li><a href="/prescription/upload" class="hover:text-primary transition-colors">Upload
-                            Prescription</a></li>
-                    <li><a href="/profile" class="hover:text-primary transition-colors">My Account</a></li>
+                    <li><a href="#" class="hover:text-primary transition-colors">
+                            <%= t('home') %>
+                        </a></li>
+                    <li><a href="#medicines" class="hover:text-primary transition-colors">
+                            <%= t('buy_medicines') %>
+                        </a></li>
+                    <li><a href="/prescription/upload" class="hover:text-primary transition-colors">
+                            <%= t('upload_prescription') %>
+                        </a></li>
+                    <li><a href="/profile" class="hover:text-primary transition-colors">
+                            <%= t('my_account') %>
+                        </a></li>
                 </ul>
             </div>
 
             <!-- Col 3: Legal -->
             <div>
-                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">Policy</h4>
+                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">
+                    <%= t('policy') %>
+                </h4>
                 <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-                    <li><a href="/privacy-policy" class="hover:text-primary transition-colors">Privacy Policy</a></li>
-                    <li><a href="/terms" class="hover:text-primary transition-colors">Terms of Service</a></li>
-                    <li><a href="/return-policy" class="hover:text-primary transition-colors">Return Policy</a></li>
+                    <li><a href="/privacy-policy" class="hover:text-primary transition-colors">
+                            <%= t('privacy_policy') %>
+                        </a></li>
+                    <li><a href="/terms" class="hover:text-primary transition-colors">
+                            <%= t('terms_of_service') %>
+                        </a></li>
+                    <li><a href="/return-policy" class="hover:text-primary transition-colors">
+                            <%= t('return_policy') %>
+                        </a></li>
                 </ul>
             </div>
 
             <!-- Col 4: Contact -->
             <div>
-                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">Contact Us</h4>
+                <h4 class="font-bold text-dark dark:text-gray-200 mb-4">
+                    <%= t('contact_us') %>
+                </h4>
                 <ul class="space-y-3">
                     <li>
                         <a href="https://www.google.com/maps/search/?api=1&query=123+Health+Avenue+Medical+District+New+York+NY+10001"
@@ -82,7 +100,8 @@
 
         <div
             class="border-t border-gray-100 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 dark:text-gray-500">
-            <p>&copy; <%= new Date().getFullYear() %> MediCare Pharmacy. All rights reserved.</p>
+            <p>&copy; <%= new Date().getFullYear() %> MediCare Pharmacy. <%= t('all_rights_reserved') %>
+            </p>
             <div class="mt-4 md:mt-0 flex space-x-6">
                 <i class="fab fa-cc-visa text-2xl"></i>
                 <i class="fab fa-cc-mastercard text-2xl"></i>
@@ -113,7 +132,7 @@
                 if (data.isOpen) {
                     // Update to OPEN state
                     container.className = 'pharmacy-status-badge flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold bg-green-100 text-green-700';
-                    container.innerHTML = '<span class="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></span>We\'re Open';
+                    container.innerHTML = `<span class="w-2 h-2 rounded-full mr-2 bg-green-500 animate-pulse"></span>${window.translations && window.translations.we_are_open ? window.translations.we_are_open : "We're Open"}`;
                 } else {
                     // Update to CLOSED state
                     container.className = 'pharmacy-status-badge flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-semibold bg-night border border-blue-900 text-blue-100';
@@ -124,7 +143,7 @@
                                 <span class="text-[8px] text-blue-200 font-bold">z</span>
                                 <span class="text-[10px] text-blue-200 font-bold">Z</span>
                             </div>
-                            Currently Closed
+                            ${window.translations && window.translations.currently_closed ? window.translations.currently_closed : "Currently Closed"}
                         </div>
                     `;
                     // Re-trigger any anime.js animations for ZZZ if needed, though CSS animation is likely used here or elsewhere
@@ -146,12 +165,12 @@
                 }
             });
 
-        // Real-time notifications: append to header dropdown when server emits notification:new
-        socket.on('notification:new', function (data) {
-            if (typeof window.appendLiveNotification === 'function') {
-                window.appendLiveNotification(data);
-            }
-        });
+            // Real-time notifications: append to header dropdown when server emits notification:new
+            socket.on('notification:new', function (data) {
+                if (typeof window.appendLiveNotification === 'function') {
+                    window.appendLiveNotification(data);
+                }
+            });
         });
     </script>
     <% if (typeof user !=='undefined' && user) { %>
