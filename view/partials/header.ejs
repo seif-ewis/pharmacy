@@ -282,6 +282,14 @@
                     <% } else { %>
                         <!-- Guest State -->
                         <div class="hidden sm:flex items-center space-x-2">
+                            <a href="/categories"
+                                class="relative text-gray-600 dark:text-gray-300 font-bold px-5 py-2 rounded-full transition-all duration-300 text-sm hover:text-primary dark:hover:text-white hover:bg-blue-50/80 dark:hover:bg-slate-800 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] dark:hover:shadow-[0_0_15px_rgba(96,165,250,0.3)] hover:-translate-y-0.5">
+                                <span class="relative z-10 flex items-center gap-2">
+                                    <i
+                                        class="fas fa-th-large text-xs opacity-70 group-hover:opacity-100 transition-opacity"></i>
+                                    <%= typeof t !=='undefined' ? t('categories') : 'Categories' %>
+                                </span>
+                            </a>
                             <button onclick="openAuthModal('login')"
                                 class="text-gray-600 dark:text-gray-300 hover:text-primary font-bold px-4 py-2 rounded-full transition-colors text-sm">
                                 <%= t('login') %>
