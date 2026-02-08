@@ -29,6 +29,49 @@ const getOrderClause = (sort) => {
     }
 };
 
+export const getAllCategoriesPage = (req, res) => {
+    const categories = [
+        {
+            slug: 'featured',
+            name: 'Featured Products',
+            icon: 'fa-fire',
+            description: 'Discover our top rated and most popular products.',
+            color: 'text-orange-500 bg-orange-50 dark:bg-orange-500/10 dark:text-orange-400 group-hover:bg-orange-500 group-hover:text-white'
+        },
+        {
+            slug: 'essentials',
+            name: 'Daily Medicines',
+            icon: 'fa-pills',
+            description: 'Essential daily medications for your health.',
+            color: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white'
+        },
+        {
+            slug: 'wellness',
+            name: 'Beauty & Wellness',
+            icon: 'fa-magic',
+            description: 'Products to make you look and feel your best.',
+            color: 'text-purple-500 bg-purple-50 dark:bg-purple-500/10 dark:text-purple-400 group-hover:bg-purple-500 group-hover:text-white'
+        },
+        {
+            slug: 'services',
+            name: 'Pharmacy Services',
+            icon: 'fa-hand-holding-medical',
+            description: 'Professional services provided by our pharmacists.',
+            color: 'text-teal-500 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-400 group-hover:bg-teal-500 group-hover:text-white'
+        }
+    ];
+
+    res.render('categories', {
+        title: 'All Categories',
+        categories
+        // user is usually passed by middleware or manually. homeController passes it, let's assume layout handles it or we pass it if needed. 
+        // globalState middleware likely handles user in res.locals, so we might not need to pass it explicitly if layout uses locals.user.
+        // But looking at homeController, it passes user: req.user. Let's do the same to be safe.
+        , user: req.user
+    });
+};
+
+
 /**
  * Get category page (initial load)
  */

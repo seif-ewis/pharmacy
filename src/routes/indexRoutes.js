@@ -31,6 +31,7 @@ const router = express.Router();
 router.use("/admin", adminRoutes);
 
 router.get("/", homeController.getHomePage);
+router.get("/categories", categoryController.getAllCategoriesPage);
 router.get("/category/:slug", categoryController.getCategoryPage);
 router.get("/api/category/:slug/products", categoryController.getMoreProducts);
 router.get("/search", searchController.searchMedicines);
