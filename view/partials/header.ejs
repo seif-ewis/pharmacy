@@ -123,8 +123,8 @@
                                 class="max-h-[400px] md:max-h-[350px] overflow-y-auto scroll-smooth custom-scrollbar">
                                 <% if (typeof notifications !=='undefined' && notifications.length> 0) { %>
                                     <% notifications.forEach(function(notif) { %>
-                                        <div class="notification-item" onclick="markAsRead('<%= notif.id %>', this)"
-                                            class="px-5 py-4 border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative <%= !notif.read ? 'bg-blue-50/30 dark:bg-blue-900/5' : '' %>">
+                                        <div onclick="markAsRead('<%= notif.id %>', this)"
+                                            class="notification-item px-5 py-4 border-b border-gray-200 dark:border-slate-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative <%= !notif.read ? 'bg-blue-50/30 dark:bg-blue-900/5' : '' %>">
 
                                             <% if (!notif.read) { %>
                                                 <div id="dot-<%= notif.id %>"
