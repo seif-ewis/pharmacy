@@ -68,10 +68,10 @@ if (isProduction) {
 }
 app.use(cors(corsOptions));
 
-// 3.1 Rate Limiting (100 requests per 15 minutes)
+// 3.1 Rate Limiting (1000 requests per 15 minutes)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 1000, // Increased for dashboard usage (polling/assets)
     message: "Too many requests from this IP, please try again later."
 });
 app.use(limiter);

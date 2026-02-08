@@ -3,14 +3,21 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
-const db = new Pool({
+const isLocal = process.env.PG_HOST === 'localhost' || process.env.PG_HOST === '127.0.0.1';
+
+const dbConfig = {
     user: process.env.PG_USER,
     host: process.env.PG_HOST,
     database: process.env.PG_DATABASE,
     password: process.env.PG_PASSWORD,
     port: process.env.PG_PORT,
-    ssl: {rejectUnauthorized: false}
-});
+};
+
+if (!isLocal) {
+    dbConfig.ssl = { rejectUnauthorized: false };
+}
+
+const db = new Pool(dbConfig);
 
 
 // Connect to database
