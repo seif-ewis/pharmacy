@@ -93,13 +93,24 @@
 <script>
     async function handleProfileUpdate(e) {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalBtnHtml = btn.innerHTML;
+
+        // Loading state
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Updating...';
+
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
         try {
             const res = await fetch('/admin/profile/update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: JSON.stringify(data)
             });
 
@@ -107,20 +118,24 @@
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 const json = await res.json();
                 if (json.success) {
-                    showToast('success', 'Profile updated successfully');
+                    showToast('success', json.message || 'Profile updated successfully');
                     // Clear password fields only
                     e.target.querySelector('[name="current_password"]').value = '';
-                    e.target.querySelector('[name="new_password"]').value = '';
-                    e.target.querySelector('[name="confirm_password"]').value = '';
+                    if (e.target.querySelector('[name="new_password"]')) e.target.querySelector('[name="new_password"]').value = '';
+                    if (e.target.querySelector('[name="confirm_password"]')) e.target.querySelector('[name="confirm_password"]').value = '';
                 } else {
                     showToast('error', json.message || 'Update failed');
                 }
             } else {
                 if (res.ok) window.location.reload();
-                else showToast('error', 'Update failed');
+                else showToast('error', 'Update failed (Server returned non-JSON response)');
             }
         } catch (err) {
-            showToast('error', 'Network error');
+            console.error('Update catch error:', err);
+            showToast('error', 'Network error or server unavailable');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml;
         }
     }
 </script>
