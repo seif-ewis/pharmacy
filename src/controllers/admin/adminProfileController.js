@@ -13,7 +13,7 @@ export const updateProfile = async (req, res) => {
 
     try {
         // 1. Verify Current Password
-        const userRes = await db.query("SELECT password, email FROM users WHERE id = $1", [userId]);
+        const userRes = await db.query("SELECT password_hash, email FROM users WHERE id = $1", [userId]);
         const user = userRes.rows[0];
 
         if (!user) {
@@ -21,20 +21,20 @@ export const updateProfile = async (req, res) => {
             return res.redirect("/admin/profile");
         }
 
-        const isMatch = await bcrypt.compare(current_password, user.password);
+        const isMatch = await bcrypt.compare(current_password, user.password_hash);
         if (!isMatch) {
-            if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
                 return res.status(400).json({ success: false, message: "Incorrect current password." });
             }
             req.flash("error", "Incorrect current password.");
-            return res.redirect("/admin/profile");
+            return res.redirect("/admin/dashboard#profile");
         }
 
         // 2. Check if email is being changed and if it's already in use
         if (email && email !== user.email) {
             const emailCheck = await db.query("SELECT id FROM users WHERE email = $1 AND id != $2", [email, userId]);
             if (emailCheck.rows.length > 0) {
-                if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+                if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
                     return res.status(400).json({ success: false, message: "Email is already in use." });
                 }
                 req.flash("error", "Email is already in use.");
@@ -45,14 +45,14 @@ export const updateProfile = async (req, res) => {
         // 3. Prepare Updates
         if (new_password) {
             if (new_password !== confirm_password) {
-                if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+                if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
                     return res.status(400).json({ success: false, message: "New passwords do not match." });
                 }
                 req.flash("error", "New passwords do not match.");
                 return res.redirect("/admin/dashboard#profile");
             }
             if (new_password.length < 6) {
-                if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+                if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
                     return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
                 }
                 req.flash("error", "Password must be at least 6 characters.");
@@ -60,13 +60,13 @@ export const updateProfile = async (req, res) => {
             }
 
             const hashedPassword = await bcrypt.hash(new_password, 10);
-            await db.query("UPDATE users SET full_name = $1, email = $2, password = $3 WHERE id = $4", [full_name, email, hashedPassword, userId]);
+            await db.query("UPDATE users SET full_name = $1, email = $2, password_hash = $3 WHERE id = $4", [full_name, email, hashedPassword, userId]);
         } else {
             // Just update name and email
             await db.query("UPDATE users SET full_name = $1, email = $2 WHERE id = $3", [full_name, email, userId]);
         }
 
-        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
             return res.json({ success: true, message: "Profile updated successfully." });
         }
 
@@ -75,8 +75,8 @@ export const updateProfile = async (req, res) => {
 
     } catch (err) {
         console.error("Error updating profile:", err);
-        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-            return res.status(500).json({ success: false, message: "Failed to update profile." });
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
+            return res.status(500).json({ success: false, message: err.message || "Failed to update profile." });
         }
         req.flash("error", "Failed to update profile.");
         res.redirect("/admin/dashboard#profile");
