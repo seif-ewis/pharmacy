@@ -187,6 +187,8 @@
         const isEdit = !!data.id;
         const endpoint = isEdit ? '/admin/categories/edit' : '/admin/categories/add';
 
+        console.log('[DEBUG] Submitting category:', data, 'to', endpoint);
+
         try {
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -194,24 +196,27 @@
                 body: JSON.stringify(data)
             });
 
-            if (res.ok) {
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    const json = await res.json();
-                    if (json.success) {
-                        showToast('success', isEdit ? 'Category Updated' : 'Category Added');
-                        closeCategoryModal();
-                        loadCategories();
-                    } else {
-                        showToast('error', json.message || 'Operation failed');
-                    }
+            console.log('[DEBUG] Response status:', res.status);
+            const contentType = res.headers.get("content-type");
+            console.log('[DEBUG] Content-Type:', contentType);
+
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const json = await res.json();
+                console.log('[DEBUG] Response JSON:', json);
+                if (json.success) {
+                    showToast('success', isEdit ? 'Category Updated' : 'Category Added');
+                    closeCategoryModal();
+                    loadCategories();
                 } else {
-                    window.location.reload();
+                    showToast('error', json.message || 'Operation failed');
                 }
+            } else {
+                console.log('[DEBUG] Non-JSON response, reloading');
+                window.location.reload();
             }
         } catch (err) {
-            console.error(err);
-            showToast('error', 'Request failed');
+            console.error('[DEBUG] Error:', err);
+            showToast('error', 'Request failed: ' + err.message);
         }
     }
 

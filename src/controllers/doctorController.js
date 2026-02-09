@@ -116,9 +116,9 @@ export const getDashboard = async (req, res) => {
             is_open: statusRes.rows.length > 0 ? statusRes.rows[0].is_open : true
         };
 
-        // Fetch Categories
-        const catRes = await db.query("SELECT DISTINCT category FROM medicines WHERE category IS NOT NULL ORDER BY category ASC");
-        const categories = catRes.rows.map(r => r.category);
+        // Fetch Categories from categories table
+        const catRes = await db.query("SELECT name FROM categories WHERE is_active = true ORDER BY name ASC");
+        const categories = catRes.rows.map(r => r.name);
 
         res.render('doctor/dashboard', {
             user: req.user,
