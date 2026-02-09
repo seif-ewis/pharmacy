@@ -26,7 +26,8 @@ export const searchMedicines = async (req, res) => {
                 COALESCE(ms.current_stock, 0) as quantity
              FROM medicines m
              LEFT JOIN medicine_stock ms ON ms.id = m.id
-             WHERE m.name ILIKE $1 OR m.description ILIKE $1
+             WHERE (m.name ILIKE $1 OR m.description ILIKE $1)
+                AND COALESCE(m.is_archived, false) = false
              LIMIT 50`,
             [`%${query}%`]
         );

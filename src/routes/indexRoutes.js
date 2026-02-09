@@ -131,6 +131,7 @@ router.get("/doctor/inventory/most-sold", ensureDoctor, doctorController.getMost
 router.post("/doctor/inventory/create", sensitivePostLimiter, ensureDoctor, doctorController.createInventoryItem);
 router.put("/doctor/inventory/update/:id", sensitivePostLimiter, ensureDoctor, doctorController.updateInventoryItem);
 router.delete("/doctor/inventory/delete/:id", sensitivePostLimiter, ensureDoctor, doctorController.deleteInventoryItem);
+router.post("/doctor/inventory/archive/:id", sensitivePostLimiter, ensureDoctor, doctorController.toggleArchiveItem);
 
 // Doctor Chat Routes
 router.get("/doctor/chats/active", ensureDoctor, doctorController.getChats);

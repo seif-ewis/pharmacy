@@ -47,7 +47,7 @@ export const getHomePage = async (req, res) => {
                     SELECT *,
                            ROW_NUMBER() OVER (PARTITION BY category ORDER BY created_at DESC) AS rn
                     FROM medicines
-                    WHERE category = ANY($1)
+                    WHERE category = ANY($1) AND COALESCE(is_archived, false) = false
                 ) m
                 LEFT JOIN medicine_stock ms ON ms.id = m.id
                 WHERE m.rn <= 10

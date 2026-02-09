@@ -619,11 +619,12 @@ export const getInventory = async (req, res) => {
                 m.image_url,
                 m.low_stock_threshold,
                 m.created_at,
+                COALESCE(m.is_archived, false) as is_archived,
                 COALESCE(ms.current_stock, 0) as current_stock,
                 COALESCE(ms.is_low_stock, false) as is_low_stock
             FROM medicines m
             LEFT JOIN medicine_stock ms ON ms.id = m.id
-            ORDER BY m.name ASC
+            ORDER BY m.is_archived ASC, m.name ASC
         `);
 
         res.json({
@@ -860,7 +861,7 @@ export const updateInventoryItem = async (req, res) => {
     }
 };
 
-// Delete Inventory Item
+// Delete Inventory Item (or archive if has order history)
 export const deleteInventoryItem = async (req, res) => {
     const { id } = req.params;
 
@@ -872,14 +873,32 @@ export const deleteInventoryItem = async (req, res) => {
         );
 
         if (parseInt(ordersCheck.rows[0].count) > 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Cannot delete medicine that has been ordered. Set stock to 0 instead.'
+            // Archive instead of delete to preserve order history
+            const result = await db.query(
+                'UPDATE medicines SET is_archived = true WHERE id = $1 RETURNING *',
+                [id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Product not found'
+                });
+            }
+
+            return res.json({
+                success: true,
+                message: 'Product archived successfully (has order history)',
+                archived: true
             });
         }
 
-        // Delete related inventory adjustments first to avoid FK constraint
+        // Delete related records first to avoid FK constraints
         await db.query('DELETE FROM inventory_adjustments WHERE medicine_id = $1', [id]);
+        await db.query('DELETE FROM availability_notifications WHERE medicine_id = $1', [id]);
+        await db.query('DELETE FROM ai_generation_logs WHERE medicine_id = $1', [id]);
+        // Clear matched_medicine_id from product_requests (keep the request, just unlink)
+        await db.query('UPDATE product_requests SET matched_medicine_id = NULL WHERE matched_medicine_id = $1', [id]);
 
         const result = await db.query(
             'DELETE FROM medicines WHERE id = $1 RETURNING *',
@@ -902,6 +921,38 @@ export const deleteInventoryItem = async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to delete product'
+        });
+    }
+};
+
+// Toggle Archive Status
+export const toggleArchiveItem = async (req, res) => {
+    const { id } = req.params;
+    const { archive } = req.body; // true = archive, false = unarchive
+
+    try {
+        const result = await db.query(
+            'UPDATE medicines SET is_archived = $1 WHERE id = $2 RETURNING *',
+            [archive, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: archive ? 'Product archived successfully' : 'Product restored successfully',
+            product: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Toggle Archive Error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update product status'
         });
     }
 };

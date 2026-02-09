@@ -2924,16 +2924,21 @@
                 tbody.innerHTML = filtered.map(item => {
                     const isLowStock = item.current_stock <= (item.low_stock_threshold || 10);
                     const stockClass = isLowStock ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400';
+                    const isArchived = item.is_archived;
+                    const rowClass = isArchived ? 'opacity-50 bg-gray-50 dark:bg-slate-700/30' : '';
 
                     return `
-                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${rowClass}">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     ${item.image_url ?
                             `<img src="${item.image_url}" class="w-10 h-10 rounded-lg object-cover" alt="${item.name}">` :
                             '<div class="w-10 h-10 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center"><i class="fas fa-pills text-gray-400"></i></div>'}
                                     <div>
-                                        <p class="font-bold text-sm dark:text-white">${item.name}</p>
+                                        <p class="font-bold text-sm dark:text-white flex items-center gap-2">
+                                            ${item.name}
+                                            ${isArchived ? '<span class="px-2 py-0.5 bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 text-[10px] font-bold uppercase rounded-full">Archived</span>' : ''}
+                                        </p>
                                         <p class="text-xs text-gray-400">${formatCategory(item.category)}</p>
                                     </div>
                                 </div>
@@ -2949,12 +2954,19 @@
                                 ${formatCategory(item.category) || 'Uncategorized'}
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <button onclick="openEditModal('${item.id}')" 
-                                    class="text-blue-500 hover:text-blue-700 mr-3 transition-colors">
-                                    <i class="fas fa-edit"></i>
+                                ${!isArchived ? `
+                                    <button onclick="openEditModal('${item.id}')" 
+                                        class="text-blue-500 hover:text-blue-700 mr-3 transition-colors" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                ` : ''}
+                                <button onclick="toggleArchive('${item.id}', ${!isArchived}, '${item.name.replace(/'/g, "\\'")}')" 
+                                    class="${isArchived ? 'text-green-500 hover:text-green-700' : 'text-amber-500 hover:text-amber-700'} mr-3 transition-colors" 
+                                    title="${isArchived ? 'Restore' : 'Archive'}">
+                                    <i class="fas ${isArchived ? 'fa-undo' : 'fa-archive'}"></i>
                                 </button>
                                 <button onclick="deleteProduct('${item.id}', '${item.name.replace(/'/g, "\\'")}')" 
-                                    class="text-red-500 hover:text-red-700 transition-colors">
+                                    class="text-red-500 hover:text-red-700 transition-colors" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -3313,7 +3325,7 @@
             });
 
             async function deleteProduct(productId, productName) {
-                const confirmed = await showConfirm('Delete Product', `Are you sure you want to delete "${productName}"? This action cannot be undone.`, 'Delete', 'Cancel');
+                const confirmed = await showConfirm('Delete Product', `Are you sure you want to delete "${productName}"? Products with order history will be archived instead.`, 'Delete', 'Cancel');
                 if (!confirmed) return;
 
                 try {
@@ -3324,13 +3336,48 @@
                     const data = await res.json();
 
                     if (data.success) {
-                        showToast('success', 'Product deleted');
+                        if (data.archived) {
+                            showToast('info', 'Product archived (has order history)');
+                        } else {
+                            showToast('success', 'Product deleted');
+                        }
                         loadInventory(); // Reload table
                     } else {
                         showToast('error', data.error || 'Failed to delete product');
                     }
                 } catch (err) {
                     console.error('Delete product error:', err);
+                    showToast('error', 'Network error');
+                }
+            }
+
+            async function toggleArchive(productId, archive, productName) {
+                const action = archive ? 'archive' : 'restore';
+                const confirmed = await showConfirm(
+                    `${archive ? 'Archive' : 'Restore'} Product`,
+                    `Are you sure you want to ${action} "${productName}"?${archive ? ' It will be hidden from the store.' : ' It will be visible in the store again.'}`,
+                    archive ? 'Archive' : 'Restore',
+                    'Cancel'
+                );
+                if (!confirmed) return;
+
+                try {
+                    const res = await fetch(`/doctor/inventory/archive/${productId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ archive })
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast('success', data.message || `Product ${action}d successfully`);
+                        loadInventory(); // Reload table
+                    } else {
+                        showToast('error', data.error || `Failed to ${action} product`);
+                    }
+                } catch (err) {
+                    console.error('Toggle archive error:', err);
                     showToast('error', 'Network error');
                 }
             }

@@ -67,7 +67,7 @@ export const getCategoryPage = async (req, res) => {
             SELECT m.id, m.name, m.description, m.price, m.original_price, m.icon, m.image_url, COALESCE(ms.current_stock, 0) as quantity, m.created_at
             FROM medicines m
             LEFT JOIN medicine_stock ms ON m.id = ms.id
-            WHERE m.category = $1
+            WHERE m.category = $1 AND COALESCE(m.is_archived, false) = false
             ORDER BY ${orderBy}
             LIMIT $2
         `, [slug, ITEMS_PER_PAGE]);
@@ -78,7 +78,7 @@ export const getCategoryPage = async (req, res) => {
 
         // Get total count
         const countResult = await db.query(`
-            SELECT COUNT(*) as total FROM medicines WHERE category = $1
+            SELECT COUNT(*) as total FROM medicines WHERE category = $1 AND COALESCE(is_archived, false) = false
         `, [slug]);
         const totalCount = parseInt(countResult.rows[0].total);
 
@@ -129,7 +129,7 @@ export const getMoreProducts = async (req, res) => {
             SELECT m.id, m.name, m.description, m.price, m.original_price, m.icon, m.image_url, COALESCE(ms.current_stock, 0) as quantity, m.created_at
             FROM medicines m
             LEFT JOIN medicine_stock ms ON m.id = ms.id
-            WHERE m.category = $1
+            WHERE m.category = $1 AND COALESCE(m.is_archived, false) = false
             ORDER BY ${orderBy} 
             LIMIT $2 OFFSET $3
         `, [slug, ITEMS_PER_PAGE, offset]);
