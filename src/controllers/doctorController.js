@@ -881,9 +881,6 @@ export const deleteInventoryItem = async (req, res) => {
         // Delete related inventory adjustments first to avoid FK constraint
         await db.query('DELETE FROM inventory_adjustments WHERE medicine_id = $1', [id]);
 
-        // Delete related cart items
-        await db.query('DELETE FROM cart_items WHERE medicine_id = $1', [id]);
-
         const result = await db.query(
             'DELETE FROM medicines WHERE id = $1 RETURNING *',
             [id]

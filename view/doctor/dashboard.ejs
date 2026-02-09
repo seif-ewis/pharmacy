@@ -1100,14 +1100,7 @@
                                 <select id="category-filter" onchange="filterInventory()"
                                     class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
                                     <option value="">All Categories</option>
-                                    <option value="featuredMedicines">Featured Medicines</option>
-                                    <option value="dailyEssentials">Daily Essentials</option>
-                                    <option value="wellnessProducts">Wellness Products</option>
-                                    <option value="servicesProducts">Services</option>
-                                    <option value="Antibiotics">Antibiotics</option>
-                                    <option value="Pain Relief">Pain Relief</option>
-                                    <option value="Vitamins">Vitamins</option>
-                                    <option value="Supplements">Supplements</option>
+                                    <!-- Categories loaded dynamically -->
                                 </select>
                                 <select id="stock-filter" onchange="filterInventory()"
                                     class="bg-gray-50 dark:bg-slate-900 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
@@ -2838,9 +2831,32 @@
             let inventoryCache = [];
             let editingProductId = null;
 
+            async function populateCategoryFilter() {
+                const filter = document.getElementById('category-filter');
+                if (!filter) return;
+
+                try {
+                    const res = await fetch('/admin/categories/json');
+                    const data = await res.json();
+
+                    if (data.success && data.categories) {
+                        filter.innerHTML = '<option value="">All Categories</option>' +
+                            data.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                    }
+                } catch (err) {
+                    console.error('Failed to load category filter:', err);
+                }
+            }
+
             async function loadInventory() {
                 const tbody = document.getElementById('inventory-table-body');
                 if (!tbody) return;
+
+                // Populate category filter if empty
+                const categorySelect = document.getElementById('category-filter');
+                if (categorySelect && categorySelect.options.length <= 1) {
+                    await populateCategoryFilter();
+                }
 
                 tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-4xl mb-3"></i><p>Loading inventory...</p></td></tr>';
 
