@@ -22,7 +22,7 @@ export const searchMedicines = async (req, res) => {
 
         const result = await db.query(
             `SELECT 
-                m.id, m.name, m.description, m.price, m.icon, m.category,
+                m.id, m.name, m.description, m.price, m.original_price, m.icon, m.image_url, m.category,
                 COALESCE(ms.current_stock, 0) as quantity
              FROM medicines m
              LEFT JOIN medicine_stock ms ON ms.id = m.id

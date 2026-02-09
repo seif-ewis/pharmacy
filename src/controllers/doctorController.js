@@ -1,5 +1,6 @@
 
 import db from '../config/dataBase.js';
+import redisClient from '../config/redis.js';
 import * as inventoryController from './inventoryController.js';
 import { formatTimeAgo } from '../utils/formatDate.js';
 import { logOrderStatusChange } from '../utils/orderStatusLogger.js';
@@ -614,8 +615,11 @@ export const getInventory = async (req, res) => {
                 m.id, 
                 m.name, 
                 m.price, 
+                m.original_price,
                 m.category, 
                 m.description, 
+                m.benefits,
+                m.side_effects,
                 m.image_url,
                 m.low_stock_threshold,
                 m.created_at,
@@ -714,7 +718,7 @@ export const generateProductDetails = async (req, res) => {
 // Create New Inventory Item
 export const createInventoryItem = async (req, res) => {
     const {
-        name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects,
+        name, price, originalPrice, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects,
         aiGenerated, aiReviewed
     } = req.body;
 
@@ -747,11 +751,11 @@ export const createInventoryItem = async (req, res) => {
         // Create medicine record WITHOUT stock
         const result = await client.query(
             `INSERT INTO medicines
-            (name, price, category, description, image_url, low_stock_threshold, benefits, side_effects, ai_generated, ai_reviewed, ai_reviewed_at, created_at)
-        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+            (name, price, original_price, category, description, image_url, low_stock_threshold, benefits, side_effects, ai_generated, ai_reviewed, ai_reviewed_at, created_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
         RETURNING * `,
             [
-                name, price, category, description || null, imageUrl || null, lowStockThreshold || 10, benefits || null, sideEffects || null,
+                name, price, originalPrice || null, category, description || null, imageUrl || null, lowStockThreshold || 10, benefits || null, sideEffects || null,
                 isAiGenerated, isAiReviewed, aiReviewedAt
             ]
         );
@@ -794,7 +798,7 @@ export const createInventoryItem = async (req, res) => {
 // Update Inventory Item
 export const updateInventoryItem = async (req, res) => {
     const { id } = req.params;
-    const { name, price, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects } = req.body;
+    const { name, price, originalPrice, quantity, category, description, imageUrl, lowStockThreshold, benefits, sideEffects } = req.body;
 
     const client = await db.connect();
     try {
@@ -809,15 +813,16 @@ export const updateInventoryItem = async (req, res) => {
             `UPDATE medicines 
             SET name = $1,
             price = $2,
-            category = $3,
-            description = $4,
-            image_url = $5,
-            low_stock_threshold = $6,
-            benefits = $7,
-            side_effects = $8
-            WHERE id = $9
+            original_price = $3,
+            category = $4,
+            description = $5,
+            image_url = $6,
+            low_stock_threshold = $7,
+            benefits = $8,
+            side_effects = $9
+            WHERE id = $10
         RETURNING * `,
-            [name, price, category, description, imageUrl, lowStockThreshold || 10, benefits || null, sideEffects || null, id]
+            [name, price, originalPrice || null, category, description, imageUrl, lowStockThreshold || 10, benefits || null, sideEffects || null, id]
         );
 
         if (result.rows.length === 0) {
@@ -827,6 +832,9 @@ export const updateInventoryItem = async (req, res) => {
                 error: 'Product not found'
             });
         }
+
+        // Invalidate Homepage Cache
+        await redisClient.del('homepage:products_fixed');
 
         // Get current shift for tracking
         const currentShift = await inventoryController.getCurrentShift(client, req.user.id);
@@ -886,6 +894,9 @@ export const deleteInventoryItem = async (req, res) => {
                 });
             }
 
+            // Invalidate Homepage Cache
+            await redisClient.del('homepage:products_fixed');
+
             return res.json({
                 success: true,
                 message: 'Product archived successfully (has order history)',
@@ -911,6 +922,9 @@ export const deleteInventoryItem = async (req, res) => {
                 error: 'Product not found'
             });
         }
+
+        // Invalidate Homepage Cache
+        await redisClient.del('homepage:products_fixed');
 
         res.json({
             success: true,
@@ -942,6 +956,9 @@ export const toggleArchiveItem = async (req, res) => {
                 error: 'Product not found'
             });
         }
+
+        // Invalidate Homepage Cache
+        await redisClient.del('homepage:products_fixed');
 
         res.json({
             success: true,
