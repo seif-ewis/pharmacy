@@ -158,6 +158,12 @@
                             <i class="fas fa-id-card w-5 text-center group-hover:scale-110 transition-transform"></i>
                             Patients
                         </button>
+                        <button onclick="showModule('categories')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="categories">
+                            <i class="fas fa-tags w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            Categories
+                        </button>
 
                         <p
                             class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
@@ -201,6 +207,17 @@
                             data-module="audit">
                             <i class="fas fa-shield-alt w-5 text-center group-hover:scale-110 transition-transform"></i>
                             Audit Logs
+                        </button>
+
+                        <p
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-4 mt-8 opacity-50">
+                            Account</p>
+                        <button onclick="showModule('profile')"
+                            class="sidebar-item w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all group"
+                            data-module="profile">
+                            <i
+                                class="fas fa-user-circle w-5 text-center group-hover:scale-110 transition-transform"></i>
+                            My Profile
                         </button>
                     </nav>
                 </div>

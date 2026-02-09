@@ -14,7 +14,9 @@ const MODULE_PERMISSIONS = {
     'coupons': ['admin'],
     'settings': ['admin'],
     'audit': ['admin'],
-    'announcements': ['admin']
+    'announcements': ['admin'],
+    'categories': ['admin'],
+    'profile': ['admin']
 };
 
 export const getModulePartial = async (req, res) => {

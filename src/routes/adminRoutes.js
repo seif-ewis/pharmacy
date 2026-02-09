@@ -11,6 +11,8 @@ import * as adminInventoryController from "../controllers/admin/adminInventoryCo
 import * as adminPrescriptionsController from "../controllers/admin/adminPrescriptionsController.js";
 import * as adminAuditController from "../controllers/admin/adminAuditController.js";
 import * as announcementController from "../controllers/announcementController.js";
+import * as adminCategoryController from "../controllers/admin/adminCategoryController.js";
+import * as adminProfileController from "../controllers/admin/adminProfileController.js";
 
 const router = express.Router();
 
@@ -70,5 +72,16 @@ router.post("/settings/toggle-status", adminActionLimiter, adminSettingsControll
 // Announcements
 router.get("/announcements", announcementController.getAnnouncements);
 router.post("/announcements/create", adminActionLimiter, announcementController.createAnnouncement);
+
+// Category Management
+router.get("/categories", adminCategoryController.getCategories);
+router.get("/categories/json", adminCategoryController.getCategoriesJson);
+router.post("/categories/add", adminActionLimiter, adminCategoryController.addCategory);
+router.post("/categories/edit", adminActionLimiter, adminCategoryController.editCategory);
+router.post("/categories/delete/:id", adminActionLimiter, adminCategoryController.deleteCategory);
+
+// Profile Management
+router.get("/profile", adminProfileController.getProfile);
+router.post("/profile/update", adminActionLimiter, adminProfileController.updateProfile);
 
 export default router;

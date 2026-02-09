@@ -5,8 +5,14 @@ import * as chatController from "./chatController.js";
 
 export const getHomePage = async (req, res) => {
 
-    // Define categories once
-    const CATEGORIES = ["featuredMedicines", "dailyEssentials", "wellnessProducts", "servicesProducts"];
+    // Define specific categories for Homepage
+    const CATEGORY_SLUGS = {
+        featuredMedicines: 'featured',
+        dailyEssentials: 'essentials',
+        wellnessProducts: 'wellness',
+        servicesProducts: 'services'
+    };
+
     const products = {
         featuredMedicines: [],
         dailyEssentials: [],
@@ -17,14 +23,16 @@ export const getHomePage = async (req, res) => {
     let featuredCoupon = null;
 
     try {
-        const cacheKey = "homepage:products";
+        const cacheKey = "homepage:products_fixed";
         const cachedProducts = await redisClient.get(cacheKey);
 
         if (cachedProducts) {
             const parsed = JSON.parse(cachedProducts);
             Object.assign(products, parsed);
         } else {
-            const result = await db.query(`
+            const slugs = Object.values(CATEGORY_SLUGS);
+
+            const productQuery = `
                 SELECT 
                     m.id, 
                     m.name, 
@@ -32,6 +40,7 @@ export const getHomePage = async (req, res) => {
                     m.price, 
                     m.original_price, 
                     m.icon, 
+                    m.image_url,
                     COALESCE(ms.current_stock, 0) as quantity,
                     m.category
                 FROM (
@@ -42,24 +51,28 @@ export const getHomePage = async (req, res) => {
                 ) m
                 LEFT JOIN medicine_stock ms ON ms.id = m.id
                 WHERE m.rn <= 10
-            `, [CATEGORIES]);
+            `;
 
-            // Group by category
+            const result = await db.query(productQuery, [slugs]);
+
+            // Map results to specific categories
             result.rows.forEach(row => {
-                if (products[row.category]) {
-                    products[row.category].push({
+                // Find which key this slug belongs to
+                const key = Object.keys(CATEGORY_SLUGS).find(k => CATEGORY_SLUGS[k] === row.category);
+                if (key && products[key]) {
+                    products[key].push({
                         id: row.id,
                         name: row.name,
                         description: row.description,
                         price: row.price,
                         originalPrice: row.original_price,
                         icon: row.icon,
+                        imageUrl: row.image_url,
                         stock: row.quantity
                     });
                 }
             });
 
-            // Cache for 60 seconds
             await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
         }
 
@@ -79,7 +92,7 @@ export const getHomePage = async (req, res) => {
                 `);
                 if (couponRes.rows.length > 0) {
                     featuredCoupon = couponRes.rows[0];
-                    await redisClient.setEx(couponCacheKey, 300, JSON.stringify(featuredCoupon)); // Cache for 5 mins
+                    await redisClient.setEx(couponCacheKey, 300, JSON.stringify(featuredCoupon));
                 }
             }
         } catch (err) {
@@ -88,7 +101,7 @@ export const getHomePage = async (req, res) => {
         }
 
     } catch (err) {
-        console.error("Homepage medicines error:", err);
+        console.error("Homepage products error:", err);
         return res.status(500).send("Internal Server Error");
     }
 
@@ -122,8 +135,10 @@ export const getHomePage = async (req, res) => {
         chatMessages,
         error: req.flash("error"),
         success: req.flash("success"),
-        success: req.flash("success"),
         featuredCoupon,
-        ...products,
+        featuredMedicines: products.featuredMedicines,
+        dailyEssentials: products.dailyEssentials,
+        wellnessProducts: products.wellnessProducts,
+        servicesProducts: products.servicesProducts
     });
 };

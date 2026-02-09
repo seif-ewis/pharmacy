@@ -168,7 +168,8 @@
                             class="text-sm text-primary hover:text-blue-800 font-bold underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
                             Resend code
                         </button>
-                        <span id="resend-cooldown" class="text-sm text-gray-500 hidden">Resend in <span id="resend-countdown">60</span>s</span>
+                        <span id="resend-cooldown" class="text-sm text-gray-500 hidden">Resend in <span
+                                id="resend-countdown">60</span>s</span>
                     </div>
                     <button onclick="handleOtpBack()"
                         class="w-full mt-4 text-sm text-gray-500 hover:text-dark font-medium font-bold italic underline"
@@ -551,6 +552,19 @@
 
     function closeAuthModal() {
         const modal = document.getElementById('auth-modal');
-        modal.classList.add('hidden');
+        const backdrop = document.getElementById('modal-backdrop');
+        const panel = document.getElementById('modal-panel');
+
+        // Animate Out
+        backdrop.classList.add('opacity-0');
+        panel.classList.add('scale-95', 'opacity-0');
+
+        // Hide after transition matches duration-300
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
     }
+
+    // Close on backdrop click (already handled by onclick on backdrop div logic if added, but let's be explicit here too just in case)
+    document.getElementById('modal-backdrop').addEventListener('click', closeAuthModal);
 </script>

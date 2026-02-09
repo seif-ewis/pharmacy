@@ -168,9 +168,9 @@
                                             <% } %>
 
                                                 <a href="/products/<%= med.id %>" class="block">
-                                                    <% if (med.image_url) { %>
+                                                    <% if (med.imageUrl) { %>
                                                         <div class="h-48 overflow-hidden relative group">
-                                                            <img src="<%= med.image_url %>" alt="<%= med.name %>"
+                                                            <img src="<%= med.imageUrl %>" alt="<%= med.name %>"
                                                                 class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out">
                                                             <div
                                                                 class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -211,7 +211,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
+                                                                onclick="addToCart('<%= med.id %>', `<%= med.name.replace(/`/g, '') %>`, '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -312,7 +312,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
+                                                                onclick="addToCart('<%= med.id %>', `<%= med.name.replace(/`/g, '') %>`, '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-white dark:bg-white/10 text-primary dark:text-blue-400 flex items-center justify-center hover:bg-primary hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -413,7 +413,7 @@
                                                         </button>
                                                         <% } else { %>
                                                             <button
-                                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
+                                                                onclick="addToCart('<%= med.id %>', `<%= med.name.replace(/`/g, '') %>`, '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                                 class="w-10 h-10 rounded-full bg-teal-50 dark:bg-teal-900/30 text-secondary dark:text-teal-400 flex items-center justify-center hover:bg-secondary hover:text-white dark:hover:bg-teal-500 dark:hover:text-white transition-all duration-300 add-btn">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -496,9 +496,8 @@
                                                     <% } %>
                                             </div>
                                             <button
-                                                onclick="addToCart('<%= med.id %>', '<%= med.name %>', '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
+                                                onclick="addToCart('<%= med.id %>', `<%= med.name.replace(/`/g, '') %>`, '<%= med.price %>', <%= (typeof med.stock !=='undefined') ? med.stock : 9999 %>)"
                                                 class="w-10 h-10 rounded-full bg-teal-50 text-secondary flex items-center justify-center hover:bg-secondary hover:text-white transition-all duration-300 add-btn">
-
                                                 <i class="fas fa-plus"></i>
                                             </button>
                                         </div>
@@ -561,7 +560,8 @@
                     <div id="draggable-chat" class="fixed bottom-8 right-8 z-[100] cursor-move select-none">
                         <button onclick="toggleChatModal()"
                             class="w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden">
-                            <div class="absolute inset-0 bg-blue-400/20 animate-ping opacity-20"></div>
+                            <div class="absolute inset-0 bg-blue-400/20 animate-ping opacity-20">
+                            </div>
                             <i class="fas fa-user-md text-3xl animate-wave origin-bottom"></i>
                             <!-- Notification Badge (Initially Hidden) -->
                             <span id="chat-notification-badge"
@@ -666,7 +666,7 @@
                         // Pre-populate chat history if available
                         <% if (typeof chatMessages !== 'undefined' && chatMessages.length > 0) { %>
                             <% chatMessages.forEach(function (msg) { %>
-                            appendMessage("<%= msg.message %>", "<%= (msg.sender_id === user.id) ? 'me' : 'other' %>");
+                            appendMessage(<% - JSON.stringify(msg.message) %>, "<%= (msg.sender_id === user.id) ? 'me' : 'other' %>");
                             <% }); %>
                         <% } %>
 

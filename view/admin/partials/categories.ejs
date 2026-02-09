@@ -1,0 +1,251 @@
+<div id="module-categories" class="module-content">
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tighter">Category Management</h1>
+            <p class="text-gray-500 text-sm">Organize store structure and homepage sections.</p>
+        </div>
+        <button onclick="openCategoryModal()"
+            class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95">
+            <i class="fas fa-plus"></i>
+            <span>New Category</span>
+        </button>
+    </div>
+
+    <!-- Categories List -->
+    <div
+        class="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50/50 dark:bg-slate-900/50">
+                    <tr>
+                        <th class="p-6 text-xs font-black text-gray-400 uppercase tracking-widest">Image</th>
+                        <th class="p-6 text-xs font-black text-gray-400 uppercase tracking-widest">Name</th>
+                        <th class="p-6 text-xs font-black text-gray-400 uppercase tracking-widest">Slug</th>
+                        <th class="p-6 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="categories-list-body" class="divide-y divide-gray-100 dark:divide-slate-800">
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-gray-400 font-bold italic">Loading categories...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Category Modal -->
+<div id="category-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCategoryModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-4">
+        <div
+            class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transform transition-all scale-100">
+            <div class="p-8">
+                <h3 class="text-2xl font-black dark:text-white tracking-tighter mb-6" id="category-modal-title">Add
+                    Category</h3>
+                <form id="category-form" onsubmit="handleCategorySubmit(event)" class="space-y-4">
+                    <input type="hidden" name="id" id="cat-id">
+
+                    <div>
+                        <label
+                            class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Name</label>
+                        <input type="text" name="name" id="cat-name" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-bold dark:text-white focus:ring-2 focus:ring-primary/50">
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Slug</label>
+                        <input type="text" name="slug" id="cat-slug" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-bold dark:text-white focus:ring-2 focus:ring-primary/50"
+                            placeholder="e.g. featured">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Image URL
+                            <span class="text-gray-300 font-normal">(SVG, PNG, JPG)</span></label>
+                        <input type="url" name="image_url" id="cat-image-url"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-bold dark:text-white focus:ring-2 focus:ring-primary/50"
+                            placeholder="https://...">
+                        <p class="text-xs text-gray-400 mt-1">Leave empty to use icon instead</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Icon
+                            <span class="text-gray-300 font-normal">(FontAwesome fallback)</span></label>
+                        <input type="text" name="icon" id="cat-icon"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-bold dark:text-white focus:ring-2 focus:ring-primary/50"
+                            placeholder="fa-box">
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea name="description" id="cat-desc" rows="2"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-bold dark:text-white focus:ring-2 focus:ring-primary/50"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                        <button type="button" onclick="closeCategoryModal()"
+                            class="py-3 rounded-xl font-black uppercase tracking-widest text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="py-3 rounded-xl font-black uppercase tracking-widest text-xs bg-primary text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all transform hover:scale-105">
+                            Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadCategories() {
+        try {
+            const res = await fetch('/admin/categories/json');
+            const data = await res.json();
+
+            if (data.success) {
+                renderCategories(data.categories);
+            } else {
+                document.getElementById('categories-list-body').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold">Failed to load categories</td></tr>`;
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('categories-list-body').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold">Error loading categories. Check console.</td></tr>`;
+        }
+    }
+
+    function renderCategories(categories) {
+        const tbody = document.getElementById('categories-list-body');
+        if (categories.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-400 font-bold italic">No categories found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = categories.map(cat => `
+        <tr class="group hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors">
+            <td class="p-6">
+                <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden shadow-sm">
+                    ${cat.image_url
+                ? `<img src="${cat.image_url}" alt="${cat.name}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas ${cat.icon || 'fa-box'} text-gray-400\\'></i>'">`
+                : `<i class="fas ${cat.icon || 'fa-box'} text-gray-400 text-lg"></i>`
+            }
+                </div>
+            </td>
+            <td class="p-6 font-bold dark:text-white">
+                ${cat.name}
+                ${!cat.is_active ? '<span class="ml-2 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Inactive</span>' : ''}
+            </td>
+            <td class="p-6">
+                <code class="text-xs bg-gray-100 dark:bg-slate-900 px-2 py-1 rounded text-gray-500 font-mono">${cat.slug}</code>
+            </td>
+            <td class="p-6 text-right">
+                <button onclick='openEditCategory(${JSON.stringify(cat).replace(/'/g, "&#39;")})' 
+                    class="p-2 text-gray-400 hover:text-primary transition-colors">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteCategory('${cat.id}')"
+                    class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    }
+
+    function openCategoryModal() {
+        document.getElementById('category-form').reset();
+        document.getElementById('cat-id').value = '';
+        document.getElementById('category-modal-title').innerText = 'Add Category';
+        document.getElementById('category-modal').classList.remove('hidden');
+    }
+
+    function openEditCategory(cat) {
+        document.getElementById('cat-id').value = cat.id;
+        document.getElementById('cat-name').value = cat.name;
+        document.getElementById('cat-slug').value = cat.slug;
+        document.getElementById('cat-icon').value = cat.icon || '';
+        document.getElementById('cat-image-url').value = cat.image_url || '';
+        document.getElementById('cat-desc').value = cat.description || '';
+        document.getElementById('category-modal-title').innerText = 'Edit Category';
+        document.getElementById('category-modal').classList.remove('hidden');
+    }
+
+    function closeCategoryModal() {
+        document.getElementById('category-modal').classList.add('hidden');
+    }
+
+    async function handleCategorySubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        const isEdit = !!data.id;
+        const endpoint = isEdit ? '/admin/categories/edit' : '/admin/categories/add';
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const json = await res.json();
+                    if (json.success) {
+                        showToast('success', isEdit ? 'Category Updated' : 'Category Added');
+                        closeCategoryModal();
+                        loadCategories();
+                    } else {
+                        showToast('error', json.message || 'Operation failed');
+                    }
+                } else {
+                    window.location.reload();
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('error', 'Request failed');
+        }
+    }
+
+    async function deleteCategory(id) {
+        if (!await showConfirm('Delete Category', 'Are you sure? This cannot be undone.', 'Delete', 'Cancel')) return;
+
+        try {
+            const res = await fetch(`/admin/categories/delete/${id}`, { method: 'POST' });
+            if (res.ok) {
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const json = await res.json();
+                    if (json.success) {
+                        showToast('success', 'Category Deleted');
+                        loadCategories();
+                    } else {
+                        showToast('error', json.message || 'Delete failed');
+                    }
+                } else {
+                    loadCategories();
+                }
+            }
+        } catch (err) {
+            showToast('error', 'Delete failed');
+        }
+    }
+
+    // Initialize
+    function initializeCategories() {
+        loadCategories();
+    }
+
+    if (typeof window.loadCategories === 'undefined') {
+        window.loadCategories = loadCategories;
+    }
+    initializeCategories();
+</script>
