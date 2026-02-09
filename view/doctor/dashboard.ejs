@@ -1688,15 +1688,29 @@
                                         </select>
                                     </div>
 
-                                    <!-- Price -->
+                                    <!-- Price (Selling Price) -->
                                     <div>
                                         <label for="product-price"
-                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Price
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Selling Price
                                             ($)</label>
                                         <input type="number" id="product-price" name="price" step="0.01" min="0"
                                             required
                                             class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-mono font-bold transition-all"
                                             placeholder="0.00">
+                                    </div>
+
+                                    <!-- Original Price (for Sale Display) -->
+                                    <div>
+                                        <label for="product-original-price"
+                                            class="block text-xs font-bold text-gray-500 uppercase mb-1">Original Price
+                                            <span class="text-gray-400 normal-case font-normal">(optional - for
+                                                sale)</span></label>
+                                        <input type="number" id="product-original-price" name="originalPrice"
+                                            step="0.01" min="0"
+                                            class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white font-mono font-bold transition-all"
+                                            placeholder="0.00">
+                                        <p class="text-xs text-gray-400 mt-1">If higher than selling price, product
+                                            shows as "On Sale"</p>
                                     </div>
 
                                     <!-- Stock -->
@@ -3228,6 +3242,7 @@
                 document.getElementById('product-id').value = productId;
                 document.getElementById('product-name').value = product.name;
                 document.getElementById('product-price').value = product.price;
+                document.getElementById('product-original-price').value = product.original_price || '';
                 document.getElementById('product-quantity').value = product.current_stock;
                 document.getElementById('product-category').value = product.category || '';
                 document.getElementById('product-low-stock').value = product.low_stock_threshold || 10;
@@ -3253,9 +3268,11 @@
             document.getElementById('inventory-form')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
+                const originalPriceValue = document.getElementById('product-original-price').value;
                 const productData = {
                     name: document.getElementById('product-name').value,
                     price: parseFloat(document.getElementById('product-price').value),
+                    originalPrice: originalPriceValue ? parseFloat(originalPriceValue) : null,
                     quantity: parseInt(document.getElementById('product-quantity').value),
                     category: document.getElementById('product-category').value,
                     description: document.getElementById('product-description').value,
