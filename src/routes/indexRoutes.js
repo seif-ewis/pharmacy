@@ -27,6 +27,7 @@ router.use("/prescription", prescriptionRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/category", categoryRoutes);
 router.use("/api/category", categoryRoutes);   // Preserves /api/category/:slug/products
 router.use("/", staticRoutes);
 
