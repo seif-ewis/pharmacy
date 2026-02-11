@@ -219,5 +219,5 @@ This project is licensed under the **ISC License**.
 
 For questions or support, please contact the development team.
 
--   **Email**: [contact@example.com](mailto:contact@example.com)
--   **GitHub**: [github.com/yourusername](https://github.com/yourusername)
+-   **Email**: Seifmedhat.sm@gmail.com
+-   **GitHub**: https://github.com/seif-ewis
