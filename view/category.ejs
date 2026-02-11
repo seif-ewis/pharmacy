@@ -26,7 +26,11 @@
                                 <%= categoryName %>
                             </h1>
                             <p class="text-gray-500 dark:text-gray-400 text-sm">
-                                <span id="shown-count"><%= products.length %></span> of <span id="total-count"><%= totalCount %></span> products
+                                <span id="shown-count">
+                                    <%= products.length %>
+                                </span> of <span id="total-count">
+                                    <%= totalCount %>
+                                </span> products
                             </p>
                         </div>
 
@@ -119,9 +123,11 @@
                             <% }); %>
                     </div>
 
+                    <!-- Sentinel for Infinite Scroll -->
+                    <div id="scroll-sentinel" class="h-4 w-full"></div>
+
                     <!-- Loading Indicator -->
-                    <div id="loading-indicator"
-                        class="<%= hasMore ? '' : 'hidden' %> flex items-center justify-center py-12">
+                    <div id="loading-indicator" class="hidden flex items-center justify-center py-12">
                         <div class="flex items-center gap-3 text-gray-400">
                             <div class="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin">
                             </div>
@@ -247,6 +253,7 @@
                     }
 
                     // Load more products
+                    // Load more products
                     async function loadMoreProducts() {
                         if (isLoading || !hasMore) return;
 
@@ -281,23 +288,26 @@
 
                                 // Show/hide indicators
                                 if (!hasMore) {
+                                    // Hide sentinel? No need, just hide loader and show end message
                                     loadingIndicator.classList.add('hidden');
                                     document.getElementById('end-message').classList.remove('hidden');
+                                    // Optional: Hide sentinel to stop observing
+                                    document.getElementById('scroll-sentinel').classList.add('hidden');
                                 }
                             }
                         } catch (err) {
                             showToast('error', 'Failed to load more products');
                         } finally {
                             isLoading = false;
-                            if (hasMore) {
-                                document.getElementById('loading-indicator').classList.add('hidden');
-                            }
+                            // Hide loader regardless
+                            loadingIndicator.classList.add('hidden');
                         }
                     }
 
                     // Intersection Observer for infinite scroll
                     function setupInfiniteScroll() {
-                        const loadingIndicator = document.getElementById('loading-indicator');
+                        const sentinel = document.getElementById('scroll-sentinel');
+                        if (!sentinel) return;
 
                         const observer = new IntersectionObserver((entries) => {
                             entries.forEach(entry => {
@@ -309,7 +319,7 @@
                             rootMargin: '200px' // Start loading 200px before reaching the bottom
                         });
 
-                        observer.observe(loadingIndicator);
+                        observer.observe(sentinel);
                     }
 
                     function initSort() {
