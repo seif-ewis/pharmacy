@@ -15,6 +15,9 @@ import staticRoutes from "./staticRoutes.js";
 const router = express.Router();
 
 // ── Public Pages ──────────────────────────────────────
+// Checkout Redirect (Legacy Support)
+router.get("/checkout", (req, res) => res.redirect("/orders/checkout"));
+
 router.get("/", homeController.getHomePage);
 router.get("/search", searchController.searchMedicines);
 
@@ -27,6 +30,7 @@ router.use("/prescription", prescriptionRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
+
 router.use("/category", categoryRoutes);
 router.use("/api/category", categoryRoutes);   // Preserves /api/category/:slug/products
 router.use("/", staticRoutes);

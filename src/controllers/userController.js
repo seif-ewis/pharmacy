@@ -105,7 +105,7 @@ export const addAddress = async (req, res) => {
         await db.query("COMMIT");
         req.flash("success", "Address added successfully.");
 
-        const redirectUrl = req.query.redirect === 'checkout' ? '/checkout' : '/profile';
+        const redirectUrl = req.query.redirect === 'checkout' ? '/orders/checkout' : '/profile';
         res.redirect(redirectUrl);
     } catch (err) {
         await db.query("ROLLBACK");
