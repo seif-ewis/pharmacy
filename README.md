@@ -1,130 +1,223 @@
-# 💊 Hosam Pharmacy: Next-Gen Healthcare Ecosystem
+# Hosam Pharmacy Management System
 
-[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Multi--Relation-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-Session--Caching-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Socket.io](https://img.shields.io/badge/Socket.io-Real--time-010101?style=for-the-badge&logo=socketdotio&logoColor=white)](https://socket.io/)
+A comprehensive, production-ready pharmacy management system designed to streamline inventory control, sales, staff management, and patient care. Built with Node.js, Express, and PostgreSQL, it features real-time communication, role-based access control, and a modern user interface.
 
-**Hosam Pharmacy** is a premium, feature-rich pharmacy management system that bridges the gap between traditional medicine sales and modern AI-driven clinical care. Designed for patients, doctors, and administrators, it offers a seamless experience from prescription analysis to inventory synchronization.
+## 🚀 Features
 
----
+-   **User Authentication & Security**:
+    -   Secure Login/Signup with Email & Password (bcrypt hashing).
+    -   Google OAuth Integration.
+    -   Two-Factor Authentication (OTP) for sensitive actions.
+    -   Role-Based Access Control (RBAC): Admin, Doctor, Pharmacist, User.
+    -   Session management via Redis.
 
-## 🌟 Core Ecosystem
+-   **Inventory & Sales Management**:
+    -   Real-time stock tracking and adjustments.
+    -   Product categorization and search.
+    -   Sales processing and order history.
+    -   Prescription management and processing.
 
-### 🧪 Advanced Patient Experience
-*   **Intelligent Catalog**: Real-time stock availability, infinite-scroll categories, and powerful search.
-*   **AI-Assisted Clarity**: Automated generation of medicine benefits, side effects, and usage instructions.
-*   **Clinical Submission**: Securely upload prescription images for review by licensed pharmacists.
-*   **Real-time Guidance**: Live chat with on-duty doctors and pharmacists via Socket.io.
-*   **Dynamic Cart**: Smart tax calculations, guest/member checkout, and multi-address management.
+-   **Real-time Communication**:
+    -   Live chat between Patients and Doctors/Pharmacists.
+    -   Real-time notifications for order updates and announcements.
+    -   Powered by Socket.io.
 
-### ⚕️ The Doctor’s Workspace
-*   **AI Vision Analysis**: Automatic extraction of medication details from handwritten prescriptions using Google Gemini.
-*   **Shift Accountability**: Integrated shift management (Start/End) tracking performance, sales, and inventory changes.
-*   **Inventory Master**: Comprehensive CRUD for medicines with AI-powered detail generation for new stock items.
-*   **Manual Fulfillment**: Create orders directly from patient chats or walk-in consultations.
-*   **Processing Engine**: Review returns, fulfill special product requests, and approve/reject prescriptions.
+-   **Admin Dashboard**:
+    -   Comprehensive analytics (Sales, User Growth, Inventory Health).
+    -   User management (Doctors, Staff, Patients).
+    -   System-wide settings and configuration.
+    -   Audit logs and performance ledgers.
 
-### 🛡️ Administrative Command Center
-*   **Global Analytics**: Real-time dashboard for revenue, user trends, and inventory health.
-*   **Audit Logging**: Detailed trail of every critical system action for security and compliance.
-*   **Staff Governance**: Manage roles, promote doctors, and handle global configurations.
-*   **Communication Hub**: Schedule and broadcast announcements to the entire user base.
+-   **Additional Features**:
+    -   **Internationalization (i18n)**: Support for multiple languages (defaulting to English).
+    -   **Scheduled Announcements**: Automated system announcements.
+    -   **Coupons & Promotions**: Management of discount codes.
 
----
+## 🛠️ Tech Stack
 
-## 🛠️ Technology Stack
+-   **Backend**: Node.js, Express.js
+-   **Database**: PostgreSQL
+-   **Caching & Session Store**: Redis
+-   **Real-time Engine**: Socket.io
+-   **Frontend**: EJS (Embedded JavaScript Templates), TailwindCSS
+-   **Authentication**: Passport.js (Local, Google)
+-   **Other Tools**: Docker (optional), Nodemailer (Email), Cloudinary (Image Uploads).
 
-| Category | Tech | Description |
-| :--- | :--- | :--- |
-| **Backend** | `Node.js` + `Express` | High-performance, modular MVC architecture. |
-| **Frontend** | `EJS` + `Vanilla CSS` | SEO-optimized templates with premium dark/light themes. |
-| **Database** | `PostgreSQL` | Relational storage for orders, users, and audit data. |
-| **Caching** | `Redis` | Distributed session management and potential caching layer. |
-| **Real-time** | `Socket.io` | Bi-directional communication for chat and notifications. |
-| **AI Layer** | `Google Gemini` | Multimodal analysis (OCR/Medication recognition). |
-| **Storage** | `Cloudinary` | Optimized image hosting for prescriptions and avatars. |
+## ⚙️ Installation & Setup
 
----
+Follow these steps to set up the project locally.
 
-## 📂 Project Anatomy
+### Prerequisites
+
+-   Node.js (v18+ recommended)
+-   PostgreSQL
+-   Redis
+-   npm or yarn
+
+### 1. Clone the Repository
 
 ```bash
-├── public/                # Static assets (animations, CSS, JS)
-├── src/
-│   ├── config/            # DB, Redis, Passport, and Cloudinary setups
-│   ├── controllers/       # Business logic (Modularized by role)
-│   ├── middleware/        # RBAC, Rate limiting, Global state
-│   ├── routes/            # Route definitions (admin, auth, user)
-│   ├── services/          # External integrations (Email, etc.)
-│   └── utils/             # Helper functions & event emitters
-├── view/                  # EJS templates (doctor dashboard, admin panel, etc.)
-├── scripts/               # DB Migrations and initialization utilities
-└── server.js              # Application entry point & Socket.io logic
+git clone https://github.com/yourusername/hosam-pharmacy.git
+cd hosam-pharmacy
 ```
 
----
+### 2. Install Dependencies
 
-## 🚀 Quick Start
-
-### 1. Prerequisites
-- Node.js (v18+)
-- PostgreSQL Instance
-- Redis Server
-- API Keys for: Cloudinary, Google Gemini, and Google OAuth
-
-### 2. Environment Setup
-Create a `.env` file in the root:
-```env
-PORT=3001
-PG_USER=your_user
-PG_PASSWORD=your_password
-PG_DATABASE=hosam_pharmacy
-PG_HOST=localhost
-PG_PORT=5432
-
-SESSION_SECRET=your_secret_key
-GEMINI_API_KEY=your_gemini_key
-
-CLOUDINARY_CLOUD_NAME=your_name
-CLOUDINARY_API_KEY=your_key
-CLOUDINARY_API_SECRET=your_secret
-
-GOOGLE_CLIENT_ID=your_id
-GOOGLE_CLIENT_SECRET=your_secret
-CALLBACK_URL=http://localhost:3001/auth/google/callback
-```
-
-### 3. Initialize Database
-Run the schema migrations:
-```bash
-node scripts/setup_monitoring.js
-node scripts/migrate_inventory.js
-# See scripts/ folder for full migration list
-```
-
-### 4. Launch
 ```bash
 npm install
-npm run dev # Starts server via nodemon
 ```
 
----
+### 3. Environment Configuration
 
-## 🔐 Security & Optimization
-*   **Rate Limiting**: Per-route limits on sensitive actions (OTP, Profile updates, Orders).
-*   **Secure Sessions**: Redis-backed sessions with HTTP-only, secure, and same-site cookies.
-*   **RBAC**: Strict role-based access control (`ensureAdmin`, `ensureDoctor`).
-*   **Audit trails**: Automated logging of stock adjustments and status changes.
-*   **Asset Performance**: Cloudinary on-the-fly image transformations for fast loads.
+Create a `.env` file in the root directory and configure the following variables (reference `.env.example` if available):
 
----
+```env
+# Server Configuration
+PORT=3001
+NODE_ENV=development
 
-## 🔮 Roadmap & Future Features
-- [ ] **Advanced Search**: Fuzzy search integration with ElasticSearch.
-- [ ] **Background Workers**: Moving AI tasks to BullMQ/Redis worker threads.
-- [ ] **Payment Integration**: Stripe/PayPal live gateway implementation.
-- [ ] **Mobile App**: React Native bridge for patient prescriptions.
+# Database Configuration
+DATABASE_URL=postgresql://user:password@localhost:5432/hosam_pharmacy
 
----
-*Created with ❤️ for Hosam Pharmacy Ecosystem.*
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
+SESSION_SECRET=your_super_secret_session_key
+
+# Google OAuth (Optional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
+
+# Email Service (Nodemailer)
+EMAIL_SERVICE=gmail
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_email_password
+
+# Cloudinary (Image Uploads)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Other
+JWT_SECRET=your_jwt_secret
+```
+
+### 4. Database Setup
+
+Run the provided SQL schema to initialize the database tables.
+
+```bash
+psql -U your_db_user -d hosam_pharmacy -f schema.sql
+```
+
+> **Note**: Ensure your PostgreSQL server is running and the database `hosam_pharmacy` exists before running the schema.
+
+### 5. Start the Application
+
+**Development Mode:**
+
+```bash
+npm run dev
+# or if nodemon is not configured in scripts:
+node server.js
+```
+
+**Production Mode:**
+
+```bash
+npm start
+```
+
+## 📖 Usage
+
+1.  **Access the App**: Open your browser and navigate to `http://localhost:3001`.
+2.  **Default Admin**: There is no default admin account created by the schema. You may need to manually insert an admin user into the database or register a new user and update their role to `admin` via SQL:
+    ```sql
+    UPDATE users SET role = 'admin' WHERE email = 'your_email@example.com';
+    ```
+3.  **Explore**:
+    -   **Shop**: Browse products, add to cart, and checkout.
+    -   **Dashboard**: Log in as Admin to view the admin panel (`/admin/dashboard`).
+    -   **Chat**: Log in and use the chat feature to talk to available doctors.
+
+## 🔌 API Endpoints
+
+The application primarily uses Server-Side Rendering (SSR) with EJS, but exposes several API-like routes for dynamic content.
+
+### Authentication (`/auth`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/auth/login` | Log in a user |
+| POST | `/auth/register` | Register a new user |
+| GET | `/auth/google` | Initiate Google OAuth |
+| GET | `/auth/logout` | Log out |
+
+### Admin (`/admin`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/dashboard` | Main admin dashboard |
+| GET | `/admin/users/all` | List all users |
+| GET | `/admin/inventory` | Manage inventory |
+| POST | `/admin/products/add` | Add a new product |
+
+### Products & Categories
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/api/category/:slug/products` | Get products by category (JSON) |
+| GET | `/search` | Search for medicines |
+
+## 🧪 Testing
+
+Currently, there are no automated tests specified in the `package.json`.
+
+To run tests (if implemented):
+```bash
+npm test
+```
+
+## 📦 Deployment
+
+### Docker Deployment
+
+1.  Build the Docker image:
+    ```bash
+    docker build -t hosam-pharmacy .
+    ```
+2.  Run the container:
+    ```bash
+    docker run -p 3001:3001 --env-file .env hosam-pharmacy
+    ```
+
+### Manual Deployment (Linux/Ubuntu)
+
+1.  Set up Node.js, PostgreSQL, and Redis on your server.
+2.  Clone the repo and install dependencies.
+3.  Use `pm2` to keep the app running:
+    ```bash
+    npm install -g pm2
+    pm2 start server.js --name "hosam-pharmacy"
+    ```
+4.  Configure Nginx as a reverse proxy to forward traffic to port 3001.
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+1.  **Fork** the repository.
+2.  Create a new **Branch** (`git checkout -b feature/AmazingFeature`).
+3.  **Commit** your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  **Push** to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a **Pull Request**.
+
+Please ensure your code follows the existing style and conventions.
+
+## 📄 License
+
+This project is licensed under the **ISC License**.
+
+## 📞 Contact
+
+For questions or support, please contact the development team.
+
+-   **Email**: [contact@example.com](mailto:contact@example.com)
+-   **GitHub**: [github.com/yourusername](https://github.com/yourusername)
